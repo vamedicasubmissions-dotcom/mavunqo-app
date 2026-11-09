@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business Profile | Mavunqo</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+  <style>
+    .storefront-header {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      padding: 3rem 1.5rem 2.5rem;
+      border-radius: var(--radius);
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow-lg);
+    }
+    .storefront-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+    .storefront-badges {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .storefront-badge {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .storefront-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+    }
+    @media (max-width: 850px) {
+      .storefront-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .service-menu-item {
+      background-color: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .service-menu-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--secondary);
+      margin-bottom: 0.25rem;
+    }
+    .service-menu-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .service-menu-price {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--primary);
+      white-space: nowrap;
+    }
+    .sidebar-box {
+      background-color: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+    .sidebar-box h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--secondary);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+    .contact-item-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        Mavunqo<span class="accent">.</span>
+        <span class="brand-pill" data-i18n="brand_subtitle">Directory</span>
+      </a>
+
+      <div class="nav-actions">
+        <div class="lang-switch">
+          <button class="lang-btn active" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="es">ES</button>
+        </div>
+        <a href="/" class="btn btn-outline btn-sm" data-i18n="nav_home">Directory</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="loadingBox" class="state-box">
+      <h3>Loading business details...</h3>
+    </div>
+
+    <div id="profileContent" style="display: none;">
+      <!-- Storefront Hero Header -->
+      <div class="storefront-header">
+        <div class="storefront-badges">
+          <span id="bizCategory" class="storefront-badge">Category</span>
+          <span id="bizLocation" class="storefront-badge">📍 Location</span>
+          <span id="bizTierPill" class="storefront-badge" data-i18n="free_basic_listing_pill">Free Mavunqo Listing</span>
+        </div>
+        <h1 id="bizTradingName" class="storefront-title">Business Name</h1>
+        <p id="bizDescription" style="font-size: 1.1rem; max-width: 800px; opacity: 0.95;"></p>
+      </div>
+
+      <div class="storefront-grid">
+        <!-- Main: Services Catalog -->
+        <div>
+          <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 1rem;" data-i18n="services_heading">Offered Services</h2>
+          <div id="servicesMenuContainer">
+            <!-- Services injected here -->
+          </div>
+        </div>
+
+        <!-- Sidebar: Contact, Hours, Location -->
+        <div>
+          <!-- Quick Contact Actions -->
+          <div class="sidebar-box">
+            <h4 data-i18n="contact_direct">Direct Contacts</h4>
+            <div id="contactActionsList">
+              <!-- Action buttons -->
+            </div>
+            <div style="margin-top: 1rem;">
+              <button class="btn btn-outline" style="width: 100%;" onclick="openContactModal();" data-i18n="contact_form_cta">Send Message</button>
+            </div>
+          </div>
+
+          <!-- Location & Hours -->
+          <div class="sidebar-box">
+            <h4>Location & Hours</h4>
+            <div id="physicalAddressRow" class="contact-item-row">
+              <span>📍</span>
+              <span id="bizAddress"></span>
+            </div>
+            <div id="serviceAreasRow" class="contact-item-row" style="margin-top: 0.5rem;">
+              <span>🚗</span>
+              <span id="bizServiceAreas"></span>
+            </div>
+            <div style="margin-top: 1rem; border-top: 1px dashed var(--border); padding-top: 0.75rem;">
+              <strong style="font-size: 0.85rem;" data-i18n="hours_label">Business Hours</strong>
+              <div id="bizHoursContent" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem;"></div>
+            </div>
+          </div>
+
+          <!-- External Website Info -->
+          <div id="externalWebsiteBox" class="sidebar-box" style="display: none; background-color: #f8fafc;">
+            <h4>External Website</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;" data-i18n="external_site_notice">This business maintains its own external website.</p>
+            <a id="externalSiteLink" href="#" target="_blank" class="btn btn-outline btn-sm" style="width: 100%;" data-i18n="website_cta">Visit Website</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Contact Form Modal -->
+  <div id="contactModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center;">
+    <div style="background: #ffffff; border-radius: var(--radius); padding: 2rem; max-width: 480px; width: 90%; box-shadow: var(--shadow-lg);">
+      <h3 style="margin-bottom: 1rem;" data-i18n="contact_modal_title">Contact This Business</h3>
+      <form id="contactForm" onsubmit="event.preventDefault(); submitContact();">
+        <div style="margin-bottom: 0.75rem;">
+          <label style="font-size: 0.85rem; font-weight: 600;" data-i18n="name_label">Your Name</label>
+          <input type="text" id="contactName" class="input-field" style="width: 100%; margin-top: 0.25rem;" required>
+        </div>
+        <div style="margin-bottom: 0.75rem;">
+          <label style="font-size: 0.85rem; font-weight: 600;" data-i18n="contact_input_label">Your Phone / Email</label>
+          <input type="text" id="contactInfo" class="input-field" style="width: 100%; margin-top: 0.25rem;" required>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.85rem; font-weight: 600;" data-i18n="message_label">Message</label>
+          <textarea id="contactMessage" class="input-field" style="width: 100%; height: 90px; margin-top: 0.25rem;" required></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+          <button type="button" class="btn btn-outline" onclick="closeContactModal();">Cancel</button>
+          <button type="submit" class="btn btn-primary" data-i18n="send_btn">Send Inquiry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <div><strong>Mavunqo</strong> &copy; 2026. <span data-i18n="footer_text"></span></div>
+    </div>
+  </footer>
+
+  <script src="/frontend/i18n.js"></script>
+  <script>
+    let currentBusiness = null;
+
+    async function loadBusiness() {
+      const parts = window.location.pathname.split("/");
+      const slug = parts[2];
+      if (!slug) return;
+
+      try {
+        const res = await fetch(`/api/businesses/${slug}`);
+        if (!res.ok) {
+          document.getElementById("loadingBox").innerHTML = `<h3>Business listing not found or pending review.</h3>`;
+          return;
+        }
+        currentBusiness = await res.json();
+        renderBusiness();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderBusiness() {
+      if (!currentBusiness) return;
+      const b = currentBusiness;
+      document.title = `${b.trading_name} | Mavunqo`;
+
+      document.getElementById("loadingBox").style.display = "none";
+      document.getElementById("profileContent").style.display = "block";
+
+      document.getElementById("bizTradingName").textContent = b.trading_name;
+      document.getElementById("bizCategory").textContent = currentLang === "es" ? b.category_name_es : b.category_name_en;
+      document.getElementById("bizLocation").textContent = `📍 ${b.location_name}`;
+      document.getElementById("bizDescription").textContent = currentLang === "es" ? b.description_es : b.description_en;
+
+      // Address & areas
+      document.getElementById("bizAddress").textContent = b.address || "Sosúa, Dominican Republic";
+      if (b.service_areas && b.service_areas.length > 0) {
+        document.getElementById("bizServiceAreas").textContent = `Serves: ${b.service_areas.map(a => a.name).join(", ")}`;
+      } else {
+        document.getElementById("serviceAreasRow").style.display = "none";
+      }
+
+      // Hours
+      const hoursBox = document.getElementById("bizHoursContent");
+      if (b.hours && Object.keys(b.hours).length > 0) {
+        hoursBox.innerHTML = Object.entries(b.hours)
+          .map(([k, v]) => `<div><strong>${k.replace('_', ' ').toUpperCase()}:</strong> ${v}</div>`)
+          .join("");
+      } else {
+        hoursBox.textContent = "Contact for appointment and availability.";
+      }
+
+      // External website
+      const extBox = document.getElementById("externalWebsiteBox");
+      const extLink = document.getElementById("externalSiteLink");
+      if (b.website_url) {
+        extBox.style.display = "block";
+        extLink.href = b.website_url;
+      } else {
+        extBox.style.display = "none";
+      }
+
+      // Direct CTAs
+      const ctaList = document.getElementById("contactActionsList");
+      ctaList.innerHTML = "";
+      if (b.whatsapp) {
+        const waNum = b.whatsapp.replace(/[^0-9]/g, '');
+        ctaList.innerHTML += `
+          <a href="https://wa.me/${waNum}" target="_blank" class="btn btn-success" style="width: 100%; margin-bottom: 0.5rem;">
+            💬 WhatsApp (${b.whatsapp})
+          </a>
+        `;
+      }
+      if (b.phone) {
+        ctaList.innerHTML += `
+          <a href="tel:${b.phone}" class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;">
+            📞 Call ${b.phone}
+          </a>
+        `;
+      }
+
+      // Services menu
+      const sContainer = document.getElementById("servicesMenuContainer");
+      sContainer.innerHTML = "";
+      if (b.services && b.services.length > 0) {
+        b.services.forEach(s => {
+          const sName = currentLang === "es" ? s.name_es : s.name_en;
+          const sDesc = currentLang === "es" ? s.description_es : s.description_en;
+          const priceText = s.display_price && s.price 
+            ? `${s.currency} $${s.price}` 
+            : `<span style="font-size: 0.85rem; color: var(--text-muted);">${i18n[currentLang].price_on_request}</span>`;
+
+          const card = document.createElement("div");
+          card.className = "service-menu-item";
+          card.innerHTML = `
+            <div>
+              <div class="service-menu-name">${sName}</div>
+              <div class="service-menu-desc">${sDesc || ''}</div>
+            </div>
+            <div class="service-menu-price">${priceText}</div>
+          `;
+          sContainer.appendChild(card);
+        });
+      } else {
+        sContainer.innerHTML = `<p style="color: var(--text-muted);">Please contact this business directly for their services list.</p>`;
+      }
+    }
+
+    function openContactModal() {
+      document.getElementById("contactModal").style.display = "flex";
+    }
+
+    function closeContactModal() {
+      document.getElementById("contactModal").style.display = "none";
+    }
+
+    async function submitContact() {
+      const name = document.getElementById("contactName").value;
+      const contact = document.getElementById("contactInfo").value;
+      const message = document.getElementById("contactMessage").value;
+
+      try {
+        const res = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            business_id: currentBusiness.id,
+            name,
+            contact,
+            message
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(i18n[currentLang].contact_success);
+          closeContactModal();
+          document.getElementById("contactForm").reset();
+        } else {
+          alert("Error: " + data.error);
+        }
+      } catch (err) {
+        alert("Network error submitting contact request.");
+      }
+    }
+
+    window.addEventListener("languageChanged", renderBusiness);
+    document.addEventListener("DOMContentLoaded", loadBusiness);
+  </script>
+</body>
+</html>

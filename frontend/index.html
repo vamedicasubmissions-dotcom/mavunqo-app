@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mavunqo — Local Business Directory | Sosúa, Cabarete & Puerto Plata</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        Mavunqo<span class="accent">.</span>
+        <span class="brand-pill" data-i18n="brand_subtitle">Directory</span>
+      </a>
+
+      <div class="nav-actions">
+        <!-- Bilingual Switch -->
+        <div class="lang-switch" role="group" aria-label="Language Switch">
+          <button class="lang-btn active" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="es">ES</button>
+        </div>
+
+        <a href="/register" class="btn btn-outline btn-sm" data-i18n="nav_register">List Your Business</a>
+        <a href="/login" class="btn btn-primary btn-sm" data-i18n="nav_login">Business Sign In</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container">
+    <div class="hero">
+      <h1 data-i18n="hero_title">Find Local Services in the North Coast</h1>
+      <p data-i18n="hero_subtitle">Trusted businesses, verified service menus, and direct WhatsApp / phone contact. Sosúa pilot active.</p>
+
+      <!-- Market Status -->
+      <div class="market-status-bar">
+        <span class="market-tag active" data-i18n="sosua_active_tag">● Sosúa: Live Pilot</span>
+        <span class="market-tag upcoming" data-i18n="cabarete_upcoming_tag">○ Cabarete: Coming Soon</span>
+        <span class="market-tag upcoming" data-i18n="puerto_plata_tag">○ Puerto Plata: Planned</span>
+      </div>
+
+      <!-- Search Box -->
+      <div class="search-card-wrapper">
+        <form id="searchForm" class="search-form" onsubmit="event.preventDefault(); handleSearch();">
+          <input type="text" id="searchInput" class="input-field" placeholder="What are you looking for?" data-i18n="search_input_placeholder">
+          
+          <select id="categorySelect" class="input-field">
+            <option value="" data-i18n="all_categories">All Categories</option>
+          </select>
+
+          <select id="locationSelect" class="input-field">
+            <option value="" data-i18n="all_locations">All Locations</option>
+          </select>
+
+          <button type="submit" class="btn btn-primary" data-i18n="search_button">Search</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Listings Grid -->
+    <div id="listingsGrid" class="listings-grid">
+      <!-- Loaded via JavaScript -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="state-box" style="display: none;">
+      <div class="state-icon">🔍</div>
+      <h3 data-i18n="no_results_title">No businesses found</h3>
+      <p data-i18n="no_results_desc">Try adjusting your search terms, changing the location, or browsing all categories.</p>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div>
+        <strong>Mavunqo</strong> &copy; 2026. <span data-i18n="footer_text">The local business directory connecting Sosúa, Cabarete & Puerto Plata.</span>
+      </div>
+      <div>
+        <a href="/admin" class="btn btn-outline btn-sm" style="font-size: 0.75rem;">Jay Admin Portal</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/frontend/i18n.js"></script>
+  <script>
+    let categoriesList = [];
+    let locationsList = [];
+
+    async function loadMetadata() {
+      try {
+        const [catsRes, locsRes] = await Promise.all([
+          fetch("/api/categories"),
+          fetch("/api/locations")
+        ]);
+        categoriesList = await catsRes.json();
+        locationsList = await locsRes.json();
+
+        populateFilters();
+        handleSearch();
+      } catch (err) {
+        console.error("Error loading filters:", err);
+      }
+    }
+
+    function populateFilters() {
+      const catSelect = document.getElementById("categorySelect");
+      const locSelect = document.getElementById("locationSelect");
+
+      categoriesList.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = currentLang === "es" ? c.name_es : c.name_en;
+        catSelect.appendChild(opt);
+      });
+
+      locationsList.forEach(l => {
+        const opt = document.createElement("option");
+        opt.value = l.id;
+        opt.textContent = `${l.name} (${l.status === 'active' ? 'Active' : 'Staged'})`;
+        locSelect.appendChild(opt);
+      });
+    }
+
+    async function handleSearch() {
+      const q = document.getElementById("searchInput").value;
+      const cat = document.getElementById("categorySelect").value;
+      const loc = document.getElementById("locationSelect").value;
+
+      const url = `/api/businesses?q=${encodeURIComponent(q)}&category=${encodeURIComponent(cat)}&location=${encodeURIComponent(loc)}&lang=${currentLang}`;
+      const res = await fetch(url);
+      const businesses = await res.json();
+
+      renderListings(businesses);
+    }
+
+    function renderListings(items) {
+      const grid = document.getElementById("listingsGrid");
+      const empty = document.getElementById("emptyState");
+      grid.innerHTML = "";
+
+      if (!items || items.length === 0) {
+        grid.style.display = "none";
+        empty.style.display = "block";
+        return;
+      }
+
+      grid.style.display = "grid";
+      empty.style.display = "none";
+
+      items.forEach(b => {
+        const catName = currentLang === "es" ? b.category_name_es : b.category_name_en;
+        const desc = currentLang === "es" ? b.description_es : b.description_en;
+        const hasExternalSite = !!b.website_url;
+
+        let servicesHtml = "";
+        if (b.services_summary && b.services_summary.length > 0) {
+          servicesHtml = `
+            <div class="services-list-preview">
+              <div class="services-title">${currentLang === "es" ? "Servicios" : "Services"}</div>
+              ${b.services_summary.map(s => `
+                <div class="service-item-row">
+                  <span>${currentLang === "es" ? s.name_es : s.name_en}</span>
+                  <span class="service-price">${s.display_price && s.price ? `${s.currency} $${s.price}` : ''}</span>
+                </div>
+              `).join("")}
+            </div>
+          `;
+        }
+
+        const card = document.createElement("div");
+        card.className = "business-card";
+        card.innerHTML = `
+          <div class="card-header-bar">
+            <div>
+              <h3 class="business-title">${b.trading_name}</h3>
+            </div>
+          </div>
+
+          <div class="card-badges">
+            <span class="badge badge-category">${catName}</span>
+            <span class="badge badge-location">📍 ${b.location_name}</span>
+            ${hasExternalSite 
+              ? `<span class="badge badge-location" title="${i18n[currentLang].external_site_notice}">🌐 Web</span>` 
+              : `<span class="badge badge-storefront" title="${i18n[currentLang].free_storefront_notice}">⚡ Storefront</span>`}
+          </div>
+
+          <div class="card-body">
+            <p class="business-description">${desc}</p>
+            ${servicesHtml}
+          </div>
+
+          <div class="card-footer">
+            <a href="/b/${b.slug}" class="btn btn-outline btn-sm">
+              ${hasExternalSite ? i18n[currentLang].view_profile_btn : i18n[currentLang].view_storefront_btn}
+            </a>
+
+            <div class="cta-actions">
+              ${b.whatsapp ? `<a href="https://wa.me/${b.whatsapp.replace(/[^0-9]/g, '')}" target="_blank" class="btn btn-success btn-sm">WA</a>` : ''}
+              ${b.phone ? `<a href="tel:${b.phone}" class="btn btn-primary btn-sm">📞</a>` : ''}
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    window.addEventListener("languageChanged", () => {
+      // Re-populate filters and re-run search with current language
+      const catSelect = document.getElementById("categorySelect");
+      const locSelect = document.getElementById("locationSelect");
+      const curCat = catSelect.value;
+      const curLoc = locSelect.value;
+      catSelect.innerHTML = `<option value="">${i18n[currentLang].all_categories}</option>`;
+      locSelect.innerHTML = `<option value="">${i18n[currentLang].all_locations}</option>`;
+      populateFilters();
+      catSelect.value = curCat;
+      locSelect.value = curLoc;
+      handleSearch();
+    });
+
+    document.addEventListener("DOMContentLoaded", loadMetadata);
+  </script>
+</body>
+</html>

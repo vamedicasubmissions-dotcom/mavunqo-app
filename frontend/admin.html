@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jay Admin Portal | Mavunqo</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+  <style>
+    .admin-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+    .stat-val {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    .stat-lbl {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        Mavunqo<span class="accent">.</span>
+        <span class="brand-pill" style="background: #fef3c7; color: #b45309;">Jay Admin</span>
+      </a>
+
+      <div class="nav-actions">
+        <a href="/" class="btn btn-outline btn-sm">Public Directory</a>
+        <button onclick="logout();" class="btn btn-outline btn-sm">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <h1 style="font-size: 1.8rem; font-weight: 800;">Moderation & Directory Management</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Review submissions, approve public listings, and monitor Sosúa pilot aggregate metrics.</p>
+      </div>
+    </div>
+
+    <!-- Analytics Cards -->
+    <div id="statsGrid" class="admin-stats-grid">
+      <div class="stat-card">
+        <div class="stat-lbl">Pending Review</div>
+        <div id="statPending" class="stat-val">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Approved Listings</div>
+        <div id="statApproved" class="stat-val">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Total Directory Searches</div>
+        <div id="statSearches" class="stat-val">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Zero-Result Searches</div>
+        <div id="statZeroSearches" class="stat-val">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Customer Inquiries</div>
+        <div id="statInquiries" class="stat-val">0</div>
+      </div>
+    </div>
+
+    <!-- Applications Table -->
+    <h2 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 1rem;">Listing Applications</h2>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Business / Owner</th>
+            <th>Location & Category</th>
+            <th>RNC (Tax ID)</th>
+            <th>Website / Storefront</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="applicationsTableBody">
+          <!-- rows injected here -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem("mavunqo_token");
+    if (!token) {
+      window.location.href = "/login";
+    }
+
+    async function loadAdminData() {
+      try {
+        const [statsRes, appsRes] = await Promise.all([
+          fetch("/api/admin/analytics", { headers: { "Authorization": `Bearer ${token}` } }),
+          fetch("/api/admin/applications", { headers: { "Authorization": `Bearer ${token}` } })
+        ]);
+
+        if (statsRes.status === 401 || statsRes.status === 403) {
+          alert("Unauthorized access. Admin privileges required.");
+          window.location.href = "/login";
+          return;
+        }
+
+        const stats = await statsRes.json();
+        const apps = await appsRes.json();
+
+        // Render stats
+        document.getElementById("statPending").textContent = stats.pending_businesses;
+        document.getElementById("statApproved").textContent = stats.approved_businesses;
+        document.getElementById("statSearches").textContent = stats.total_searches;
+        document.getElementById("statZeroSearches").textContent = stats.zero_result_searches;
+        document.getElementById("statInquiries").textContent = stats.total_contact_inquiries;
+
+        // Render table
+        renderTable(apps);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderTable(apps) {
+      const tbody = document.getElementById("applicationsTableBody");
+      tbody.innerHTML = "";
+
+      if (apps.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No applications found.</td></tr>`;
+        return;
+      }
+
+      apps.forEach(a => {
+        let statusBadge = "";
+        if (a.status === "approved") {
+          statusBadge = `<span class="badge" style="background: #dcfce7; color: #166534;">Approved</span>`;
+        } else if (a.status === "pending") {
+          statusBadge = `<span class="badge" style="background: #fef3c7; color: #b45309;">Pending Jay Approval</span>`;
+        } else {
+          statusBadge = `<span class="badge" style="background: #fee2e2; color: #991b1b;">Rejected</span>`;
+        }
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>
+            <strong>${a.trading_name}</strong><br>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">${a.owner_name} (${a.owner_email})</span>
+          </td>
+          <td>
+            ${a.location_name}<br>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">${a.category_name}</span>
+          </td>
+          <td>
+            ${a.rnc_tax_id ? `<code>${a.rnc_tax_id}</code>` : `<span style="color: var(--text-muted); font-size: 0.8rem;">None (Optional)</span>`}
+          </td>
+          <td>
+            ${a.website_url ? `<a href="${a.website_url}" target="_blank" style="font-size: 0.82rem;">External Site ↗</a>` : `<span class="badge badge-storefront">Hosted Storefront</span>`}
+          </td>
+          <td>${statusBadge}</td>
+          <td>
+            <div style="display: flex; gap: 0.4rem;">
+              ${a.status === "pending" ? `
+                <button class="btn btn-success btn-sm" onclick="approveApp('${a.id}');">Approve</button>
+                <button class="btn btn-danger btn-sm" onclick="rejectApp('${a.id}');">Reject</button>
+              ` : `
+                <a href="/b/${a.slug}" target="_blank" class="btn btn-outline btn-sm">Preview</a>
+              `}
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function approveApp(id) {
+      if (!confirm("Are you sure you want to approve and publish this business listing?")) return;
+      const res = await fetch(`/api/admin/applications/${id}/approve`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Listing approved and live!");
+        loadAdminData();
+      } else {
+        alert("Error: " + data.error);
+      }
+    }
+
+    async function rejectApp(id) {
+      const reason = prompt("Enter rationale / reason for rejection:");
+      if (!reason) return;
+      const res = await fetch(`/api/admin/applications/${id}/reject`, {
+        method: "POST",
+        headers: { 
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ reason })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Application marked as rejected.");
+        loadAdminData();
+      } else {
+        alert("Error: " + data.error);
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("mavunqo_token");
+      localStorage.removeItem("mavunqo_user");
+      window.location.href = "/login";
+    }
+
+    document.addEventListener("DOMContentLoaded", loadAdminData);
+  </script>
+</body>
+</html>

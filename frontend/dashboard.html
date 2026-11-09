@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business Dashboard | Mavunqo</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+  <style>
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        Mavunqo<span class="accent">.</span>
+        <span class="brand-pill">Owner Portal</span>
+      </a>
+
+      <div class="nav-actions">
+        <a href="/" class="btn btn-outline btn-sm">Public Directory</a>
+        <button onclick="logout();" class="btn btn-outline btn-sm">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 1.8rem; font-weight: 800;">My Business Listings</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Manage your profile, service menu, contact channels and view direct customer inquiries.</p>
+    </div>
+
+    <div id="bizContainer" class="dashboard-layout">
+      <!-- Injected owned business listings -->
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem("mavunqo_token");
+    if (!token) {
+      window.location.href = "/login";
+    }
+
+    async function loadDashboard() {
+      try {
+        const res = await fetch("/api/owner/businesses", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          window.location.href = "/login";
+          return;
+        }
+        const businesses = await res.json();
+        renderBusinesses(businesses);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function renderBusinesses(list) {
+      const container = document.getElementById("bizContainer");
+      container.innerHTML = "";
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="state-box">
+            <h3>No businesses found for your account</h3>
+            <p>Ready to get started? <a href="/register">Submit a new business listing application</a>.</p>
+          </div>
+        `;
+        return;
+      }
+
+      for (const b of list) {
+        // Fetch contact inquiries for each owned business
+        const cntRes = await fetch(`/api/owner/businesses/${b.id}/contacts`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const contacts = await cntRes.json();
+
+        let statusBadge = "";
+        if (b.status === "approved") {
+          statusBadge = `<span class="badge" style="background: #dcfce7; color: #166534;">Live / Approved</span>`;
+        } else if (b.status === "pending") {
+          statusBadge = `<span class="badge" style="background: #fef3c7; color: #b45309;">Pending Jay Approval</span>`;
+        } else {
+          statusBadge = `<span class="badge" style="background: #fee2e2; color: #991b1b;">Rejected (${b.rejection_reason || 'See details'})</span>`;
+        }
+
+        const card = document.createElement("div");
+        card.className = "form-card";
+        card.style.maxWidth = "100%";
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                <h2 style="font-size: 1.5rem; font-weight: 800;">${b.trading_name}</h2>
+                ${statusBadge}
+              </div>
+              <p style="color: var(--text-muted); font-size: 0.9rem;">📍 ${b.location_name} &bull; ${b.category_name} &bull; Public Slug: <code>/b/${b.slug}</code></p>
+            </div>
+            <div>
+              ${b.status === 'approved' ? `<a href="/b/${b.slug}" target="_blank" class="btn btn-outline btn-sm">View Public Storefront ↗</a>` : ''}
+            </div>
+          </div>
+
+          <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem;">Update Profile Information</h3>
+          <form onsubmit="event.preventDefault(); saveProfile('${b.id}', this);">
+            <div class="form-row">
+              <div>
+                <label>Trading Name</label>
+                <input type="text" name="trading_name" class="input-field" style="width: 100%;" value="${b.trading_name || ''}">
+              </div>
+              <div>
+                <label>Legal Name (Sensitive - Requires Jay Approval)</label>
+                <input type="text" name="legal_name" class="input-field" style="width: 100%;" value="${b.legal_name || ''}">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div>
+                <label>WhatsApp Number</label>
+                <input type="text" name="whatsapp" class="input-field" style="width: 100%;" value="${b.whatsapp || ''}">
+              </div>
+              <div>
+                <label>Phone Number</label>
+                <input type="text" name="phone" class="input-field" style="width: 100%;" value="${b.phone || ''}">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div>
+                <label>Physical Address</label>
+                <input type="text" name="address" class="input-field" style="width: 100%;" value="${b.address || ''}">
+              </div>
+              <div>
+                <label>External Website Link (Optional)</label>
+                <input type="url" name="website_url" class="input-field" style="width: 100%;" value="${b.website_url || ''}" placeholder="https://...">
+              </div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <label>Description (English)</label>
+              <textarea name="description_en" class="input-field" style="width: 100%; height: 60px;">${b.description_en || ''}</textarea>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <label>Description (Spanish)</label>
+              <textarea name="description_es" class="input-field" style="width: 100%; height: 60px;">${b.description_es || ''}</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm">Save Profile Changes</button>
+          </form>
+
+          <!-- Inquiries Box -->
+          <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">Direct Customer Inquiries (${contacts.length})</h3>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Customer Name</th>
+                    <th>Contact</th>
+                    <th>Message</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${contacts.length === 0 ? `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No inquiries yet.</td></tr>` : 
+                    contacts.map(c => `
+                      <tr>
+                        <td style="font-size: 0.8rem; color: var(--text-muted);">${c.created_at}</td>
+                        <td><strong>${c.sender_name}</strong></td>
+                        <td>${c.sender_contact}</td>
+                        <td>${c.message}</td>
+                      </tr>
+                    `).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      }
+    }
+
+    async function saveProfile(bizId, formEl) {
+      const formData = new FormData(formEl);
+      const payload = {};
+      formData.forEach((val, key) => {
+        payload[key] = val;
+      });
+
+      try {
+        const res = await fetch(`/api/owner/businesses/${bizId}`, {
+          method: "PUT",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          let msg = "Profile updated successfully!";
+          if (data.pending_approval && data.pending_approval.length > 0) {
+            msg += `\nSensitive fields (${data.pending_approval.join(", ")}) were submitted as a change request for Jay's review.`;
+          }
+          alert(msg);
+          loadDashboard();
+        } else {
+          alert("Error updating profile: " + data.error);
+        }
+      } catch (err) {
+        alert("Network error.");
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("mavunqo_token");
+      localStorage.removeItem("mavunqo_user");
+      window.location.href = "/login";
+    }
+
+    document.addEventListener("DOMContentLoaded", loadDashboard);
+  </script>
+</body>
+</html>

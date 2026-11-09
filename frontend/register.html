@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>List Your Business | Mavunqo</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        Mavunqo<span class="accent">.</span>
+        <span class="brand-pill" data-i18n="brand_subtitle">Directory</span>
+      </a>
+
+      <div class="nav-actions">
+        <div class="lang-switch">
+          <button class="lang-btn active" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="es">ES</button>
+        </div>
+        <a href="/" class="btn btn-outline btn-sm" data-i18n="nav_home">Directory</a>
+        <a href="/login" class="btn btn-primary btn-sm" data-i18n="nav_login">Sign In</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="form-card">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <span class="badge badge-storefront">100% Free Basic Plan</span>
+        <h2 style="font-size: 1.6rem; font-weight: 800; margin-top: 0.5rem;">Apply for a Mavunqo Business Listing</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Join the Sosúa pilot directory. If you don't have a website, we'll provide a free hosted storefront.</p>
+      </div>
+
+      <div id="alertBox" style="display: none; padding: 1rem; border-radius: var(--radius); margin-bottom: 1.5rem;"></div>
+
+      <form id="registerForm" onsubmit="event.preventDefault(); submitRegistration();">
+        <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem;">1. Owner Information</h3>
+        <div class="form-row">
+          <div>
+            <label>Full Name *</label>
+            <input type="text" id="ownerName" class="input-field" style="width: 100%;" required>
+          </div>
+          <div>
+            <label>Email Address *</label>
+            <input type="email" id="ownerEmail" class="input-field" style="width: 100%;" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Account Password *</label>
+            <input type="password" id="ownerPassword" class="input-field" style="width: 100%;" required minlength="6">
+          </div>
+          <div>
+            <label>Phone / WhatsApp *</label>
+            <input type="text" id="ownerPhone" class="input-field" style="width: 100%;" placeholder="+1-809-555-0100" required>
+          </div>
+        </div>
+
+        <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; margin-top: 1.5rem;">2. Business Details</h3>
+        <div class="form-row">
+          <div>
+            <label>Trading / Public Business Name *</label>
+            <input type="text" id="tradingName" class="input-field" style="width: 100%;" required>
+          </div>
+          <div>
+            <label>Primary Category *</label>
+            <select id="regCategory" class="input-field" style="width: 100%;" required>
+              <!-- categories -->
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label>Launch Location *</label>
+            <select id="regLocation" class="input-field" style="width: 100%;" required>
+              <!-- locations -->
+            </select>
+          </div>
+          <div>
+            <label>Physical Address (Optional)</label>
+            <input type="text" id="regAddress" class="input-field" style="width: 100%;" placeholder="Street & number, El Batey, Sosúa">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label>Existing Website URL (Optional)</label>
+            <input type="url" id="websiteUrl" class="input-field" style="width: 100%;" placeholder="https://yourbusiness.com">
+            <span class="form-help">Leave empty if you need a free Mavunqo-hosted storefront.</span>
+          </div>
+          <div>
+            <label>Dominican Republic RNC / Tax ID (Optional)</label>
+            <input type="text" id="rncTaxId" class="input-field" style="width: 100%;" placeholder="131-XXXXX-X">
+            <span class="form-help" data-i18n="rnc_optional_hint">Optional tax ID (RNC). You can submit without it.</span>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label>Description in English *</label>
+          <textarea id="descEn" class="input-field" style="width: 100%; height: 75px;" required placeholder="Describe your services and why customers should choose you..."></textarea>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <label>Description in Spanish *</label>
+          <textarea id="descEs" class="input-field" style="width: 100%; height: 75px;" required placeholder="Describe tus servicios en español..."></textarea>
+        </div>
+
+        <div style="background-color: #f8fafc; border: 1px solid var(--border); padding: 1rem; border-radius: var(--radius); margin-bottom: 1.5rem; font-size: 0.85rem; color: var(--text-muted);">
+          ℹ️ <strong>Note on Approvals:</strong> Every new listing is submitted in a <code>Pending</code> state and manually approved by Jay before it becomes publicly visible in the directory or search results.
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem;">Submit Application for Jay's Approval</button>
+      </form>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <div><strong>Mavunqo</strong> &copy; 2026. <span data-i18n="footer_text"></span></div>
+    </div>
+  </footer>
+
+  <script src="/frontend/i18n.js"></script>
+  <script>
+    async function initForm() {
+      const [catsRes, locsRes] = await Promise.all([
+        fetch("/api/categories"),
+        fetch("/api/locations")
+      ]);
+      const categories = await catsRes.json();
+      const locations = await locsRes.json();
+
+      const catSelect = document.getElementById("regCategory");
+      categories.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = `${c.name_en} / ${c.name_es}`;
+        catSelect.appendChild(opt);
+      });
+
+      const locSelect = document.getElementById("regLocation");
+      locations.forEach(l => {
+        const opt = document.createElement("option");
+        opt.value = l.id;
+        opt.textContent = `${l.name} (${l.status === 'active' ? 'Active Pilot' : 'Staged Expansion'})`;
+        locSelect.appendChild(opt);
+      });
+    }
+
+    async function submitRegistration() {
+      const btn = document.getElementById("submitBtn");
+      const alertBox = document.getElementById("alertBox");
+      btn.disabled = true;
+      btn.textContent = "Submitting...";
+
+      const payload = {
+        owner_name: document.getElementById("ownerName").value,
+        owner_email: document.getElementById("ownerEmail").value,
+        password: document.getElementById("ownerPassword").value,
+        phone: document.getElementById("ownerPhone").value,
+        whatsapp: document.getElementById("ownerPhone").value,
+        trading_name: document.getElementById("tradingName").value,
+        category_id: document.getElementById("regCategory").value,
+        primary_location_id: document.getElementById("regLocation").value,
+        address: document.getElementById("regAddress").value,
+        website_url: document.getElementById("websiteUrl").value,
+        rnc_tax_id: document.getElementById("rncTaxId").value || null,
+        description_en: document.getElementById("descEn").value,
+        description_es: document.getElementById("descEs").value,
+        serves_entire_area: true
+      };
+
+      try {
+        const res = await fetch("/api/businesses/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alertBox.style.display = "block";
+          alertBox.style.backgroundColor = "#dcfce7";
+          alertBox.style.color = "#166534";
+          alertBox.innerHTML = `
+            <strong>Application Received!</strong><br>
+            Your listing for <em>${payload.trading_name}</em> is now in <strong>Pending</strong> status awaiting review by Jay.<br>
+            Once approved, it will be published to the directory. You can sign in using your email and password to view status.
+          `;
+          document.getElementById("registerForm").reset();
+        } else {
+          alertBox.style.display = "block";
+          alertBox.style.backgroundColor = "#fee2e2";
+          alertBox.style.color = "#991b1b";
+          alertBox.textContent = data.error || "Failed to submit application.";
+        }
+      } catch (err) {
+        alertBox.style.display = "block";
+        alertBox.style.backgroundColor = "#fee2e2";
+        alertBox.style.color = "#991b1b";
+        alertBox.textContent = "Network error. Please try again.";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Submit Application for Jay's Approval";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", initForm);
+  </script>
+</body>
+</html>

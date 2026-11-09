@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In | Mavunqo</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        Mavunqo<span class="accent">.</span>
+        <span class="brand-pill" data-i18n="brand_subtitle">Directory</span>
+      </a>
+
+      <div class="nav-actions">
+        <a href="/" class="btn btn-outline btn-sm" data-i18n="nav_home">Directory</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="form-card" style="max-width: 440px; margin-top: 3rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; text-align: center;">Sign In</h2>
+      <p style="text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Access your Business Dashboard or Jay Admin Portal</p>
+
+      <div id="errorBox" style="display: none; background: #fee2e2; color: #991b1b; padding: 0.75rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.88rem;"></div>
+
+      <form id="loginForm" onsubmit="event.preventDefault(); handleLogin();">
+        <div style="margin-bottom: 1rem;">
+          <label>Email Address</label>
+          <input type="email" id="emailInput" class="input-field" style="width: 100%;" required>
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+          <label>Password</label>
+          <input type="password" id="passwordInput" class="input-field" style="width: 100%;" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+      </form>
+
+      <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem; font-size: 0.82rem; color: var(--text-muted);">
+        <strong>Demo Accounts for Review:</strong>
+        <ul style="margin-left: 1.25rem; margin-top: 0.25rem;">
+          <li><strong>Jay Admin:</strong> <code>admin@mavunqo.com</code> / <code>AdminPass2026!</code></li>
+          <li><strong>Villa Owner:</strong> <code>carlos@sosuavillas.com</code> / <code>OwnerPass2026!</code></li>
+          <li><strong>Auto Repair Owner:</strong> <code>rosa@caribefix.com</code> / <code>OwnerPass2026!</code></li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    async function handleLogin() {
+      const email = document.getElementById("emailInput").value;
+      const password = document.getElementById("passwordInput").value;
+      const errorBox = document.getElementById("errorBox");
+
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          localStorage.setItem("mavunqo_token", data.token);
+          localStorage.setItem("mavunqo_user", JSON.stringify(data.user));
+          if (data.user.role === "admin") {
+            window.location.href = "/admin";
+          } else {
+            window.location.href = "/dashboard";
+          }
+        } else {
+          errorBox.style.display = "block";
+          errorBox.textContent = data.error || "Login failed";
+        }
+      } catch (err) {
+        errorBox.style.display = "block";
+        errorBox.textContent = "Network error";
+      }
+    }
+  </script>
+</body>
+</html>
