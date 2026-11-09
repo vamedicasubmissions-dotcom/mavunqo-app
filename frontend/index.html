@@ -199,8 +199,11 @@
             </a>
 
             <div class="cta-actions">
-              ${b.whatsapp ? `<a href="https://wa.me/${b.whatsapp.replace(/[^0-9]/g, '')}" target="_blank" class="btn btn-success btn-sm">WA</a>` : ''}
-              ${b.phone ? `<a href="tel:${b.phone}" class="btn btn-primary btn-sm">📞</a>` : ''}
+              ${b.whatsapp ? `
+                <a href="https://wa.me/${b.whatsapp.replace(/[^0-9]/g, '')}?text=${currentLang === 'es' ? encodeURIComponent(`Hola ${b.trading_name}, vi su negocio en Mavunqo y me gustaría información.`) : encodeURIComponent(`Hello ${b.trading_name}, I found your business on Mavunqo and would like to inquire.`)}" target="_blank" class="btn btn-success btn-sm" title="WhatsApp">
+                  WA
+                </a>` : ''}
+              ${b.phone ? `<a href="tel:${b.phone}" class="btn btn-primary btn-sm" title="Call">📞</a>` : ''}
             </div>
           </div>
         `;

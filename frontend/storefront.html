@@ -275,13 +275,16 @@
         extBox.style.display = "none";
       }
 
-      // Direct CTAs
+      // Direct CTAs with pre-filled Mavunqo referral message
       const ctaList = document.getElementById("contactActionsList");
       ctaList.innerHTML = "";
       if (b.whatsapp) {
         const waNum = b.whatsapp.replace(/[^0-9]/g, '');
+        const waMessage = currentLang === "es"
+          ? encodeURIComponent(`Hola ${b.trading_name}, vi su negocio en Mavunqo y me gustaría información sobre sus servicios.`)
+          : encodeURIComponent(`Hello ${b.trading_name}, I found your business on Mavunqo and would like to inquire about your services.`);
         ctaList.innerHTML += `
-          <a href="https://wa.me/${waNum}" target="_blank" class="btn btn-success" style="width: 100%; margin-bottom: 0.5rem;">
+          <a href="https://wa.me/${waNum}?text=${waMessage}" target="_blank" class="btn btn-success" style="width: 100%; margin-bottom: 0.5rem;">
             💬 WhatsApp (${b.whatsapp})
           </a>
         `;
