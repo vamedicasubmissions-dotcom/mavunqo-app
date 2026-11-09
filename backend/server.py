@@ -321,4 +321,5 @@ def run_server(port=8080, db_path=None):
 if __name__ == "__main__":
     from .seed import seed_database
     seed_database(DB_PATH)
-    run_server(8080)
+    port = int(os.environ.get("PORT", 8080))
+    run_server(port)
