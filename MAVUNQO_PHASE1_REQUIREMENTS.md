@@ -25,12 +25,12 @@ This directory is **the market entry point**, not the end product. The platform 
 
 | Topic | Requirement |
 |---|---|
-| Listing approval | **Jay approves every public business listing** before publication. |
+| Listing approval | **Admin approves every public business listing** before publication. |
 | Public discovery | Search by **service, category, location, and business name**. |
 | Search cards | Show business name, services, location/service areas, photos, contact and website when provided. |
 | Customer identity | Public browsing and discovery require **no customer account or login**. |
 | Business ownership | Authenticated business owners may manage **only their own** listings. |
-| Significant edits | Jay must approve significant edits before they become public. |
+| Significant edits | Admin must approve significant edits before they become public. |
 | Basic plan | **Free** basic listing and **free** basic hosted storefront for businesses that need a website. |
 | Existing websites | Businesses may link to and continue using their existing website. No forced migration. |
 | Service prices | Optional; each business chooses whether to display them. |
@@ -87,8 +87,8 @@ This directory is **the market entry point**, not the end product. The platform 
 
 ### 5.3 Onboarding workflow
 1. Business submits a registration form (status `pending`).
-2. Jay checks duplicate listings, legitimacy, contact/authorization and available RNC information as appropriate.
-3. Jay approves, rejects with rationale, or requests corrections.
+2. Admin checks duplicate listings, legitimacy, contact/authorization and available RNC information as appropriate.
+3. Admin approves, rejects with rationale, or requests corrections.
 4. Approved listing is published; rejected/pending listings remain private.
 5. Owner can propose edits; designated sensitive fields (ownership, payout details when enabled, legal identity, primary website/domain) require manual approval.
 6. Record who approved changes, when, and what changed.
@@ -97,7 +97,7 @@ This directory is **the market entry point**, not the end product. The platform 
 
 ## 6. Admin and owner dashboards
 
-### Jay admin
+### Platform Admin
 - View pending/approved/rejected/suspended applications.
 - Review and approve listings and sensitive changes; resolve duplicates; manage categories and cities.
 - View business profiles, moderation notes and change history.
@@ -131,7 +131,7 @@ Choose a coherent implementation based on the existing repository; **inspect exi
 
 - **Web:** Next.js + TypeScript + Tailwind CSS.
 - **Database:** PostgreSQL with migrations and tenant-aware access controls.
-- **Auth:** Well-supported managed authentication for business owners and Jay’s admin users; customer browsing is public.
+- **Auth:** Well-supported managed authentication for business owners and platform admin users; customer browsing is public.
 - **Media:** Object storage with safe file types, size limits and image processing.
 - **Search:** Indexed database search with services/categories/location filters; add specialized search infrastructure only when needed.
 - **Languages:** EN/ES message catalogs; persist user language preference when appropriate, with visible switcher.
@@ -160,7 +160,7 @@ Treat this as a conceptual schema; refine during implementation with indexes, co
 
 - Authenticate and authorize every admin/owner operation; never trust a business ID passed from the browser.
 - Prevent cross-business access in APIs, database queries, files and reports; test against tenant isolation failures.
-- MFA for Jay administrators; appropriate credential/session protections for business owners.
+- MFA for platform administrators; appropriate credential/session protections for business owners.
 - Rate-limit registration, login, search and contact endpoints; anti-bot protections where needed.
 - Validate uploaded images and URLs; block malicious file formats and unsafe redirects.
 - Secure secrets, HTTPS, audit trails, backups and restoration testing.
@@ -182,7 +182,7 @@ Treat this as a conceptual schema; refine during implementation with indexes, co
 
 ### Milestone 2 — Applications and approvals
 - Business application form, optional RNC, pending workflow, admin review and notification.
-- Enforce no publication before Jay approves.
+- Enforce no publication before admin approves.
 
 ### Milestone 3 — Directory and search
 - Home, categories, keyword/service/location/company search, filters and search-result cards.
@@ -205,7 +205,7 @@ Treat this as a conceptual schema; refine during implementation with indexes, co
 - [ ] Sosúa is the first active launch area, with configurable future expansion to Cabarete and Puerto Plata.
 - [ ] A business with an existing website can register, be approved and link to that site.
 - [ ] A business without a website can receive a free Mavunqo-hosted profile/storefront.
-- [ ] Owners can edit only their own businesses; sensitive changes require Jay's approval.
+- [ ] Owners can edit only their own businesses; sensitive changes require admin approval.
 - [ ] RNC and banking information are **not required** to submit a Phase 1 application.
 - [ ] Service prices can be shown or hidden independently per business/service.
 - [ ] WhatsApp, phone, website and contact form work as configured.
@@ -222,7 +222,7 @@ Payment processing, payouts, paid subscriptions, full CRM automation, AI agents,
 
 ## 14. Instructions to paste into Antigravity
 
-> Read `MAVUNQO_PHASE1_REQUIREMENTS.md` as the approved Phase 1 product specification. Inspect this repository before making changes. First produce a concise gap analysis mapping existing code to requirements and an implementation plan. Then build only the missing Phase 1 features in milestone order, keeping Sosúa as the initial live market and Cabarete/Puerto Plata configurable for future rollout. Preserve the free listing and free basic storefront model, optional RNC and bank information, bilingual UI, business isolation, owner-managed profiles, and Jay approval gates. Do not add Phase 2 marketplace or AI automation functionality yet. Implement and run tests, document configuration and manual steps, and never claim production readiness without evidence.
+> Read `MAVUNQO_PHASE1_REQUIREMENTS.md` as the approved Phase 1 product specification. Inspect this repository before making changes. First produce a concise gap analysis mapping existing code to requirements and an implementation plan. Then build only the missing Phase 1 features in milestone order, keeping Sosúa as the initial live market and Cabarete/Puerto Plata configurable for future rollout. Preserve the free listing and free basic storefront model, optional RNC and bank information, bilingual UI, business isolation, owner-managed profiles, and admin approval gates. Do not add Phase 2 marketplace or AI automation functionality yet. Implement and run tests, document configuration and manual steps, and never claim production readiness without evidence.
 
 ---
 
