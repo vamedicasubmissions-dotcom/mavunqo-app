@@ -9,7 +9,7 @@ Endpoints:
 - POST /api/contact (submit contact request)
 - POST /api/auth/login (admin & business owner login)
 - GET /api/auth/me (current user profile)
-- Admin Endpoints (Jay only):
+- Admin Endpoints:
   - GET /api/admin/applications (list pending/all applications)
   - POST /api/admin/applications/{id}/approve
   - POST /api/admin/applications/{id}/reject
@@ -24,7 +24,7 @@ Endpoints:
   - /register -> frontend/register.html (Business Onboarding)
   - /login -> frontend/login.html (Owner/Admin Sign In)
   - /dashboard -> frontend/dashboard.html (Owner Dashboard)
-  - /admin -> frontend/admin.html (Jay Admin Moderation)
+  - /admin -> frontend/admin.html (Admin Moderation)
   - /assets/* -> static files
 """
 import http.server
@@ -124,14 +124,14 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/api/admin/applications":
             user = self.get_auth_user()
             if not user or user.get("role") != "admin":
-                return self.send_json({"error": "Forbidden: Jay admin only"}, 403)
+                return self.send_json({"error": "Forbidden: Admin access only"}, 403)
             status = query.get("status", [None])[0]
             return self.send_json(service.get_admin_applications(status=status))
 
         if path == "/api/admin/analytics":
             user = self.get_auth_user()
             if not user or user.get("role") != "admin":
-                return self.send_json({"error": "Forbidden: Jay admin only"}, 403)
+                return self.send_json({"error": "Forbidden: Admin access only"}, 403)
             return self.send_json(service.get_admin_analytics())
 
         # Owner Routes
@@ -236,7 +236,7 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 )
                 return self.send_json({
                     "success": True,
-                    "message": "Application submitted successfully and is awaiting review by Jay.",
+                    "message": "Application submitted successfully and is awaiting review.",
                     "data": res
                 }, 201)
             except Exception as e:
@@ -260,7 +260,7 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path.startswith("/api/admin/applications/") and path.endswith("/approve"):
             user = self.get_auth_user()
             if not user or user.get("role") != "admin":
-                return self.send_json({"error": "Forbidden: Jay admin only"}, 403)
+                return self.send_json({"error": "Forbidden: Admin access only"}, 403)
             parts = path.split("/")
             biz_id = parts[4]
             try:
@@ -272,7 +272,7 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path.startswith("/api/admin/applications/") and path.endswith("/reject"):
             user = self.get_auth_user()
             if not user or user.get("role") != "admin":
-                return self.send_json({"error": "Forbidden: Jay admin only"}, 403)
+                return self.send_json({"error": "Forbidden: Admin access only"}, 403)
             parts = path.split("/")
             biz_id = parts[4]
             data = self.read_json_body()

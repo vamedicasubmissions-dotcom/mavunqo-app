@@ -5,9 +5,9 @@ Handles:
 - Zero-results and search query audit tracking
 - Business profiles & hosted storefronts (/b/{slug})
 - Business application registration (optional RNC, default 'pending' status)
-- Jay Admin moderation: approve, reject, request corrections, list applications
+- Administrator moderation: approve, reject, request corrections, list applications
 - Multi-tenant business owner dashboard: view owned businesses, edit profile, propose sensitive changes
-- Change requests workflow (sensitive fields require Jay approval)
+- Change requests workflow (sensitive fields require admin approval)
 - Contact form handling with rate-limit and anti-spam verification
 """
 import sqlite3
@@ -210,7 +210,7 @@ class MavunqoService:
             final_slug = test_slug
 
             biz_id = f"biz_{uuid.uuid4().hex[:12]}"
-            # Status is strictly PENDING until Jay approves
+            # Status is strictly PENDING until approved by admin
             conn.execute(
                 """INSERT INTO businesses (
                     id, owner_id, trading_name, legal_name, slug, category_id, primary_location_id,
@@ -258,7 +258,7 @@ class MavunqoService:
             return {"business_id": biz_id, "slug": final_slug, "status": "pending", "owner_id": owner_id}
 
     # -------------------------------------------------------------
-    # Jay Admin Actions
+    # Administrator Actions
     # -------------------------------------------------------------
     def get_admin_applications(self, status: str = None):
         with self.get_connection() as conn:
@@ -283,7 +283,7 @@ class MavunqoService:
             # Verify admin
             admin = conn.execute("SELECT role FROM users WHERE id = ?", (admin_user_id,)).fetchone()
             if not admin or admin["role"] != "admin":
-                raise PermissionError("Only Jay or authorized admins can approve listings.")
+                raise PermissionError("Only authorized administrators can approve listings.")
 
             conn.execute(
                 """UPDATE businesses
@@ -303,7 +303,7 @@ class MavunqoService:
         with self.get_connection() as conn:
             admin = conn.execute("SELECT role FROM users WHERE id = ?", (admin_user_id,)).fetchone()
             if not admin or admin["role"] != "admin":
-                raise PermissionError("Only Jay or authorized admins can reject listings.")
+                raise PermissionError("Only authorized administrators can reject listings.")
 
             conn.execute(
                 """UPDATE businesses
@@ -374,7 +374,7 @@ class MavunqoService:
         if not self.verify_business_ownership(user_id, business_id):
             raise PermissionError("Access denied: You do not own this business.")
 
-        # Check for sensitive changes that require Jay approval
+        # Check for sensitive changes that require admin approval
         # Sensitive fields: legal_name, rnc_tax_id, primary_location_id, category_id, website_url
         sensitive_keys = {"legal_name", "rnc_tax_id", "primary_location_id", "category_id"}
         sensitive_updates = {k: v for k, v in update_data.items() if k in sensitive_keys}

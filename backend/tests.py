@@ -4,7 +4,7 @@ Validates:
 1. Public visitor search without account (keyword, category, location, service).
 2. Sosúa is active launch market, Cabarete and Puerto Plata staged as upcoming.
 3. RNC optionality during business registration.
-4. Business approval gate (listings stay pending until Jay approves).
+4. Business approval gate (listings stay pending until admin approves).
 5. Multi-tenant business isolation (owners cannot view or edit unauthorized businesses).
 6. Sensitive change requests require admin review.
 7. Service prices can be shown or hidden independently.
@@ -114,8 +114,8 @@ class TestMavunqoPhase1(unittest.TestCase):
         # Both are accessible via the hosted profile path
         self.assertIn("Caribe Fix Auto & AC", biz_hosted["trading_name"])
 
-    # 6. Optional RNC in Registration & Pending Approval Gate
-    def test_registration_optional_rnc_and_jay_approval_gate(self):
+    # 4. Business approval gate (listings stay pending until admin approves)
+    def test_registration_optional_rnc_and_admin_approval_gate(self):
         # Register business without RNC
         reg = self.service.register_business(
             owner_name="Marcos Diaz",
@@ -141,8 +141,8 @@ class TestMavunqoPhase1(unittest.TestCase):
         # Public get by slug must return None before approval
         self.assertIsNone(self.service.get_business_by_slug(new_slug, require_approved=True))
 
-        # Jay Admin approves listing
-        self.service.approve_business(admin_user_id="user_jay_admin", business_id=new_biz_id)
+        # Admin approves listing
+        self.service.approve_business(admin_user_id="user_admin", business_id=new_biz_id)
 
         # Now appears in public search
         search_res_after = self.service.search_businesses(q="Sosúa Reef Diving")

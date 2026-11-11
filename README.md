@@ -33,12 +33,12 @@ Visit in your browser:
 - **Business Profile / Storefront:** `http://localhost:8080/b/caribe-fix-auto` or `http://localhost:8080/b/sosua-ocean-view-villas`
 - **Business Registration:** `http://localhost:8080/register`
 - **Sign In:** `http://localhost:8080/login`
-- **Jay Admin Portal:** `http://localhost:8080/admin`
+- **Admin Portal:** `http://localhost:8080/admin`
 - **Business Owner Portal:** `http://localhost:8080/dashboard`
 
 ---
 
 ## Seed Accounts for Evaluation
-- **Jay Admin:** `admin@mavunqo.com` / `AdminPass2026!`
+- **System Admin:** `admin@mavunqo.com` / `AdminPass2026!`
 - **Villa Rentals Owner (with external website):** `carlos@sosuavillas.com` / `OwnerPass2026!`
 - **Auto & AC Repair Owner (free hosted storefront):** `rosa@caribefix.com` / `OwnerPass2026!`

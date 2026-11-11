@@ -110,10 +110,10 @@
         </div>
 
         <div style="background-color: #f8fafc; border: 1px solid var(--border); padding: 1rem; border-radius: var(--radius); margin-bottom: 1.5rem; font-size: 0.85rem; color: var(--text-muted);">
-          ℹ️ <strong>Note on Approvals:</strong> Every new listing is submitted in a <code>Pending</code> state and manually approved by Jay before it becomes publicly visible in the directory or search results.
+          ℹ️ <strong>Note on Approvals:</strong> Every new listing is submitted in a <code>Pending</code> state and manually approved by an administrator before it becomes publicly visible in the directory or search results.
         </div>
 
-        <button type="submit" id="submitBtn" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem;">Submit Application for Jay's Approval</button>
+        <button type="submit" id="submitBtn" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem;">Submit Application for Approval</button>
       </form>
     </div>
   </main>
@@ -187,7 +187,7 @@
           alertBox.style.color = "#166534";
           alertBox.innerHTML = `
             <strong>Application Received!</strong><br>
-            Your listing for <em>${payload.trading_name}</em> is now in <strong>Pending</strong> status awaiting review by Jay.<br>
+            Your listing for <em>${payload.trading_name}</em> is now in <strong>Pending</strong> status awaiting review.<br>
             Once approved, it will be published to the directory. You can sign in using your email and password to view status.
           `;
           document.getElementById("registerForm").reset();
@@ -204,7 +204,7 @@
         alertBox.textContent = "Network error. Please try again.";
       } finally {
         btn.disabled = false;
-        btn.textContent = "Submit Application for Jay's Approval";
+        btn.textContent = "Submit Application for Approval";
       }
     }
 

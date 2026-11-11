@@ -1,7 +1,7 @@
 """
 Seed data for Mavunqo Phase 1.
 Initializes:
-- Admin user: Jay (admin@mavunqo.com / admin123)
+- Admin user: (admin@mavunqo.com)
 - Initial categories (Home Services, Dining & Food, Health & Wellness, Auto & Transport, Professional Services, Hospitality & Tourism)
 - Initial locations: Sosúa (Active launch market), Cabarete (Upcoming), Puerto Plata (Upcoming)
 - Two realistic demo businesses:
@@ -19,14 +19,14 @@ def seed_database(db_path: str):
     conn = init_db(db_path)
     cur = conn.cursor()
 
-    # 1. Admin User: Jay
-    admin_id = "user_jay_admin"
+    # 1. Admin User
+    admin_id = "user_admin"
     cur.execute("SELECT id FROM users WHERE email = 'admin@mavunqo.com'")
     if not cur.fetchone():
         cur.execute(
             """INSERT INTO users (id, email, password_hash, full_name, role)
                VALUES (?, ?, ?, ?, ?)""",
-            (admin_id, "admin@mavunqo.com", hash_password("AdminPass2026!"), "Jay Admin", "admin")
+            (admin_id, "admin@mavunqo.com", hash_password("AdminPass2026!"), "Mavunqo Admin", "admin")
         )
 
     # 2. Categories
