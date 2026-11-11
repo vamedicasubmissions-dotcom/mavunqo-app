@@ -5,103 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Business Profile | Mavunqo</title>
   <link rel="stylesheet" href="/frontend/style.css">
-  <style>
-    .storefront-header {
-      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-      color: #ffffff;
-      padding: 3rem 1.5rem 2.5rem;
-      border-radius: var(--radius);
-      margin-bottom: 2rem;
-      box-shadow: var(--shadow-lg);
-    }
-    .storefront-title {
-      font-size: 2.2rem;
-      font-weight: 800;
-      margin-bottom: 0.5rem;
-    }
-    .storefront-badges {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      margin-bottom: 1rem;
-    }
-    .storefront-badge {
-      background: rgba(255, 255, 255, 0.2);
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-    .storefront-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 2rem;
-    }
-    @media (max-width: 850px) {
-      .storefront-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-    .service-menu-item {
-      background-color: #ffffff;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-    .service-menu-name {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--secondary);
-      margin-bottom: 0.25rem;
-    }
-    .service-menu-desc {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-    }
-    .service-menu-price {
-      font-size: 1.2rem;
-      font-weight: 800;
-      color: var(--primary);
-      white-space: nowrap;
-    }
-    .sidebar-box {
-      background-color: #ffffff;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: var(--shadow);
-    }
-    .sidebar-box h4 {
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      color: var(--secondary);
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 0.5rem;
-    }
-    .contact-item-row {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 0.75rem;
-      font-size: 0.92rem;
-    }
-  </style>
 </head>
 <body>
 
-  <!-- Top Navbar -->
+  <!-- Uber Dark Navbar -->
   <header class="navbar">
     <div class="nav-container">
       <a href="/" class="brand-logo">
-        Mavunqo<span class="accent">.</span>
-        <span class="brand-pill" data-i18n="brand_subtitle">Directory</span>
+        Mavunqo<span class="dot">.</span>
+        <span class="brand-pill" data-i18n="brand_subtitle">Services</span>
       </a>
 
       <div class="nav-actions">
@@ -109,42 +21,42 @@
           <button class="lang-btn active" data-lang="en">EN</button>
           <button class="lang-btn" data-lang="es">ES</button>
         </div>
-        <a href="/" class="btn btn-outline btn-sm" data-i18n="nav_home">Directory</a>
+        <a href="/" class="btn btn-outline-white btn-sm" data-i18n="nav_home">Directory</a>
       </div>
     </div>
   </header>
 
-  <main class="container">
+  <main class="container" style="padding-top: 2rem;">
     <div id="loadingBox" class="state-box">
       <h3>Loading business details...</h3>
     </div>
 
     <div id="profileContent" style="display: none;">
-      <!-- Storefront Hero Header -->
-      <div class="storefront-header">
-        <div class="storefront-badges">
-          <span id="bizCategory" class="storefront-badge">Category</span>
-          <span id="bizLocation" class="storefront-badge">📍 Location</span>
-          <span id="bizTierPill" class="storefront-badge" data-i18n="free_basic_listing_pill">Free Mavunqo Listing</span>
+      <!-- Uber Storefront Hero Header -->
+      <div class="uber-storefront-hero">
+        <div class="uber-storefront-meta">
+          <span id="bizCategory" class="uber-storefront-badge">Category</span>
+          <span id="bizLocation" class="uber-storefront-badge">📍 Location</span>
+          <span id="bizTierPill" class="uber-storefront-badge">Verified Listing</span>
         </div>
-        <h1 id="bizTradingName" class="storefront-title">Business Name</h1>
-        <p id="bizDescription" style="font-size: 1.1rem; max-width: 800px; opacity: 0.95;"></p>
+        <h1 id="bizTradingName" class="uber-storefront-title">Business Name</h1>
+        <p id="bizDescription" class="uber-storefront-desc"></p>
       </div>
 
-      <div class="storefront-grid">
+      <div class="uber-storefront-layout">
         <!-- Main: Services Catalog -->
         <div>
-          <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 1rem;" data-i18n="services_heading">Offered Services</h2>
+          <h2 style="font-size: 1.6rem; font-weight: 850; margin-bottom: 1.25rem; letter-spacing: -0.02em;" data-i18n="services_heading">Offered Services & Menu</h2>
           <div id="servicesMenuContainer">
             <!-- Services injected here -->
           </div>
         </div>
 
-        <!-- Sidebar: Contact, Hours, Location -->
+        <!-- Sidebar: Uber Fast Contact & Info -->
         <div>
           <!-- Quick Contact Actions -->
-          <div class="sidebar-box">
-            <h4 data-i18n="contact_direct">Direct Contacts</h4>
+          <div class="uber-sidebar-panel">
+            <h4 class="uber-sidebar-title" data-i18n="contact_direct">Direct Contacts</h4>
             <div id="contactActionsList">
               <!-- Action buttons -->
             </div>
@@ -154,27 +66,27 @@
           </div>
 
           <!-- Location & Hours -->
-          <div class="sidebar-box">
-            <h4>Location & Hours</h4>
+          <div class="uber-sidebar-panel">
+            <h4 class="uber-sidebar-title">Location & Operating Hours</h4>
             <div id="physicalAddressRow" class="contact-item-row">
-              <span>📍</span>
-              <span id="bizAddress"></span>
+              <span style="font-size: 1.1rem;">📍</span>
+              <span id="bizAddress" style="font-weight: 600;"></span>
             </div>
             <div id="serviceAreasRow" class="contact-item-row" style="margin-top: 0.5rem;">
-              <span>🚗</span>
-              <span id="bizServiceAreas"></span>
+              <span style="font-size: 1.1rem;">🚗</span>
+              <span id="bizServiceAreas" style="font-size: 0.92rem; color: var(--text-secondary);"></span>
             </div>
-            <div style="margin-top: 1rem; border-top: 1px dashed var(--border); padding-top: 0.75rem;">
-              <strong style="font-size: 0.85rem;" data-i18n="hours_label">Business Hours</strong>
-              <div id="bizHoursContent" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem;"></div>
+            <div style="margin-top: 1.25rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+              <strong style="font-size: 0.88rem;" data-i18n="hours_label">Operating Hours</strong>
+              <div id="bizHoursContent" style="font-size: 0.88rem; color: var(--text-secondary); margin-top: 0.5rem; line-height: 1.6;"></div>
             </div>
           </div>
 
           <!-- External Website Info -->
-          <div id="externalWebsiteBox" class="sidebar-box" style="display: none; background-color: #f8fafc;">
-            <h4>External Website</h4>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;" data-i18n="external_site_notice">This business maintains its own external website.</p>
-            <a id="externalSiteLink" href="#" target="_blank" class="btn btn-outline btn-sm" style="width: 100%;" data-i18n="website_cta">Visit Website</a>
+          <div id="externalWebsiteBox" class="uber-sidebar-panel" style="display: none;">
+            <h4 class="uber-sidebar-title">External Website</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;" data-i18n="external_site_notice">This business maintains its own external website.</p>
+            <a id="externalSiteLink" href="#" target="_blank" class="btn btn-outline btn-sm" style="width: 100%;" data-i18n="website_cta">Visit Website ↗</a>
           </div>
         </div>
       </div>
@@ -182,25 +94,25 @@
   </main>
 
   <!-- Contact Form Modal -->
-  <div id="contactModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center;">
-    <div style="background: #ffffff; border-radius: var(--radius); padding: 2rem; max-width: 480px; width: 90%; box-shadow: var(--shadow-lg);">
-      <h3 style="margin-bottom: 1rem;" data-i18n="contact_modal_title">Contact This Business</h3>
+  <div id="contactModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center;">
+    <div style="background: #ffffff; border-radius: var(--radius-lg); padding: 2.25rem; max-width: 480px; width: 90%; box-shadow: var(--shadow-hover);">
+      <h3 style="font-size: 1.4rem; font-weight: 850; margin-bottom: 1rem;" data-i18n="contact_modal_title">Contact This Business</h3>
       <form id="contactForm" onsubmit="event.preventDefault(); submitContact();">
-        <div style="margin-bottom: 0.75rem;">
-          <label style="font-size: 0.85rem; font-weight: 600;" data-i18n="name_label">Your Name</label>
-          <input type="text" id="contactName" class="input-field" style="width: 100%; margin-top: 0.25rem;" required>
-        </div>
-        <div style="margin-bottom: 0.75rem;">
-          <label style="font-size: 0.85rem; font-weight: 600;" data-i18n="contact_input_label">Your Phone / Email</label>
-          <input type="text" id="contactInfo" class="input-field" style="width: 100%; margin-top: 0.25rem;" required>
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.88rem; font-weight: 700;" data-i18n="name_label">Your Name</label>
+          <input type="text" id="contactName" class="input-field" style="margin-top: 0.35rem;" required>
         </div>
         <div style="margin-bottom: 1rem;">
-          <label style="font-size: 0.85rem; font-weight: 600;" data-i18n="message_label">Message</label>
-          <textarea id="contactMessage" class="input-field" style="width: 100%; height: 90px; margin-top: 0.25rem;" required></textarea>
+          <label style="font-size: 0.88rem; font-weight: 700;" data-i18n="contact_input_label">Your Phone / Email</label>
+          <input type="text" id="contactInfo" class="input-field" style="margin-top: 0.35rem;" required>
         </div>
-        <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <div style="margin-bottom: 1.5rem;">
+          <label style="font-size: 0.88rem; font-weight: 700;" data-i18n="message_label">Message</label>
+          <textarea id="contactMessage" class="input-field" style="height: 100px; margin-top: 0.35rem;" required></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
           <button type="button" class="btn btn-outline" onclick="closeContactModal();">Cancel</button>
-          <button type="submit" class="btn btn-primary" data-i18n="send_btn">Send Inquiry</button>
+          <button type="submit" class="btn btn-primary" data-i18n="send_btn">Send Message</button>
         </div>
       </form>
     </div>
@@ -275,29 +187,29 @@
         extBox.style.display = "none";
       }
 
-      // Direct CTAs with pre-filled Mavunqo referral message
+      // Direct CTAs with referral message
       const ctaList = document.getElementById("contactActionsList");
       ctaList.innerHTML = "";
       if (b.whatsapp) {
         const waNum = b.whatsapp.replace(/[^0-9]/g, '');
-        const waMessage = currentLang === "es"
+        const waMsg = currentLang === "es"
           ? encodeURIComponent(`Hola ${b.trading_name}, vi su negocio en Mavunqo y me gustaría información sobre sus servicios.`)
           : encodeURIComponent(`Hello ${b.trading_name}, I found your business on Mavunqo and would like to inquire about your services.`);
         ctaList.innerHTML += `
-          <a href="https://wa.me/${waNum}?text=${waMessage}" target="_blank" class="btn btn-success" style="width: 100%; margin-bottom: 0.5rem;">
+          <a href="https://wa.me/${waNum}?text=${waMsg}" target="_blank" class="btn btn-success" style="width: 100%; margin-bottom: 0.65rem;">
             💬 WhatsApp (${b.whatsapp})
           </a>
         `;
       }
       if (b.phone) {
         ctaList.innerHTML += `
-          <a href="tel:${b.phone}" class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;">
+          <a href="tel:${b.phone}" class="btn btn-primary" style="width: 100%; margin-bottom: 0.65rem;">
             📞 Call ${b.phone}
           </a>
         `;
       }
 
-      // Services menu
+      // Services menu (Uber-style cards)
       const sContainer = document.getElementById("servicesMenuContainer");
       sContainer.innerHTML = "";
       if (b.services && b.services.length > 0) {
@@ -306,21 +218,21 @@
           const sDesc = currentLang === "es" ? s.description_es : s.description_en;
           const priceText = s.display_price && s.price 
             ? `${s.currency} $${s.price}` 
-            : `<span style="font-size: 0.85rem; color: var(--text-muted);">${i18n[currentLang].price_on_request}</span>`;
+            : `<span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">${i18n[currentLang].price_on_request}</span>`;
 
           const card = document.createElement("div");
-          card.className = "service-menu-item";
+          card.className = "uber-menu-card";
           card.innerHTML = `
             <div>
-              <div class="service-menu-name">${sName}</div>
-              <div class="service-menu-desc">${sDesc || ''}</div>
+              <div class="uber-menu-name">${sName}</div>
+              <div class="uber-menu-desc">${sDesc || ''}</div>
             </div>
-            <div class="service-menu-price">${priceText}</div>
+            <div class="uber-menu-price">${priceText}</div>
           `;
           sContainer.appendChild(card);
         });
       } else {
-        sContainer.innerHTML = `<p style="color: var(--text-muted);">Please contact this business directly for their services list.</p>`;
+        sContainer.innerHTML = `<p style="color: var(--text-muted);">Please contact this business directly for their services menu.</p>`;
       }
     }
 

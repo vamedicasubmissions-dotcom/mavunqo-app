@@ -3,84 +3,99 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mavunqo — Local Business Directory | Sosúa, Cabarete & Puerto Plata</title>
+  <title>Mavunqo — Local Services Directory | Sosúa, Cabarete & Puerto Plata</title>
   <link rel="stylesheet" href="/frontend/style.css">
 </head>
 <body>
 
-  <!-- Top Navbar -->
+  <!-- Uber-style Dark Minimal Navbar -->
   <header class="navbar">
     <div class="nav-container">
       <a href="/" class="brand-logo">
-        Mavunqo<span class="accent">.</span>
-        <span class="brand-pill" data-i18n="brand_subtitle">Directory</span>
+        Mavunqo<span class="dot">.</span>
+        <span class="brand-pill" data-i18n="brand_subtitle">Services</span>
       </a>
 
       <div class="nav-actions">
-        <!-- Bilingual Switch -->
-        <div class="lang-switch" role="group" aria-label="Language Switch">
+        <!-- Bilingual Switcher -->
+        <div class="lang-switch" role="group" aria-label="Language">
           <button class="lang-btn active" data-lang="en">EN</button>
           <button class="lang-btn" data-lang="es">ES</button>
         </div>
 
-        <a href="/register" class="btn btn-outline btn-sm" data-i18n="nav_register">List Your Business</a>
-        <a href="/login" class="btn btn-primary btn-sm" data-i18n="nav_login">Business Sign In</a>
+        <a href="/register" class="btn btn-outline-white btn-sm" data-i18n="nav_register">List Your Business</a>
+        <a href="/login" class="btn btn-white btn-sm" data-i18n="nav_login">Sign In</a>
       </div>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="container">
-    <div class="hero">
-      <h1 data-i18n="hero_title">Find Local Services in the North Coast</h1>
-      <p data-i18n="hero_subtitle">Trusted businesses, verified service menus, and direct WhatsApp / phone contact. Sosúa pilot active.</p>
+  <!-- Uber Hero Header -->
+  <section class="uber-hero">
+    <h1 class="uber-hero-headline" data-i18n="hero_title">Find Local Services in the North Coast</h1>
+    <p class="uber-hero-subtitle" data-i18n="hero_subtitle">Instant access to verified local businesses, upfront pricing, and direct WhatsApp / phone contact.</p>
 
-      <!-- Market Status -->
-      <div class="market-status-bar">
-        <span class="market-tag active" data-i18n="sosua_active_tag">● Sosúa: Live Pilot</span>
-        <span class="market-tag upcoming" data-i18n="cabarete_upcoming_tag">○ Cabarete: Coming Soon</span>
-        <span class="market-tag upcoming" data-i18n="puerto_plata_tag">○ Puerto Plata: Planned</span>
-      </div>
-
-      <!-- Search Box -->
-      <div class="search-card-wrapper">
-        <form id="searchForm" class="search-form" onsubmit="event.preventDefault(); handleSearch();">
-          <input type="text" id="searchInput" class="input-field" placeholder="What are you looking for?" data-i18n="search_input_placeholder">
-          
-          <select id="categorySelect" class="input-field">
+    <!-- Uber Interactive Search Box -->
+    <div class="uber-search-card">
+      <form id="searchForm" class="uber-search-grid" onsubmit="event.preventDefault(); handleSearch();">
+        <div class="uber-input-wrap">
+          <span class="uber-input-icon">🔍</span>
+          <input type="text" id="searchInput" class="uber-input" placeholder="What service or business are you looking for?" data-i18n="search_input_placeholder">
+        </div>
+        
+        <div class="uber-input-wrap">
+          <span class="uber-input-icon">📂</span>
+          <select id="categorySelect" class="uber-input" onchange="handleSearch();">
             <option value="" data-i18n="all_categories">All Categories</option>
           </select>
+        </div>
 
-          <select id="locationSelect" class="input-field">
+        <div class="uber-input-wrap">
+          <span class="uber-input-icon">📍</span>
+          <select id="locationSelect" class="uber-input" onchange="handleSearch();">
             <option value="" data-i18n="all_locations">All Locations</option>
           </select>
+        </div>
 
-          <button type="submit" class="btn btn-primary" data-i18n="search_button">Search</button>
-        </form>
-      </div>
+        <button type="submit" class="btn btn-primary" data-i18n="search_button">Search</button>
+      </form>
     </div>
 
-    <!-- Listings Grid -->
-    <div id="listingsGrid" class="listings-grid">
-      <!-- Loaded via JavaScript -->
+    <!-- Category Chips (Uber Services style) -->
+    <div id="categoryChips" class="category-chips-scroll">
+      <button class="category-chip active" onclick="selectChip('', this);">
+        <span>✨</span> <span data-i18n="all_categories">All Categories</span>
+      </button>
+      <!-- Injected categories chips -->
+    </div>
+  </section>
+
+  <!-- Directory Results Section -->
+  <main class="container">
+    <div class="listings-header-bar">
+      <h2 class="section-title">Available Services</h2>
+      <span id="resultsCount" class="results-count-badge"></span>
+    </div>
+
+    <!-- Grid of Uber-Style Cards -->
+    <div id="listingsGrid" class="uber-grid">
+      <!-- Cards injected by JS -->
     </div>
 
     <!-- Empty State -->
     <div id="emptyState" class="state-box" style="display: none;">
-      <div class="state-icon">🔍</div>
-      <h3 data-i18n="no_results_title">No businesses found</h3>
+      <h3>No businesses found</h3>
       <p data-i18n="no_results_desc">Try adjusting your search terms, changing the location, or browsing all categories.</p>
     </div>
   </main>
 
-  <!-- Footer -->
+  <!-- Uber Clean Footer -->
   <footer class="footer">
     <div class="footer-container">
       <div>
-        <strong>Mavunqo</strong> &copy; 2026. <span data-i18n="footer_text">The local business directory connecting Sosúa, Cabarete & Puerto Plata.</span>
+        <strong style="color: #ffffff; font-size: 1.1rem; letter-spacing: -0.02em;">Mavunqo</strong> &copy; 2026. <span data-i18n="footer_text">The local business directory connecting Sosúa, Cabarete & Puerto Plata.</span>
       </div>
       <div>
-        <a href="/admin" class="btn btn-outline btn-sm" style="font-size: 0.75rem;">Admin Portal</a>
+        <a href="/admin" class="btn btn-outline-white btn-sm" style="font-size: 0.8rem;" data-i18n="nav_admin">Admin Portal</a>
       </div>
     </div>
   </footer>
@@ -89,6 +104,7 @@
   <script>
     let categoriesList = [];
     let locationsList = [];
+    let activeCategory = "";
 
     async function loadMetadata() {
       try {
@@ -100,6 +116,7 @@
         locationsList = await locsRes.json();
 
         populateFilters();
+        renderChips();
         handleSearch();
       } catch (err) {
         console.error("Error loading filters:", err);
@@ -120,14 +137,49 @@
       locationsList.forEach(l => {
         const opt = document.createElement("option");
         opt.value = l.id;
-        opt.textContent = `${l.name} (${l.status === 'active' ? 'Active' : 'Staged'})`;
+        opt.textContent = `${l.name} (${l.status === 'active' ? 'Sosúa Pilot' : 'Planned'})`;
         locSelect.appendChild(opt);
       });
     }
 
+    function renderChips() {
+      const chipsBox = document.getElementById("categoryChips");
+      chipsBox.innerHTML = `
+        <button class="category-chip ${activeCategory === '' ? 'active' : ''}" onclick="selectChip('', this);">
+          <span>✨</span> <span>${i18n[currentLang].all_categories}</span>
+        </button>
+      `;
+
+      const icons = {
+        "cat_home": "🛠️",
+        "cat_dining": "🍽️",
+        "cat_health": "💆",
+        "cat_auto": "🚗",
+        "cat_prof": "💼",
+        "cat_tourism": "🌴"
+      };
+
+      categoriesList.forEach(c => {
+        const icon = icons[c.id] || "🏷️";
+        const btn = document.createElement("button");
+        btn.className = `category-chip ${activeCategory === c.id ? 'active' : ''}`;
+        btn.onclick = () => selectChip(c.id, btn);
+        btn.innerHTML = `<span>${icon}</span> <span>${currentLang === "es" ? c.name_es : c.name_en}</span>`;
+        chipsBox.appendChild(btn);
+      });
+    }
+
+    function selectChip(catId, btnEl) {
+      activeCategory = catId;
+      document.querySelectorAll(".category-chip").forEach(c => c.classList.remove("active"));
+      if (btnEl) btnEl.classList.add("active");
+      document.getElementById("categorySelect").value = catId;
+      handleSearch();
+    }
+
     async function handleSearch() {
       const q = document.getElementById("searchInput").value;
-      const cat = document.getElementById("categorySelect").value;
+      const cat = document.getElementById("categorySelect").value || activeCategory;
       const loc = document.getElementById("locationSelect").value;
 
       const url = `/api/businesses?q=${encodeURIComponent(q)}&category=${encodeURIComponent(cat)}&location=${encodeURIComponent(loc)}&lang=${currentLang}`;
@@ -140,16 +192,19 @@
     function renderListings(items) {
       const grid = document.getElementById("listingsGrid");
       const empty = document.getElementById("emptyState");
+      const countBadge = document.getElementById("resultsCount");
       grid.innerHTML = "";
 
       if (!items || items.length === 0) {
         grid.style.display = "none";
         empty.style.display = "block";
+        countBadge.textContent = "0 businesses";
         return;
       }
 
       grid.style.display = "grid";
       empty.style.display = "none";
+      countBadge.textContent = `${items.length} ${items.length === 1 ? 'business' : 'businesses'} in North Coast`;
 
       items.forEach(b => {
         const catName = currentLang === "es" ? b.category_name_es : b.category_name_en;
@@ -159,51 +214,50 @@
         let servicesHtml = "";
         if (b.services_summary && b.services_summary.length > 0) {
           servicesHtml = `
-            <div class="services-list-preview">
-              <div class="services-title">${currentLang === "es" ? "Servicios" : "Services"}</div>
+            <div class="uber-services-mini">
+              <div class="uber-services-mini-header">${currentLang === "es" ? "Servicios Populares" : "Popular Services"}</div>
               ${b.services_summary.map(s => `
-                <div class="service-item-row">
+                <div class="uber-service-row">
                   <span>${currentLang === "es" ? s.name_es : s.name_en}</span>
-                  <span class="service-price">${s.display_price && s.price ? `${s.currency} $${s.price}` : ''}</span>
+                  <span class="uber-service-price">${s.display_price && s.price ? `${s.currency} $${s.price}` : ''}</span>
                 </div>
               `).join("")}
             </div>
           `;
         }
 
+        const waMsg = currentLang === "es"
+          ? encodeURIComponent(`Hola ${b.trading_name}, vi su negocio en Mavunqo y me gustaría información.`)
+          : encodeURIComponent(`Hello ${b.trading_name}, I found your business on Mavunqo and would like to inquire.`);
+
         const card = document.createElement("div");
-        card.className = "business-card";
+        card.className = "uber-card";
         card.innerHTML = `
-          <div class="card-header-bar">
-            <div>
-              <h3 class="business-title">${b.trading_name}</h3>
+          <div class="uber-card-top">
+            <h3 class="uber-card-title">${b.trading_name}</h3>
+            <div class="uber-card-meta">
+              <span class="uber-badge">${catName}</span>
+              <span>📍 ${b.location_name}</span>
+              ${hasExternalSite ? `<span class="uber-badge">🌐 Web</span>` : `<span class="uber-badge" style="background: #e2e8f0;">⚡ Storefront</span>`}
             </div>
           </div>
 
-          <div class="card-badges">
-            <span class="badge badge-category">${catName}</span>
-            <span class="badge badge-location">📍 ${b.location_name}</span>
-            ${hasExternalSite 
-              ? `<span class="badge badge-location" title="${i18n[currentLang].external_site_notice}">🌐 Web</span>` 
-              : `<span class="badge badge-storefront" title="${i18n[currentLang].free_storefront_notice}">⚡ Storefront</span>`}
-          </div>
-
-          <div class="card-body">
-            <p class="business-description">${desc}</p>
+          <div class="uber-card-body">
+            <p class="uber-card-desc">${desc}</p>
             ${servicesHtml}
           </div>
 
-          <div class="card-footer">
+          <div class="uber-card-actions">
             <a href="/b/${b.slug}" class="btn btn-outline btn-sm">
               ${hasExternalSite ? i18n[currentLang].view_profile_btn : i18n[currentLang].view_storefront_btn}
             </a>
 
-            <div class="cta-actions">
+            <div style="display: flex; gap: 0.5rem;">
               ${b.whatsapp ? `
-                <a href="https://wa.me/${b.whatsapp.replace(/[^0-9]/g, '')}?text=${currentLang === 'es' ? encodeURIComponent(`Hola ${b.trading_name}, vi su negocio en Mavunqo y me gustaría información.`) : encodeURIComponent(`Hello ${b.trading_name}, I found your business on Mavunqo and would like to inquire.`)}" target="_blank" class="btn btn-success btn-sm" title="WhatsApp">
-                  WA
+                <a href="https://wa.me/${b.whatsapp.replace(/[^0-9]/g, '')}?text=${waMsg}" target="_blank" class="btn btn-success btn-sm">
+                  WhatsApp
                 </a>` : ''}
-              ${b.phone ? `<a href="tel:${b.phone}" class="btn btn-primary btn-sm" title="Call">📞</a>` : ''}
+              ${b.phone ? `<a href="tel:${b.phone}" class="btn btn-primary btn-sm">📞</a>` : ''}
             </div>
           </div>
         `;
@@ -212,16 +266,7 @@
     }
 
     window.addEventListener("languageChanged", () => {
-      // Re-populate filters and re-run search with current language
-      const catSelect = document.getElementById("categorySelect");
-      const locSelect = document.getElementById("locationSelect");
-      const curCat = catSelect.value;
-      const curLoc = locSelect.value;
-      catSelect.innerHTML = `<option value="">${i18n[currentLang].all_categories}</option>`;
-      locSelect.innerHTML = `<option value="">${i18n[currentLang].all_locations}</option>`;
-      populateFilters();
-      catSelect.value = curCat;
-      locSelect.value = curLoc;
+      renderChips();
       handleSearch();
     });
 

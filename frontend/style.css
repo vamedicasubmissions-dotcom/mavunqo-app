@@ -1,94 +1,91 @@
-/* Mavunqo Modern Responsive Premium Stylesheet */
+/* ==========================================================================
+   MAVUNQO — UBER-INSPIRED DESIGN SYSTEM
+   Modern, Bold, High-Contrast, Minimalist, Fast
+   ========================================================================== */
+
 :root {
-  --primary: #0284c7;
-  --primary-hover: #0369a1;
-  --primary-light: #e0f2fe;
-  --primary-gradient: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
-  --secondary: #0f172a;
-  --accent: #f59e0b;
-  --bg-main: #f8fafc;
-  --bg-card: #ffffff;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --border: #e2e8f0;
-  --border-focus: #38bdf8;
-  --success: #10b981;
-  --success-dark: #059669;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --radius: 12px;
+  --black: #000000;
+  --dark-gray: #141414;
+  --mid-gray: #333333;
+  --light-gray: #eeeeee;
+  --bg-page: #ffffff;
+  --bg-subtle: #f6f6f6;
+  --border: #e2e2e2;
+  --border-focus: #000000;
+  --text-primary: #000000;
+  --text-secondary: #5e5e5e;
+  --text-muted: #757575;
+  --accent: #276ef1; /* Clean modern accent */
+  --accent-hover: #1e56be;
+  --whatsapp: #25d366;
+  --whatsapp-hover: #20ba5a;
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-lg: 16px;
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-  --shadow-lg: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.05);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.12), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+  --radius-pill: 9999px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-hover: 0 8px 24px rgba(0,0,0,0.12);
+  --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Uber Move Text", "Inter", "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 body {
-  background-color: var(--bg-main);
-  color: var(--text-main);
+  background-color: var(--bg-page);
+  color: var(--text-primary);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
-a {
-  color: var(--primary);
-  text-decoration: none;
-  transition: color 0.15s ease;
-}
-a:hover {
-  color: var(--primary-hover);
-}
-
-/* Header & Nav */
+/* ==========================================================================
+   NAVBAR (Uber Black & Clean style)
+   ========================================================================== */
 header.navbar {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border);
+  background-color: var(--black);
+  color: #ffffff;
   position: sticky;
   top: 0;
-  z-index: 50;
-  box-shadow: var(--shadow-sm);
+  z-index: 100;
 }
 
 .nav-container {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0.85rem 1.25rem;
+  padding: 1rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .brand-logo {
-  font-size: 1.45rem;
-  font-weight: 800;
-  color: var(--secondary);
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-decoration: none;
+  letter-spacing: -0.04em;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  letter-spacing: -0.03em;
+  gap: 0.6rem;
 }
-.brand-logo span.accent {
-  color: var(--primary);
+.brand-logo span.dot {
+  color: #276ef1;
 }
 .brand-pill {
   font-size: 0.72rem;
   font-weight: 700;
-  background-color: var(--primary-light);
-  color: var(--primary);
-  padding: 0.2rem 0.55rem;
-  border-radius: 9999px;
+  background-color: #262626;
+  color: #ffffff;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-pill);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -96,440 +93,540 @@ header.navbar {
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 1rem;
 }
 
 .lang-switch {
   display: flex;
-  background-color: #f1f5f9;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 2px;
+  background-color: #262626;
+  border-radius: var(--radius-pill);
+  padding: 3px;
 }
-
 .lang-btn {
   border: none;
   background: none;
-  font-size: 0.8rem;
+  color: #999999;
   font-weight: 700;
-  padding: 0.25rem 0.65rem;
-  border-radius: 16px;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  color: var(--text-muted);
-  transition: all 0.2s ease;
+  transition: var(--transition);
 }
 .lang-btn.active {
-  background-color: var(--primary);
-  color: #ffffff;
-  box-shadow: var(--shadow-sm);
+  background-color: #ffffff;
+  color: #000000;
 }
 
+/* Uber-style Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
-  font-size: 0.92rem;
-  font-weight: 600;
-  padding: 0.6rem 1.2rem;
-  border-radius: var(--radius);
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0.75rem 1.4rem;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
   text-decoration: none !important;
+  transition: var(--transition);
 }
-.btn:hover {
-  transform: translateY(-1px);
-}
-.btn:active {
-  transform: translateY(0);
-}
-
 .btn-primary {
-  background: var(--primary-gradient);
+  background-color: var(--black);
   color: #ffffff;
-  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
 }
 .btn-primary:hover {
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+  background-color: var(--mid-gray);
+  color: #ffffff;
 }
-
-.btn-outline {
-  border-color: var(--border);
+.btn-white {
   background-color: #ffffff;
-  color: var(--secondary);
+  color: var(--black);
+}
+.btn-white:hover {
+  background-color: #e2e2e2;
+}
+.btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--border);
+  color: var(--black);
 }
 .btn-outline:hover {
-  background-color: #f8fafc;
-  border-color: #cbd5e1;
+  background-color: var(--bg-subtle);
 }
-
-.btn-success {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+.btn-outline-white {
+  background-color: transparent;
+  border: 1px solid #444444;
   color: #ffffff;
-  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
+}
+.btn-outline-white:hover {
+  background-color: #222222;
+}
+.btn-success {
+  background-color: var(--whatsapp);
+  color: #ffffff;
 }
 .btn-success:hover {
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+  background-color: var(--whatsapp-hover);
 }
-
-.btn-danger {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: #ffffff;
-}
-
 .btn-sm {
-  padding: 0.4rem 0.85rem;
-  font-size: 0.82rem;
-  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
 }
 
-/* Container */
-.container {
-  max-width: 1200px;
+/* ==========================================================================
+   UBER HERO SECTION (Split Banner / Bold Headline)
+   ========================================================================== */
+.uber-hero {
+  background-color: var(--bg-page);
+  padding: 3rem 1.5rem 2rem;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 1.75rem 1.25rem;
-  flex: 1;
+}
+.uber-hero-headline {
+  font-size: 3.2rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  color: var(--black);
+  margin-bottom: 0.75rem;
+}
+.uber-hero-subtitle {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  font-weight: 400;
+  max-width: 650px;
+}
+
+/* ==========================================================================
+   UBER SEARCH & FILTER BAR
+   ========================================================================== */
+.uber-search-card {
+  background-color: var(--bg-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  margin-bottom: 2.5rem;
+}
+.uber-search-grid {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1.2fr auto;
+  gap: 0.75rem;
+}
+@media (max-width: 850px) {
+  .uber-hero-headline {
+    font-size: 2.3rem;
+  }
+  .uber-search-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.uber-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.uber-input-icon {
+  position: absolute;
+  left: 1rem;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  pointer-events: none;
+}
+.uber-input {
+  width: 100%;
+  padding: 0.9rem 1rem 0.9rem 2.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background-color: #ffffff;
+  color: var(--text-primary);
+  outline: none;
+  transition: var(--transition);
+}
+.uber-input:focus {
+  border-color: var(--black);
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.15);
+}
+select.uber-input {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23333333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+}
+
+/* Category Quick-Chips (Uber Eats / Services style) */
+.category-chips-scroll {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+  scrollbar-width: none;
+}
+.category-chips-scroll::-webkit-scrollbar {
+  display: none;
+}
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--black);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.category-chip:hover, .category-chip.active {
+  background-color: var(--black);
+  color: #ffffff;
+  border-color: var(--black);
+}
+
+/* ==========================================================================
+   LISTINGS GRID (Uber Clean Cards)
+   ========================================================================== */
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
   width: 100%;
 }
 
-/* Hero Section */
-.hero {
-  text-align: center;
-  padding: 3rem 1rem 2rem;
-}
-.hero h1 {
-  font-size: 2.4rem;
-  font-weight: 800;
-  color: var(--secondary);
-  margin-bottom: 0.75rem;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
-}
-.hero p {
-  font-size: 1.15rem;
-  color: var(--text-muted);
-  max-width: 680px;
-  margin: 0 auto 1.75rem;
-}
-
-/* Search Bar Box */
-.search-card-wrapper {
-  background-color: #ffffff;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
-  border: 1px solid var(--border);
-  padding: 0.85rem;
-  max-width: 960px;
-  margin: 0 auto 2.25rem;
-}
-
-.search-form {
-  display: grid;
-  grid-template-columns: 2fr 1.2fr 1.2fr auto;
-  gap: 0.65rem;
-}
-
-@media (max-width: 768px) {
-  .hero h1 {
-    font-size: 1.85rem;
-  }
-  .search-form {
-    grid-template-columns: 1fr;
-  }
-}
-
-.input-field, select.input-field {
-  padding: 0.75rem 0.95rem;
-  font-size: 0.95rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  outline: none;
-  background-color: #ffffff;
-  color: var(--text-main);
-  transition: all 0.2s ease;
-}
-.input-field:focus {
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
-}
-
-/* Market Status Bar */
-.market-status-bar {
+.listings-header-bar {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1.5rem;
+}
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+.results-count-badge {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
-.market-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.85rem;
-  border-radius: 9999px;
-  font-weight: 700;
-  font-size: 0.82rem;
-}
-.market-tag.active {
-  background-color: #dcfce7;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
-}
-.market-tag.upcoming {
-  background-color: #f1f5f9;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-}
-
-/* Directory Listings Grid */
-.listings-grid {
+.uber-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 1.75rem;
 }
 
-.business-card {
-  background-color: var(--bg-card);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.business-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-xl);
-}
-
-.card-header-bar {
-  padding: 1.25rem 1.25rem 0.5rem;
-}
-
-.business-title {
-  font-size: 1.25rem;
-  font-weight: 750;
-  color: var(--secondary);
-  letter-spacing: -0.02em;
-}
-
-.card-badges {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  margin-top: 0.5rem;
-  margin-bottom: 0.75rem;
-  padding: 0 1.25rem;
-}
-
-.badge {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.55rem;
-  border-radius: 6px;
-  font-weight: 700;
-}
-.badge-category {
-  background-color: var(--primary-light);
-  color: var(--primary-hover);
-}
-.badge-location {
-  background-color: #f1f5f9;
-  color: #475569;
-}
-.badge-storefront {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.card-body {
-  padding: 0 1.25rem 1rem;
-  flex: 1;
-}
-
-.business-description {
-  font-size: 0.92rem;
-  color: var(--text-muted);
-  margin-bottom: 1rem;
-  line-height: 1.55;
-}
-
-.services-list-preview {
-  background: #f8fafc;
-  border: 1px solid #edf2f7;
-  border-radius: var(--radius);
-  padding: 0.75rem 0.9rem;
-  margin-bottom: 0.75rem;
-}
-.services-title {
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 0.35rem;
-}
-.service-item-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.88rem;
-  padding: 0.25rem 0;
-}
-.service-price {
-  font-weight: 750;
-  color: var(--primary);
-  font-size: 0.9rem;
-}
-
-.card-footer {
-  background-color: #fafbfd;
-  border-top: 1px solid var(--border);
-  padding: 0.9rem 1.25rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.cta-actions {
-  display: flex;
-  gap: 0.45rem;
-}
-
-/* Storefront Page Styling */
-.storefront-header {
-  background: var(--primary-gradient);
-  color: #ffffff;
-  padding: 3.5rem 2rem 2.75rem;
-  border-radius: var(--radius-lg);
-  margin-bottom: 2.25rem;
-  box-shadow: var(--shadow-xl);
-  position: relative;
-  overflow: hidden;
-}
-.storefront-header::after {
-  content: "";
-  position: absolute;
-  top: -40px;
-  right: -40px;
-  width: 200px;
-  height: 200px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 50%;
-  pointer-events: none;
-}
-.storefront-title {
-  font-size: 2.5rem;
-  font-weight: 850;
-  margin-bottom: 0.5rem;
-  letter-spacing: -0.03em;
-}
-.storefront-badges {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.25rem;
-}
-.storefront-badge {
-  background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(8px);
-  padding: 0.35rem 0.85rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-}
-.storefront-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 2.25rem;
-}
-@media (max-width: 880px) {
-  .storefront-title {
-    font-size: 2rem;
-  }
-  .storefront-grid {
-    grid-template-columns: 1fr;
-  }
-}
-.service-menu-item {
+.uber-card {
   background-color: #ffffff;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 1.35rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+.uber-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover);
+  border-color: #000000;
+}
+
+.uber-card-top {
+  padding: 1.5rem 1.5rem 0.75rem;
+}
+.uber-card-title {
+  font-size: 1.35rem;
+  font-weight: 850;
+  color: var(--black);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.4rem;
+}
+.uber-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.uber-badge {
+  background-color: var(--bg-subtle);
+  color: var(--black);
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+}
+
+.uber-card-body {
+  padding: 0 1.5rem 1.25rem;
+  flex: 1;
+}
+.uber-card-desc {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.uber-services-mini {
+  background-color: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+}
+.uber-services-mini-header {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+}
+.uber-service-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+.uber-service-row:last-child {
+  border-bottom: none;
+}
+.uber-service-price {
+  font-weight: 800;
+  color: var(--black);
+}
+
+.uber-card-actions {
+  border-top: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+  background-color: #fafafa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ==========================================================================
+   STOREFRONT PAGE (Uber Storefront / Uber Eats style)
+   ========================================================================== */
+.uber-storefront-hero {
+  background-color: var(--black);
+  color: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: 3.5rem 2.5rem;
+  margin-bottom: 2.5rem;
+}
+.uber-storefront-title {
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  margin-bottom: 0.75rem;
+}
+.uber-storefront-desc {
+  font-size: 1.15rem;
+  color: #cccccc;
+  max-width: 750px;
+  line-height: 1.6;
+}
+.uber-storefront-meta {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.uber-storefront-badge {
+  background-color: #222222;
+  color: #ffffff;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.uber-storefront-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2.5rem;
+}
+@media (max-width: 900px) {
+  .uber-storefront-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.uber-menu-card {
+  background-color: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
   margin-bottom: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1.25rem;
+  gap: 1.5rem;
+  transition: var(--transition);
+}
+.uber-menu-card:hover {
+  border-color: var(--black);
   box-shadow: var(--shadow-sm);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.service-menu-item:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
+.uber-menu-name {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--black);
+  margin-bottom: 0.3rem;
 }
-.service-menu-name {
-  font-size: 1.15rem;
-  font-weight: 750;
-  color: var(--secondary);
-  margin-bottom: 0.25rem;
-}
-.service-menu-desc {
-  font-size: 0.92rem;
-  color: var(--text-muted);
+.uber-menu-desc {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
   line-height: 1.5;
 }
-.service-menu-price {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--primary);
+.uber-menu-price {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--black);
   white-space: nowrap;
 }
-.sidebar-box {
-  background-color: #ffffff;
+
+.uber-sidebar-panel {
+  background-color: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 1.5rem;
+  padding: 1.75rem;
   margin-bottom: 1.5rem;
-  box-shadow: var(--shadow);
 }
-.sidebar-box h4 {
-  font-size: 1rem;
-  font-weight: 800;
-  margin-bottom: 1rem;
-  color: var(--secondary);
+.uber-sidebar-title {
+  font-size: 1.15rem;
+  font-weight: 850;
+  margin-bottom: 1.25rem;
+  color: var(--black);
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.5rem;
-  letter-spacing: -0.01em;
-}
-.contact-item-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.85rem;
-  font-size: 0.95rem;
 }
 
-/* Footer */
+/* ==========================================================================
+   FOOTER (Uber Black minimal)
+   ========================================================================== */
 footer.footer {
-  background-color: #ffffff;
-  border-top: 1px solid var(--border);
-  padding: 2.25rem 1.25rem;
-  margin-top: 4rem;
-  font-size: 0.9rem;
-  color: var(--text-muted);
+  background-color: var(--black);
+  color: #888888;
+  padding: 3rem 1.5rem;
+  margin-top: auto;
+  border-top: 1px solid #222222;
 }
 .footer-container {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.footer a {
+  color: #cccccc;
+  text-decoration: none;
+}
+.footer a:hover {
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   STATE BOXES & FORMS
+   ========================================================================== */
+.state-box {
+  text-align: center;
+  padding: 4rem 1.5rem;
+  background-color: var(--bg-subtle);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--border);
+  max-width: 600px;
+  margin: 2rem auto;
+}
+.state-box h3 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+.state-box p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.form-card {
+  background-color: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 2.5rem;
+  max-width: 750px;
+  margin: 2rem auto;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+@media (max-width: 600px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+.form-card label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+.input-field, select.input-field {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+.input-field:focus {
+  border-color: var(--black);
+}
+
+.table-responsive {
+  overflow-x: auto;
+  background-color: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+table.data-table th {
+  background-color: var(--bg-subtle);
+  padding: 0.9rem 1.2rem;
+  border-bottom: 1px solid var(--border);
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+table.data-table td {
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid var(--border);
 }
