@@ -1099,8 +1099,99 @@ class MavunqoService:
                 if cl and not any(r["id"] == "biz_city_lights" for r in recs):
                     recs.insert(0, dict(cl))
 
-            # Regional Knowledge Base (Knowledge of Sosua, Cabarete, Puerto Plata outside the platform)
+            # Regional Knowledge Base: Comprehensive North Coast (Sosua, Cabarete, Puerto Plata)
             regional_knowledge = {
+                # 1. Money, Currency & Tipping
+                "currency": {
+                    "en": "The currency is the Dominican Peso (DOP / RD$). US Dollars are widely accepted in tourist spots, hotels, and excursions. Most restaurants and supermarkets accept Visa and Mastercard. It is best to pay in Pesos for small purchases, motoconchos, and beach shacks.",
+                    "es": "La moneda oficial es el Peso Dominicano (DOP / RD$). El dólar estadounidense es ampliamente aceptado en hoteles y zonas turísticas. Las tarjetas Visa y Mastercard son comunes en restaurantes y supermercados, pero se recomienda efectivo en pesos para motoconchos y chiringuitos de playa."
+                },
+                "exchange": {
+                    "en": "You can exchange USD and Euros at Western Union, Caribe Express, or bank branches on Calle Pedro Clisante in Sosua. Banks generally offer the official interbank rate, while exchange booths (casas de cambio) offer convenience.",
+                    "es": "Puede cambiar dólares y euros en Caribe Express, Western Union o en sucursales bancarias en la Calle Pedro Clisante. Los bancos ofrecen tasas oficiales y las casas de cambio brindan horarios convenientes."
+                },
+                "tipping": {
+                    "en": "In the Dominican Republic, restaurant bills include a mandatory 18% ITBIS (sales tax) and a 10% legal service charge. However, the 10% is pooled; it is customary and appreciated to leave an extra 5% to 10% cash tip directly to your server for good service.",
+                    "es": "En República Dominicana la cuenta del restaurante incluye por ley un 18% de ITBIS y 10% de propina legal. Es costumbre dejar entre un 5% y 10% adicional en efectivo directamente al camarero por buen servicio."
+                },
+                "propina": {
+                    "en": "Standard tipping is 5% to 10% cash on top of the bill, as the included 10% legal tip is pooled among all staff.",
+                    "es": "Es habitual dejar un 5% a 10% adicional en efectivo si el servicio fue agradable, ya que el 10% legal de la factura se reparte entre todo el personal."
+                },
+
+                # 2. Safety & Local Advice
+                "safe": {
+                    "en": "Sosua and Cabarete are generally friendly tourist beach towns. Standard common-sense precautions apply: avoid unlit beaches alone late at night, keep valuables discreet, don't flash large amounts of cash, and take official taxis or verified motoconchos.",
+                    "es": "Sosúa y Cabarete son pueblos costeros acogedores. Como en cualquier destino turístico, use sentido común: evite playas oscuras de noche, no exhiba prendas ni mucho efectivo, y tome taxis oficiales o transporte de confianza."
+                },
+                "seguridad": {
+                    "en": "Sosua is welcoming to travelers. Keep awareness in nightlife areas, use licensed taxis, and store passports in your room safe.",
+                    "es": "Sosúa es un destino concurrido y acogedor. Mantenga precaución en zonas nocturnas, utilice taxis oficiales y guarde sus documentos de valor en la caja fuerte de su hospedaje."
+                },
+                "water": {
+                    "en": "Tap water in the Dominican Republic is NOT for drinking. Always drink bottled, filtered water (agua purificada), which is provided by all hotels and sold cheaply in every colmado (Dasani, Planeta Azul, or Crystal). Tap water is fine for showering and brushing teeth.",
+                    "es": "El agua del grifo en República Dominicana NO es potable. Beba siempre agua purificada embotellada, disponible en todos los colmados y hoteles (marcas Dasani, Planeta Azul o Cristal)."
+                },
+                "agua": {
+                    "en": "Do not drink tap water; only drink bottled purified water available at every local colmado and restaurant.",
+                    "es": "No beba agua de la llave. Compre siempre botellones o botellas de agua purificada en los colmados o supermercados."
+                },
+
+                # 3. Connectivity, SIM Cards & Power
+                "sim": {
+                    "en": "For mobile data, you can get a prepaid Dominican SIM card from Claro or Altice on Calle Pedro Clisante or in Puerto Plata. You will need your physical passport. Prepaid plans with fast 4G/LTE cost around $10 to $15 USD for 7–15 days of unlimited data.",
+                    "es": "Para internet móvil, compre un chip prepago de Claro o Altice en la Calle Pedro Clisante presentando su pasaporte físico. Los paquetes con 4G/LTE ilimitado cuestan entre $10 y $15 USD por 7 a 15 días."
+                },
+                "internet": {
+                    "en": "High-speed fiber-optic Wi-Fi is common in most Sosua cafes, villas, and hotels. For cellular data, Claro and Altice have strong 4G coverage.",
+                    "es": "El Wi-Fi por fibra óptica es común en hoteles, villas y cafeterías en Sosúa. Para datos móviles, Claro y Altice tienen excelente cobertura 4G."
+                },
+                "plug": {
+                    "en": "The electrical sockets in the Dominican Republic are the same as the US and Canada (Type A and B, 110V/60Hz). Travelers from North America do not need an adapter. European travelers will need a standard US plug adapter.",
+                    "es": "Los enchufes en República Dominicana son idénticos a los de Estados Unidos y Canadá (Tipo A y B, 110V/60Hz). Viajeros norteamericanos no necesitan adaptador; los europeos requerirán adaptador americano."
+                },
+                "enchufe": {
+                    "en": "Power sockets are standard US 110V. European visitors need a flat 2-prong adapter.",
+                    "es": "Los tomacorrientes son tipo estadounidense 110V (patas planas)."
+                },
+
+                # 4. Transportation & Getting Around
+                "uber": {
+                    "en": "Uber operates in Puerto Plata and can often be booked to/from Puerto Plata International Airport (POP). Within Sosua and Cabarete, local motoconchos and official tourist taxi stands (near Supermercado Playero) are the quickest way to get around.",
+                    "es": "Uber funciona en la ciudad de Puerto Plata y traslados desde/hacia el aeropuerto POP. Dentro de Sosúa y Cabarete, los motoconchos locales y las paradas de taxis turísticos son el medio más rápido."
+                },
+                "transport": {
+                    "en": "To travel between Sosua, Cabarete, and Puerto Plata, you can take: 1) Guaguas (public minibuses running constantly along Highway 5 for ~$1-2 USD), 2) Carritos Públicos (shared taxis), or 3) Private tourist taxis (~$25-35 USD).",
+                    "es": "Para moverse entre Sosúa, Cabarete y Puerto Plata: 1) Las 'Guaguas' públicas pasan constantemente por la Carretera 5 por unos 50-100 pesos, 2) Carritos públicos compartidos, o 3) Taxis turísticos privados."
+                },
+                "motoconcho": {
+                    "en": "Motoconchos are motorcycle taxis found on every corner in Sosua. Short rides around El Batey or Los Charamicos typically cost between 50 to 100 DOP ($1-2 USD). Always agree on the price before hopping on!",
+                    "es": "Los motoconchos son mototaxis en cada esquina de Sosúa. Los trayectos cortos dentro de El Batey o Los Charamicos cuestan entre 50 y 100 pesos. Acuerde el precio antes de subir."
+                },
+
+                # 5. Nightlife, Activities & Excursions
+                "nightlife": {
+                    "en": "Sosua nightlife is centered around Calle Pedro Clisante in El Batey, featuring open-air bars, sports lounges, and dance spots. For beachfront sunset lounges and live music with your feet in the sand, head 15 minutes east to Cabarete Bay.",
+                    "es": "La vida nocturna de Sosúa se concentra en la Calle Pedro Clisante en El Batey, con bares al aire libre y música. En Cabarete (a 15 min), encontrará bares sobre la misma arena de la playa con música en vivo y ambiente bohemio."
+                },
+                "vida nocturna": {
+                    "en": "Pedro Clisante street in Sosua for bars; Cabarete beach for beachfront lounges and dancing under the stars.",
+                    "es": "Calle Pedro Clisante en Sosúa para bares y terrazas; la playa de Cabarete para bailar sobre la arena frente al mar."
+                },
+                "activity": {
+                    "en": "Top activities in the area: 1) Snorkeling and scuba diving at Three Rocks / Sosua Bay, 2) 27 Charcos of Damajagua (waterfalls you can jump and slide down), 3) Kitesurfing lessons in Cabarete, 4) Monkey Jungle zip-lining.",
+                    "es": "Mejores actividades: 1) Snorkel y buceo en la Bahía de Sosúa y Tres Rocas, 2) Los 27 Charcos de Damajagua (cascadas naturales), 3) Clases de Kitesurf en Cabarete, 4) Tirolinas en Monkey Jungle."
+                },
+                "excursion": {
+                    "en": "Must-do excursions: 27 Waterfalls of Damajagua, Puerto Plata Teleferico (Cable Car to Mount Isabel de Torres), and deep-sea fishing charters leaving from Sosua Bay.",
+                    "es": "Excursiones imperdibles: Los 27 Charcos de Damajagua, el Teleférico de Puerto Plata y tours de pesca en la Bahía de Sosúa."
+                },
+
+                # 6. Groceries, Colmados & Delivery
+                "colmado": {
+                    "en": "A 'colmado' is the quintessential Dominican corner convenience store. They sell cold Presidente beer, snacks, water, rum, and toiletries, and almost all of them offer free local motorcycle delivery if you call or send a WhatsApp!",
+                    "es": "Un colmado es el comercio típico dominicano de barrio. Tienen cerveza Presidente bien fría, botellones de agua, hielo, ron y víveres, y la mayoría entrega a domicilio en motor."
+                },
                 "atm": {
                     "en": "In Sosua, the primary ATMs and banks are Banco Popular, Banreservas, and Scotiabank located on Calle Pedro Clisante and Highway 5. You can withdraw Dominican Pesos (DOP) and USD with international Visa/Mastercard.",
                     "es": "En Sosúa, los principales cajeros automáticos y bancos son Banco Popular, Banreservas y Scotiabank en la Calle Pedro Clisante y Carretera Sosúa-Cabarete. Puede retirar pesos (DOP) y dólares con tarjetas internacionales."
