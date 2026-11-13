@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Status | Mavunqo</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        Mavunqo<span class="dot">.</span>
+        <span class="brand-pill">Orders</span>
+      </a>
+
+      <div class="nav-actions">
+        <div class="lang-switch">
+          <button class="lang-btn active" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="es">ES</button>
+        </div>
+        <a href="/" class="btn btn-outline-white btn-sm" data-i18n="nav_home">Directory</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 680px; padding-top: 2.5rem; padding-bottom: 4rem;">
+    <div id="loadingBox" class="state-box">
+      <h3>Loading order status...</h3>
+    </div>
+
+    <div id="errorBox" class="state-box" style="display: none; background: #fff1f2; border: 1px solid #fecdd3;">
+      <h3 style="color: #e11d48;" id="errorMessage">Order not found</h3>
+      <p style="color: #881337; margin-top: 0.5rem;">This link may have expired or is invalid.</p>
+      <a href="/" class="btn btn-primary" style="margin-top: 1rem;">Back to Directory</a>
+    </div>
+
+    <div id="orderContent" style="display: none;">
+      <!-- Order Status Hero Header -->
+      <div class="uber-storefront-hero" style="margin-bottom: 1.5rem; text-align: center;">
+        <span id="statusBadge" class="uber-storefront-badge" style="font-size: 1rem; padding: 0.35rem 1rem; text-transform: uppercase;"></span>
+        <h1 id="orderNum" style="font-size: 1.8rem; font-weight: 850; margin-top: 0.75rem;">MVQ-0000</h1>
+        <p id="restaurantName" style="font-size: 1.1rem; color: var(--text-secondary); margin-top: 0.25rem;"></p>
+      </div>
+
+      <!-- ETA and Instructions -->
+      <div class="uber-sidebar-panel" style="margin-bottom: 1.5rem;">
+        <div id="etaRow" style="display: none; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
+          <span style="font-size: 0.88rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Estimated Ready Time</span>
+          <div id="etaTime" style="font-size: 1.3rem; font-weight: 850; color: #16a34a; margin-top: 0.25rem;"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong style="display: block;">Fulfillment Method:</strong>
+            <span id="fulfillmentType" style="color: var(--text-secondary); text-transform: capitalize;"></span>
+          </div>
+          <div>
+            <strong style="display: block;">Payment:</strong>
+            <span id="paymentMethod" style="color: #16a34a; font-weight: 700;">Cash on Pickup</span>
+          </div>
+        </div>
+
+        <div id="deliveryAddressBox" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+          <strong style="display: block;">Delivery Address:</strong>
+          <span id="deliveryAddress" style="color: var(--text-secondary);"></span>
+        </div>
+      </div>
+
+      <!-- Order Items Summary -->
+      <div class="uber-sidebar-panel" style="margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1rem;">Order Details</h3>
+        <div id="itemsList"></div>
+
+        <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+            <span>Subtotal:</span>
+            <span id="orderSubtotal"></span>
+          </div>
+          <div id="deliveryFeeRow" style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+            <span>Delivery Fee:</span>
+            <span id="orderDeliveryFee"></span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 850; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border);">
+            <span>Total (Cash):</span>
+            <span id="orderTotal"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Restaurant Actions -->
+      <div class="uber-sidebar-panel" style="text-align: center;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem;">Need to update your order?</h4>
+        <div style="display: flex; gap: 0.75rem; justify-content: center;">
+          <a id="btnCall" href="#" class="btn btn-outline" style="flex: 1;">Call Restaurant</a>
+          <a id="btnWhatsapp" href="#" class="btn btn-outline" style="flex: 1; border-color: #25d366; color: #25d366;">WhatsApp</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/frontend/i18n.js"></script>
+  <script>
+    async function loadOrderStatus() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+
+      if (!token) {
+        showError("Missing order tracking token.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/orders/status?token=${encodeURIComponent(token)}`);
+        if (!res.ok) {
+          const err = await res.json();
+          showError(err.error || "Unable to find order.");
+          return;
+        }
+
+        const order = await res.json();
+        renderOrder(order);
+      } catch (e) {
+        showError("Network error while loading order status.");
+      }
+    }
+
+    function showError(msg) {
+      document.getElementById('loadingBox').style.display = 'none';
+      document.getElementById('orderContent').style.display = 'none';
+      const eb = document.getElementById('errorBox');
+      eb.style.display = 'block';
+      document.getElementById('errorMessage').textContent = msg;
+    }
+
+    function renderOrder(o) {
+      document.getElementById('loadingBox').style.display = 'none';
+      document.getElementById('errorBox').style.display = 'none';
+      document.getElementById('orderContent').style.display = 'block';
+
+      document.getElementById('orderNum').textContent = o.order_number;
+      document.getElementById('restaurantName').textContent = o.business_name;
+
+      const badge = document.getElementById('statusBadge');
+      badge.textContent = o.status.replace('_', ' ');
+      if (o.status === 'completed') {
+        badge.style.background = '#dcfce7';
+        badge.style.color = '#15803d';
+      } else if (o.status === 'ready') {
+        badge.style.background = '#e0e7ff';
+        badge.style.color = '#3730a3';
+      } else if (o.status === 'cancelled' || o.status === 'declined') {
+        badge.style.background = '#fee2e2';
+        badge.style.color = '#991b1b';
+      } else {
+        badge.style.background = '#fef3c7';
+        badge.style.color = '#92400e';
+      }
+
+      if (o.estimated_ready_at) {
+        document.getElementById('etaRow').style.display = 'block';
+        const etaDate = new Date(o.estimated_ready_at);
+        document.getElementById('etaTime').textContent = etaDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+
+      document.getElementById('fulfillmentType').textContent = o.fulfillment_type;
+      document.getElementById('paymentMethod').textContent = o.fulfillment_type === 'delivery' ? 'Cash on Delivery' : 'Cash on Pickup';
+
+      if (o.fulfillment_type === 'delivery' && o.delivery_address) {
+        document.getElementById('deliveryAddressBox').style.display = 'block';
+        document.getElementById('deliveryAddress').textContent = o.delivery_address;
+      }
+
+      const itemsList = document.getElementById('itemsList');
+      itemsList.innerHTML = o.items.map(it => {
+        const mods = it.modifiers && it.modifiers.length > 0 
+          ? `<div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">+ ${it.modifiers.map(m => m.name_en).join(', ')}</div>` 
+          : '';
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; padding: 0.6rem 0; border-bottom: 1px dashed var(--border);">
+            <div>
+              <strong>${it.quantity}x ${it.item_name_en}</strong>
+              ${mods}
+            </div>
+            <div style="font-weight: 700;">${it.line_total.toFixed(2)} ${o.currency}</div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('orderSubtotal').textContent = `${o.subtotal.toFixed(2)} ${o.currency}`;
+      document.getElementById('orderDeliveryFee').textContent = `${(o.delivery_fee || 0).toFixed(2)} ${o.currency}`;
+      document.getElementById('orderTotal').textContent = `${o.total.toFixed(2)} ${o.currency}`;
+
+      // Contacts
+      if (o.business_phone) {
+        document.getElementById('btnCall').href = `tel:${o.business_phone}`;
+      } else {
+        document.getElementById('btnCall').style.display = 'none';
+      }
+
+      if (o.business_whatsapp) {
+        document.getElementById('btnWhatsapp').href = `https://wa.me/${o.business_whatsapp.replace(/[^0-9]/g, '')}`;
+      } else {
+        document.getElementById('btnWhatsapp').style.display = 'none';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadOrderStatus);
+  </script>
+</body>
+</html>

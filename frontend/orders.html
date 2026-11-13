@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Merchant Orders & Live Kitchen Queue | Mavunqo</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+  <style>
+    .order-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .order-badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .badge-pending { background: #fef3c7; color: #92400e; }
+    .badge-accepted { background: #dbeafe; color: #1e40af; }
+    .badge-in_kitchen { background: #fed7aa; color: #9a3412; }
+    .badge-ready { background: #dcfce7; color: #15803d; }
+    .badge-completed { background: #f1f5f9; color: #475569; }
+    .action-btn-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        Mavunqo<span class="dot">.</span>
+        <span class="brand-pill">Kitchen Queue</span>
+      </a>
+
+      <div class="nav-actions">
+        <a href="/dashboard" class="btn btn-outline-white btn-sm">Owner Dashboard</a>
+        <button onclick="logout();" class="btn btn-outline-white btn-sm">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 900px; padding-top: 2rem; padding-bottom: 4rem;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
+      <div>
+        <h1 style="font-size: 1.8rem; font-weight: 850;">Live Orders & Kitchen Queue</h1>
+        <p style="color: var(--text-secondary); margin-top: 0.25rem;">Accept orders, set prep time, and reconcile cash payments.</p>
+      </div>
+      <div>
+        <button onclick="loadOrders();" class="btn btn-outline btn-sm">↻ Refresh Queue</button>
+      </div>
+    </div>
+
+    <!-- Active Orders Section -->
+    <h2 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1rem;">Active Kitchen Tickets</h2>
+    <div id="activeOrdersList">
+      <div class="state-box">Loading queue...</div>
+    </div>
+
+    <!-- Completed & Reconciled Section -->
+    <h2 style="font-size: 1.2rem; font-weight: 800; margin-top: 3rem; margin-bottom: 1rem;">Completed & Historical Orders</h2>
+    <div id="historyOrdersList"></div>
+  </main>
+
+  <script src="/frontend/i18n.js"></script>
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login';
+    }
+
+    let activeBusinessId = null;
+
+    async function init() {
+      // Fetch owned businesses to select the first restaurant
+      try {
+        const res = await fetch('/api/owner/businesses', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          window.location.href = '/login';
+          return;
+        }
+        const businesses = await res.json();
+        if (businesses.length === 0) {
+          document.getElementById('activeOrdersList').innerHTML = '<div class="state-box">No business found for this owner.</div>';
+          return;
+        }
+        activeBusinessId = businesses[0].id;
+        loadOrders();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadOrders() {
+      if (!activeBusinessId) return;
+
+      try {
+        const res = await fetch(`/api/owner/businesses/${activeBusinessId}/orders`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const orders = await res.json();
+
+        const active = orders.filter(o => ['pending', 'accepted', 'in_kitchen', 'ready'].includes(o.status));
+        const history = orders.filter(o => ['completed', 'cancelled', 'declined'].includes(o.status));
+
+        renderOrders(active, 'activeOrdersList', true);
+        renderOrders(history, 'historyOrdersList', false);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function renderOrders(orders, containerId, isActive) {
+      const container = document.getElementById(containerId);
+      if (orders.length === 0) {
+        container.innerHTML = `<div class="state-box" style="padding: 1.5rem;">${isActive ? 'No active orders in queue.' : 'No completed orders yet.'}</div>`;
+        return;
+      }
+
+      container.innerHTML = orders.map(o => {
+        let actionButtons = '';
+        if (o.status === 'pending') {
+          actionButtons = `
+            <button class="btn btn-primary btn-sm" onclick="updateStatus('${o.id}', 'accepted', 25)">Accept (25 min ETA)</button>
+            <button class="btn btn-outline btn-sm" onclick="updateStatus('${o.id}', 'declined')">Decline</button>
+          `;
+        } else if (o.status === 'accepted') {
+          actionButtons = `
+            <button class="btn btn-primary btn-sm" onclick="updateStatus('${o.id}', 'in_kitchen')">Start Prep (In Kitchen)</button>
+            <button class="btn btn-outline btn-sm" onclick="updateStatus('${o.id}', 'cancelled')">Cancel</button>
+          `;
+        } else if (o.status === 'in_kitchen') {
+          actionButtons = `
+            <button class="btn btn-primary btn-sm" onclick="updateStatus('${o.id}', 'ready')">Mark Ready for Handoff</button>
+          `;
+        } else if (o.status === 'ready') {
+          actionButtons = `
+            <button class="btn btn-primary btn-sm" onclick="updateStatus('${o.id}', 'completed', 0, ${o.total})">Confirm Cash Received & Complete</button>
+          `;
+        }
+
+        const itemsHtml = o.items.map(it => `
+          <div style="font-size: 0.95rem; margin-bottom: 0.2rem;">
+            <strong>${it.quantity}x</strong> ${it.item_name_en} — ${(it.line_total).toFixed(2)} ${o.currency}
+          </div>
+        `).join('');
+
+        return `
+          <div class="order-card">
+            <div class="order-header">
+              <div>
+                <strong style="font-size: 1.1rem;">${o.order_number}</strong>
+                <span style="color: var(--text-secondary); margin-left: 0.5rem; font-size: 0.88rem;">${o.customer_name} (${o.customer_phone})</span>
+              </div>
+              <span class="order-badge badge-${o.status}">${o.status}</span>
+            </div>
+
+            <div style="margin-bottom: 0.75rem;">
+              <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">
+                ${o.fulfillment_type.toUpperCase()} • ${o.payment_method.toUpperCase()}
+              </span>
+              ${o.delivery_address ? `<div style="font-size: 0.88rem; color: var(--text-secondary);">📍 ${o.delivery_address}</div>` : ''}
+              ${o.customer_notes ? `<div style="font-size: 0.88rem; color: #b45309; margin-top: 0.2rem;">📝 Note: ${o.customer_notes}</div>` : ''}
+            </div>
+
+            <div style="background: var(--bg); padding: 0.75rem; border-radius: var(--radius-sm); margin-bottom: 0.75rem;">
+              ${itemsHtml}
+              <div style="border-top: 1px solid var(--border); margin-top: 0.5rem; padding-top: 0.5rem; font-weight: 800; display: flex; justify-content: space-between;">
+                <span>Total Due (Cash):</span>
+                <span>${o.total.toFixed(2)} ${o.currency}</span>
+              </div>
+            </div>
+
+            ${actionButtons ? `<div class="action-btn-row">${actionButtons}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function updateStatus(orderId, newStatus, etaMinutes = 0, cashReceived = null) {
+      try {
+        const res = await fetch(`/api/owner/businesses/${activeBusinessId}/orders/${orderId}/status`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            status: newStatus,
+            estimated_minutes: etaMinutes,
+            cash_received: cashReceived
+          })
+        });
+
+        if (res.ok) {
+          loadOrders();
+        } else {
+          const err = await res.json();
+          alert(err.error || "Failed to update order status.");
+        }
+      } catch (e) {
+        alert("Network error.");
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

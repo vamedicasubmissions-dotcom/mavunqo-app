@@ -94,5 +94,44 @@ class TestHttpEndpoints(unittest.TestCase):
             self.assertEqual(status, 200, f"Page {p} returned {status}")
             self.assertIn(b"Mavunqo", body)
 
+    def test_restaurant_ordering_http_flow(self):
+        # 1. GET restaurant menu
+        status, body = invoke_handler("GET", "/api/restaurants/el-batey-bistro/menu")
+        self.assertEqual(status, 200)
+        menu = json.loads(body.decode("utf-8"))
+        self.assertEqual(menu["business_name"], "El Batey Bistro & Grill")
+        self.assertTrue(len(menu["categories"]) >= 2)
+
+        snapper_cat = next(c for c in menu["categories"] if c["name_en"] == "Fresh Catch & Grill")
+        snapper_item = snapper_cat["items"][0]
+        self.assertEqual(snapper_item["name_en"], "Whole Red Snapper with Tostones")
+
+        # 2. POST /api/orders (Guest order)
+        order_payload = {
+            "business_id": menu["business_id"],
+            "customer": {"name": "Carlos Gomez", "phone": "8095551234"},
+            "items": [{
+                "menu_item_id": snapper_item["id"],
+                "quantity": 1,
+                "modifiers": [{"id": "mod_chillo_garlic"}]
+            }],
+            "fulfillment_type": "pickup",
+            "order_origin": "mavunqo"
+        }
+        status, body = invoke_handler("POST", "/api/orders", body=order_payload)
+        self.assertEqual(status, 201)
+        res = json.loads(body.decode("utf-8"))
+        self.assertTrue(res["success"])
+        # Snapper 750 + Garlic glaze 50 = 800
+        self.assertEqual(res["total"], 800.0)
+        token = res["status_token"]
+
+        # 3. GET /api/orders/status?token=...
+        status, body = invoke_handler("GET", f"/api/orders/status?token={token}")
+        self.assertEqual(status, 200)
+        order_status = json.loads(body.decode("utf-8"))
+        self.assertEqual(order_status["customer_name"], "Carlos Gomez")
+        self.assertEqual(order_status["status"], "pending")
+
 if __name__ == "__main__":
     unittest.main()

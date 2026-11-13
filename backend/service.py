@@ -462,3 +462,644 @@ class MavunqoService:
                 (business_id,)
             ).fetchall()
             return [dict(r) for r in rows]
+
+    # -------------------------------------------------------------
+    # Phase 2: Restaurant Menu Management & Ordering Pilot
+    # -------------------------------------------------------------
+    def get_restaurant_menu(self, business_id_or_slug: str):
+        with self.get_connection() as conn:
+            biz = conn.execute(
+                "SELECT id, trading_name, slug, status FROM businesses WHERE id = ? OR slug = ?",
+                (business_id_or_slug, business_id_or_slug)
+            ).fetchone()
+            if not biz or biz["status"] != "approved":
+                raise ValueError("Restaurant not found or inactive.")
+
+            biz_id = biz["id"]
+            cat_rows = conn.execute(
+                "SELECT id, name_en, name_es, sort_order FROM menu_categories WHERE business_id = ? ORDER BY sort_order ASC",
+                (biz_id,)
+            ).fetchall()
+            categories = [dict(c) for c in cat_rows]
+
+            item_rows = conn.execute(
+                """SELECT id, category_id, name_en, name_es, description_en, description_es,
+                          price, currency, image_url, is_available, sort_order
+                   FROM menu_items
+                   WHERE business_id = ?
+                   ORDER BY sort_order ASC""",
+                (biz_id,)
+            ).fetchall()
+
+            item_ids = [r["id"] for r in item_rows]
+            modifiers_by_item = {}
+            if item_ids:
+                placeholders = ",".join("?" for _ in item_ids)
+                mod_rows = conn.execute(
+                    f"""SELECT id, menu_item_id, group_name_en, group_name_es,
+                               name_en, name_es, price_delta, currency, is_required, sort_order
+                        FROM menu_modifiers
+                        WHERE menu_item_id IN ({placeholders})
+                        ORDER BY sort_order ASC""",
+                    item_ids
+                ).fetchall()
+                for m in mod_rows:
+                    m_dict = dict(m)
+                    modifiers_by_item.setdefault(m_dict["menu_item_id"], []).append(m_dict)
+
+            items_by_cat = {}
+            uncategorized = []
+            for r in item_rows:
+                item_dict = dict(r)
+                item_dict["modifiers"] = modifiers_by_item.get(item_dict["id"], [])
+                cat_id = item_dict.get("category_id")
+                if cat_id:
+                    items_by_cat.setdefault(cat_id, []).append(item_dict)
+                else:
+                    uncategorized.append(item_dict)
+
+            # Build structured category list
+            menu_structure = []
+            for c in categories:
+                c["items"] = items_by_cat.get(c["id"], [])
+                menu_structure.append(c)
+
+            if uncategorized:
+                menu_structure.append({
+                    "id": "cat_other",
+                    "name_en": "Other Items",
+                    "name_es": "Otros Platos",
+                    "sort_order": 999,
+                    "items": uncategorized
+                })
+
+            return {
+                "business_id": biz_id,
+                "business_name": biz["trading_name"],
+                "slug": biz["slug"],
+                "categories": menu_structure
+            }
+
+    def place_order(self, business_id: str, customer_data: dict, items: list,
+                    fulfillment_type: str = "pickup", delivery_address: str = "",
+                    order_origin: str = "mavunqo", customer_notes: str = ""):
+        customer_name = (customer_data.get("name") or "").strip()
+        customer_phone = (customer_data.get("phone") or "").strip()
+        customer_email = (customer_data.get("email") or "").strip()
+
+        if not customer_name or not customer_phone:
+            raise ValueError("Customer name and phone number are required.")
+
+        if not items:
+            raise ValueError("Order must contain at least one item.")
+
+        if fulfillment_type not in ("pickup", "delivery"):
+            fulfillment_type = "pickup"
+
+        if fulfillment_type == "delivery" and not (delivery_address or "").strip():
+            raise ValueError("Delivery address is required for delivery orders.")
+
+        if order_origin not in ("mavunqo", "merchant"):
+            order_origin = "mavunqo"
+
+        from datetime import timedelta
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
+        expires_at = now + timedelta(hours=48)
+        status_token = f"tok_{uuid.uuid4().hex}"
+        order_id = f"ord_{uuid.uuid4().hex[:12]}"
+        order_num = f"MVQ-{now.strftime('%y%m%d')}-{uuid.uuid4().hex[:4].upper()}"
+
+        subtotal = 0.0
+        processed_items = []
+
+        with self.get_connection() as conn:
+            biz = conn.execute(
+                "SELECT id, trading_name, status FROM businesses WHERE id = ? AND status = 'approved'",
+                (business_id,)
+            ).fetchone()
+            if not biz:
+                raise ValueError("Restaurant not found or inactive.")
+
+            # Validate each item and calculate subtotal
+            for it in items:
+                menu_item_id = it.get("menu_item_id")
+                qty = int(it.get("quantity", 1))
+                if qty <= 0:
+                    continue
+
+                mi = conn.execute(
+                    "SELECT id, name_en, name_es, price, currency, is_available FROM menu_items WHERE id = ? AND business_id = ?",
+                    (menu_item_id, business_id)
+                ).fetchone()
+                if not mi:
+                    raise ValueError(f"Menu item '{menu_item_id}' not found.")
+                if not mi["is_available"]:
+                    raise ValueError(f"Menu item '{mi['name_en']}' is currently unavailable.")
+
+                selected_modifiers = it.get("modifiers") or []
+                mod_price_total = 0.0
+                valid_mods = []
+                for mod in selected_modifiers:
+                    mod_id = mod.get("id")
+                    if mod_id:
+                        m_row = conn.execute(
+                            "SELECT id, name_en, name_es, price_delta FROM menu_modifiers WHERE id = ? AND menu_item_id = ?",
+                            (mod_id, menu_item_id)
+                        ).fetchone()
+                        if m_row:
+                            mod_price_total += float(m_row["price_delta"])
+                            valid_mods.append({
+                                "id": m_row["id"],
+                                "name_en": m_row["name_en"],
+                                "name_es": m_row["name_es"],
+                                "price_delta": float(m_row["price_delta"])
+                            })
+
+                unit_price = float(mi["price"]) + mod_price_total
+                line_total = round(unit_price * qty, 2)
+                subtotal += line_total
+
+                processed_items.append({
+                    "id": f"oi_{uuid.uuid4().hex[:10]}",
+                    "menu_item_id": mi["id"],
+                    "item_name_en": mi["name_en"],
+                    "item_name_es": mi["name_es"],
+                    "unit_price": unit_price,
+                    "quantity": qty,
+                    "modifiers_json": json.dumps(valid_mods),
+                    "line_total": line_total
+                })
+
+            if not processed_items:
+                raise ValueError("No valid items in order.")
+
+            delivery_fee = 100.0 if fulfillment_type == "delivery" else 0.0
+            total = round(subtotal + delivery_fee, 2)
+
+            # Insert order
+            conn.execute(
+                """INSERT INTO orders (
+                    id, order_number, business_id, customer_name, customer_phone, customer_email,
+                    order_origin, fulfillment_type, delivery_address, customer_notes,
+                    status, subtotal, delivery_fee, total, currency, payment_method,
+                    status_token, status_token_expires_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, 'DOP', 'cash', ?, ?)""",
+                (
+                    order_id, order_num, business_id, customer_name, customer_phone, customer_email,
+                    order_origin, fulfillment_type, delivery_address, customer_notes,
+                    subtotal, delivery_fee, total, status_token, expires_at.isoformat()
+                )
+            )
+
+            # Insert order items
+            for oi in processed_items:
+                conn.execute(
+                    """INSERT INTO order_items (
+                        id, order_id, menu_item_id, item_name_en, item_name_es, unit_price, quantity, modifiers_json, line_total
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        oi["id"], order_id, oi["menu_item_id"], oi["item_name_en"], oi["item_name_es"],
+                        oi["unit_price"], oi["quantity"], oi["modifiers_json"], oi["line_total"]
+                    )
+                )
+
+            # Accrue preliminary fee record:
+            # 12% for Mavunqo-sourced orders, 0% (or configurable lower rate) for merchant-originated orders.
+            # Delivery fee is excluded from commission base.
+            commission_rate = 0.12 if order_origin == "mavunqo" else 0.00
+            commissionable_amount = subtotal
+            fee_amount = round(commissionable_amount * commission_rate, 2)
+            fee_id = f"fee_{uuid.uuid4().hex[:12]}"
+
+            conn.execute(
+                """INSERT INTO fee_records (
+                    id, order_id, business_id, order_origin, commission_rate, commissionable_amount, fee_amount, currency, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'DOP', 'pending')""",
+                (fee_id, order_id, business_id, order_origin, commission_rate, commissionable_amount, fee_amount)
+            )
+
+            # Audit event
+            conn.execute(
+                """INSERT INTO audit_events (id, actor_id, action, target_type, target_id, details_json)
+                   VALUES (?, NULL, 'order_placed', 'order', ?, ?)""",
+                (f"aud_{uuid.uuid4().hex[:12]}", order_id, json.dumps({
+                    "order_number": order_num,
+                    "total": total,
+                    "order_origin": order_origin,
+                    "items_count": len(processed_items)
+                }))
+            )
+            conn.commit()
+
+        return {
+            "success": True,
+            "order_id": order_id,
+            "order_number": order_num,
+            "total": total,
+            "currency": "DOP",
+            "status_token": status_token,
+            "status_url": f"/order/status?token={status_token}"
+        }
+
+    def get_order_by_token(self, status_token: str):
+        with self.get_connection() as conn:
+            order = conn.execute(
+                """SELECT o.*, b.trading_name AS business_name, b.phone AS business_phone, b.whatsapp AS business_whatsapp
+                   FROM orders o
+                   JOIN businesses b ON o.business_id = b.id
+                   WHERE o.status_token = ?""",
+                (status_token,)
+            ).fetchone()
+            if not order:
+                raise ValueError("Order not found or link has expired.")
+
+            exp = order["status_token_expires_at"]
+            from datetime import timezone
+            if datetime.fromisoformat(exp) < datetime.now(timezone.utc):
+                raise ValueError("Order status link has expired.")
+
+            item_rows = conn.execute(
+                "SELECT * FROM order_items WHERE order_id = ?",
+                (order["id"],)
+            ).fetchall()
+
+            order_dict = dict(order)
+            items = []
+            for ir in item_rows:
+                idict = dict(ir)
+                idict["modifiers"] = json.loads(idict["modifiers_json"]) if idict.get("modifiers_json") else []
+                items.append(idict)
+
+            order_dict["items"] = items
+            return order_dict
+
+    def get_merchant_orders(self, user_id: str, business_id: str, status_filter: str = ""):
+        if not self.verify_business_ownership(user_id, business_id):
+            raise PermissionError("Access denied.")
+
+        sql = """SELECT id, order_number, customer_name, customer_phone, customer_email,
+                        order_origin, fulfillment_type, delivery_address, customer_notes,
+                        status, subtotal, delivery_fee, total, currency, payment_method,
+                        cash_received, cash_reconciled, estimated_ready_at,
+                        created_at, updated_at
+                 FROM orders
+                 WHERE business_id = ?"""
+        params = [business_id]
+        if status_filter:
+            sql += " AND status = ?"
+            params.append(status_filter)
+        sql += " ORDER BY created_at DESC"
+
+        with self.get_connection() as conn:
+            order_rows = conn.execute(sql, params).fetchall()
+            orders = []
+            for o in order_rows:
+                od = dict(o)
+                # fetch items
+                items = conn.execute("SELECT * FROM order_items WHERE order_id = ?", (od["id"],)).fetchall()
+                od["items"] = [dict(it) for it in items]
+                orders.append(od)
+            return orders
+
+    def update_order_status(self, user_id: str, business_id: str, order_id: str, new_status: str,
+                            estimated_minutes: int = 0, reason: str = "", cash_received: float = None):
+        if not self.verify_business_ownership(user_id, business_id):
+            raise PermissionError("Access denied.")
+
+        valid_transitions = {
+            "pending": ["accepted", "declined", "cancelled"],
+            "accepted": ["in_kitchen", "ready", "cancelled"],
+            "in_kitchen": ["ready", "cancelled"],
+            "ready": ["completed", "cancelled"],
+            "completed": [],
+            "cancelled": [],
+            "declined": []
+        }
+
+        with self.get_connection() as conn:
+            order = conn.execute(
+                "SELECT id, status, total FROM orders WHERE id = ? AND business_id = ?",
+                (order_id, business_id)
+            ).fetchone()
+            if not order:
+                raise ValueError("Order not found.")
+
+            curr_status = order["status"]
+            allowed = valid_transitions.get(curr_status, [])
+            if new_status not in allowed:
+                raise ValueError(f"Cannot transition order from '{curr_status}' to '{new_status}'.")
+
+            from datetime import timezone
+            now = datetime.now(timezone.utc)
+            eta_val = None
+            if new_status == "accepted" and estimated_minutes > 0:
+                from datetime import timedelta
+                eta_val = (now + timedelta(minutes=estimated_minutes)).isoformat()
+
+            # If completing order, record cash receipt & reconcile fee
+            cash_rec = cash_received if cash_received is not None else (order["total"] if new_status == "completed" else None)
+            cash_reconciled = 1 if new_status == "completed" else 0
+
+            conn.execute(
+                """UPDATE orders
+                   SET status = ?,
+                       estimated_ready_at = COALESCE(?, estimated_ready_at),
+                       decline_reason = CASE WHEN ? = 'declined' THEN ? ELSE decline_reason END,
+                       cancellation_reason = CASE WHEN ? = 'cancelled' THEN ? ELSE cancellation_reason END,
+                       cash_received = COALESCE(?, cash_received),
+                       cash_reconciled = CASE WHEN ? = 1 THEN 1 ELSE cash_reconciled END,
+                       updated_at = CURRENT_TIMESTAMP
+                   WHERE id = ?""",
+                (new_status, eta_val, new_status, reason, new_status, reason, cash_rec, cash_reconciled, order_id)
+            )
+
+            # Update fee record status
+            if new_status == "completed":
+                conn.execute(
+                    "UPDATE fee_records SET status = 'accrued', updated_at = CURRENT_TIMESTAMP WHERE order_id = ?",
+                    (order_id,)
+                )
+            elif new_status in ("cancelled", "declined"):
+                conn.execute(
+                    """UPDATE fee_records
+                       SET status = 'reversed', reversal_reason = ?, updated_at = CURRENT_TIMESTAMP
+                       WHERE order_id = ?""",
+                    (f"Order {new_status}: {reason}", order_id)
+                )
+
+            # Audit event
+            conn.execute(
+                """INSERT INTO audit_events (id, actor_id, action, target_type, target_id, details_json)
+                   VALUES (?, ?, 'order_status_update', 'order', ?, ?)""",
+                (f"aud_{uuid.uuid4().hex[:12]}", user_id, order_id, json.dumps({
+                    "from_status": curr_status,
+                    "to_status": new_status,
+                    "reason": reason
+                }))
+            )
+            conn.commit()
+
+        return {"success": True, "order_id": order_id, "new_status": new_status}
+
+    def get_merchant_fee_statement(self, user_id: str, business_id: str):
+        if not self.verify_business_ownership(user_id, business_id):
+            raise PermissionError("Access denied.")
+
+        with self.get_connection() as conn:
+            rows = conn.execute(
+                """SELECT f.*, o.order_number, o.created_at AS order_created_at
+                   FROM fee_records f
+                   JOIN orders o ON f.order_id = o.id
+                   WHERE f.business_id = ?
+                   ORDER BY f.created_at DESC""",
+                (business_id,)
+            ).fetchall()
+
+            records = [dict(r) for r in rows]
+            total_accrued = sum(r["fee_amount"] for r in records if r["status"] == "accrued")
+            total_pending = sum(r["fee_amount"] for r in records if r["status"] == "pending")
+            total_reversed = sum(r["fee_amount"] for r in records if r["status"] == "reversed")
+
+            return {
+                "business_id": business_id,
+                "total_accrued_fees": round(total_accrued, 2),
+                "total_pending_fees": round(total_pending, 2),
+                "total_reversed_fees": round(total_reversed, 2),
+                "currency": "DOP",
+                "statement_lines": records
+            }
+
+    # -------------------------------------------------------------
+    # Multi-Vertical: City Lights Hospitality & Stays Service
+    # -------------------------------------------------------------
+    def get_lodging_units(self, business_id_or_slug: str):
+        with self.get_connection() as conn:
+            biz = conn.execute(
+                "SELECT id, trading_name, slug FROM businesses WHERE id = ? OR slug = ?",
+                (business_id_or_slug, business_id_or_slug)
+            ).fetchone()
+            if not biz:
+                raise ValueError("Business not found.")
+
+            units = conn.execute(
+                """SELECT * FROM lodging_units
+                   WHERE business_id = ? AND is_available = 1
+                   ORDER BY sort_order ASC""",
+                (biz["id"],)
+            ).fetchall()
+
+            return {
+                "business_id": biz["id"],
+                "business_name": biz["trading_name"],
+                "units": [dict(u) for u in units]
+            }
+
+    def book_lodging_unit(self, business_id: str, unit_id: str, guest_data: dict,
+                          check_in: str, check_out: str, guest_count: int = 1):
+        guest_name = (guest_data.get("name") or "").strip()
+        guest_contact = (guest_data.get("contact") or "").strip()
+        guest_email = (guest_data.get("email") or "").strip()
+
+        if not guest_name or not guest_contact:
+            raise ValueError("Guest name and contact number/WhatsApp are required.")
+
+        from datetime import datetime, date
+        d1 = datetime.strptime(check_in, "%Y-%m-%d").date()
+        d2 = datetime.strptime(check_out, "%Y-%m-%d").date()
+        nights = (d2 - d1).days
+        if nights <= 0:
+            raise ValueError("Check-out date must be after check-in date.")
+
+        with self.get_connection() as conn:
+            unit = conn.execute(
+                "SELECT * FROM lodging_units WHERE id = ? AND business_id = ? AND is_available = 1",
+                (unit_id, business_id)
+            ).fetchone()
+            if not unit:
+                raise ValueError("Selected lodging unit is unavailable or not found.")
+
+            if guest_count > unit["capacity"]:
+                raise ValueError(f"Unit capacity exceeded (maximum {unit['capacity']} guests).")
+
+            # Check overlap on active bookings
+            overlap = conn.execute(
+                """SELECT id FROM reservations
+                   WHERE unit_id = ? AND status IN ('confirmed', 'checked_in')
+                   AND NOT (check_out_date <= ? OR check_in_date >= ?)""",
+                (unit_id, check_in, check_out)
+            ).fetchone()
+            if overlap:
+                raise ValueError("Unit is already booked for the selected dates.")
+
+            res_id = f"res_{uuid.uuid4().hex[:12]}"
+            res_code = f"CL-{d1.strftime('%y%m')}-{uuid.uuid4().hex[:4].upper()}"
+            status_token = f"tok_res_{uuid.uuid4().hex}"
+            total_amount = round(unit["base_price_night"] * nights, 2)
+
+            conn.execute(
+                """INSERT INTO reservations (
+                    id, reservation_code, business_id, unit_id, guest_name, guest_contact, guest_email,
+                    check_in_date, check_out_date, nights, guest_count, nightly_rate, total_amount, currency,
+                    status, payment_method, cash_collected, status_token
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 'cash_on_arrival', 0.0, ?)""",
+                (
+                    res_id, res_code, business_id, unit_id, guest_name, guest_contact, guest_email,
+                    check_in, check_out, nights, guest_count, unit["base_price_night"], total_amount,
+                    unit["currency"], status_token
+                )
+            )
+
+            # Audit event
+            conn.execute(
+                """INSERT INTO audit_events (id, actor_id, action, target_type, target_id, details_json)
+                   VALUES (?, NULL, 'reservation_created', 'reservation', ?, ?)""",
+                (f"aud_{uuid.uuid4().hex[:12]}", res_id, json.dumps({
+                    "code": res_code, "total": total_amount, "nights": nights
+                }))
+            )
+            conn.commit()
+
+        return {
+            "success": True,
+            "reservation_id": res_id,
+            "reservation_code": res_code,
+            "total_amount": total_amount,
+            "currency": unit["currency"],
+            "status_token": status_token
+        }
+
+    def get_staff_reservations(self, user_id: str, business_id: str):
+        if not self.verify_business_ownership(user_id, business_id):
+            raise PermissionError("Access denied.")
+
+        with self.get_connection() as conn:
+            rows = conn.execute(
+                """SELECT r.*, u.unit_number, u.name_en AS unit_name_en, u.unit_type
+                   FROM reservations r
+                   JOIN lodging_units u ON r.unit_id = u.id
+                   WHERE r.business_id = ?
+                   ORDER BY r.check_in_date ASC, r.created_at DESC""",
+                (business_id,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def process_staff_checkin(self, user_id: str, business_id: str, reservation_id: str,
+                              cash_collected: float, staff_notes: str = ""):
+        if not self.verify_business_ownership(user_id, business_id):
+            raise PermissionError("Access denied.")
+
+        with self.get_connection() as conn:
+            res = conn.execute(
+                "SELECT * FROM reservations WHERE id = ? AND business_id = ?",
+                (reservation_id, business_id)
+            ).fetchone()
+            if not res:
+                raise ValueError("Reservation not found.")
+
+            if res["status"] != "confirmed":
+                raise ValueError(f"Cannot check in reservation with status '{res['status']}'.")
+
+            conn.execute(
+                """UPDATE reservations
+                   SET status = 'checked_in',
+                       cash_collected = ?,
+                       staff_notes = ?,
+                       updated_at = CURRENT_TIMESTAMP
+                   WHERE id = ?""",
+                (float(cash_collected), staff_notes, reservation_id)
+            )
+
+            conn.execute(
+                """INSERT INTO audit_events (id, actor_id, action, target_type, target_id, details_json)
+                   VALUES (?, ?, 'staff_checkin_cash_collected', 'reservation', ?, ?)""",
+                (f"aud_{uuid.uuid4().hex[:12]}", user_id, reservation_id, json.dumps({
+                    "cash_collected": float(cash_collected), "total_due": res["total_amount"]
+                }))
+            )
+            conn.commit()
+
+        return {"success": True, "reservation_id": reservation_id, "status": "checked_in"}
+
+    # -------------------------------------------------------------
+    # AI Concierge Query Engine (Bilingual & Grounded)
+    # -------------------------------------------------------------
+    def ask_ai_concierge(self, query: str, lang: str = "en"):
+        query = (query or "").strip().lower()
+        if not query:
+            return {
+                "answer": "Hello! How can I assist you with services, dining, or hotel stays in Sosúa and Puerto Plata?",
+                "recommendations": []
+            }
+
+        with self.get_connection() as conn:
+            # Query approved listings including service matches
+            words = [w for w in re.split(r'\s+', query) if len(w) > 2]
+            pattern = f"%{query}%"
+
+            sql = """
+                SELECT DISTINCT b.id, b.trading_name, b.slug, b.description_en, b.description_es,
+                       b.whatsapp, b.phone, c.name_en AS category, l.name AS location
+                FROM businesses b
+                JOIN categories c ON b.category_id = c.id
+                JOIN locations l ON b.primary_location_id = l.id
+                LEFT JOIN services s ON b.id = s.business_id
+                WHERE b.status = 'approved' AND (
+                    LOWER(b.trading_name) LIKE ? OR
+                    LOWER(b.description_en) LIKE ? OR
+                    LOWER(b.description_es) LIKE ? OR
+                    LOWER(c.name_en) LIKE ? OR
+                    LOWER(c.name_es) LIKE ? OR
+                    LOWER(s.name_en) LIKE ? OR
+                    LOWER(s.name_es) LIKE ?
+                )
+                LIMIT 4
+            """
+            params = [pattern] * 7
+            businesses = conn.execute(sql, params).fetchall()
+            recs = [dict(b) for b in businesses]
+
+            # Keyword fallback for multi-word or token matches
+            if not recs and words:
+                word_patterns = [f"%{w}%" for w in words]
+                or_clauses = " OR ".join([
+                    "(LOWER(b.trading_name) LIKE ? OR LOWER(b.description_en) LIKE ? OR LOWER(b.description_es) LIKE ? OR LOWER(s.name_en) LIKE ? OR LOWER(s.name_es) LIKE ?)"
+                    for _ in words
+                ])
+                fallback_sql = f"""
+                    SELECT DISTINCT b.id, b.trading_name, b.slug, b.description_en, b.description_es,
+                           b.whatsapp, b.phone, c.name_en AS category, l.name AS location
+                    FROM businesses b
+                    JOIN categories c ON b.category_id = c.id
+                    JOIN locations l ON b.primary_location_id = l.id
+                    LEFT JOIN services s ON b.id = s.business_id
+                    WHERE b.status = 'approved' AND ({or_clauses})
+                    LIMIT 4
+                """
+                fallback_params = []
+                for p in word_patterns:
+                    fallback_params.extend([p, p, p, p, p])
+                fb_biz = conn.execute(fallback_sql, fallback_params).fetchall()
+                recs = [dict(b) for b in fb_biz]
+
+            if "hotel" in query or "room" in query or "stay" in query or "hospedaje" in query or "dorm" in query:
+                cl = conn.execute("SELECT id, trading_name, slug FROM businesses WHERE id = 'biz_city_lights'").fetchone()
+                if cl and not any(r["id"] == "biz_city_lights" for r in recs):
+                    recs.insert(0, dict(cl))
+
+            if recs:
+                if lang == "es":
+                    ans = f"Encontré {len(recs)} opciones recomendadas para su búsqueda. Puede ver los detalles, reservar o comunicarse directamente por WhatsApp."
+                else:
+                    ans = f"I found {len(recs)} verified options matching your request. You can explore their menu or suites, place an order, or connect via WhatsApp."
+            else:
+                if lang == "es":
+                    ans = "No encontré un resultado exacto en este momento. Puede explorar todas las categorías en el directorio o comunicarse con soporte."
+                else:
+                    ans = "I couldn't find an exact match in our verified directory yet. You can browse categories or contact our Sosúa support team directly."
+
+            return {
+                "query": query,
+                "answer": ans,
+                "recommendations": recs
+            }

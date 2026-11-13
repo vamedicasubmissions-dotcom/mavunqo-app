@@ -14,19 +14,20 @@ Mavunqo starts as a bilingual, mobile-first searchable directory of local busine
 ### 1. Initialize and Seed Database
 Initializes categories, locations, demo accounts, and two pilot businesses:
 ```powershell
-python -m backend.seed
+.\py.bat -m backend.seed
+# or: .\.venv\Scripts\python.exe -m backend.seed
 ```
 
 ### 2. Run Test Suite
 Executes unit tests, multi-tenant isolation checks, approval gate verifications, and endpoint tests:
 ```powershell
-python -m backend.tests
-python -m backend.test_http
+.\py.bat -m backend.tests
+.\py.bat -m backend.test_http
 ```
 
 ### 3. Start the Web Server
 ```powershell
-python -m backend.server
+.\py.bat -m backend.server
 ```
 Visit in your browser:
 - **Public Directory:** `http://localhost:8080/`

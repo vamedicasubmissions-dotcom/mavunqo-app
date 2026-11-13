@@ -168,6 +168,252 @@ def seed_database(db_path: str):
                 (sid, sbid, sname_en, sname_es, sdesc_en, sdesc_es, sprice, scur, sdisp, sord)
             )
 
+    # -------------------------------------------------------------
+    # Phase 2: Pilot Restaurants in Sosúa
+    # -------------------------------------------------------------
+    # Pilot Restaurant 1: El Batey Bistro & Grill
+    r1_owner_id = "user_rest1_marco"
+    cur.execute("SELECT id FROM users WHERE email = 'marco@elbateybistro.com'")
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO users (id, email, password_hash, full_name, role)
+               VALUES (?, ?, ?, ?, ?)""",
+            (r1_owner_id, "marco@elbateybistro.com", hash_password("PilotPass2026!"), "Marco Rossi", "owner")
+        )
+
+    r1_id = "biz_el_batey_bistro"
+    cur.execute("SELECT id FROM businesses WHERE id = ?", (r1_id,))
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO businesses (
+                id, owner_id, trading_name, legal_name, slug, category_id, primary_location_id,
+                description_en, description_es, status, has_physical_location, address,
+                serves_entire_area, website_url, whatsapp, phone, public_email,
+                hours_json, rnc_tax_id, rnc_status, approved_by, approved_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+            (
+                r1_id, r1_owner_id, "El Batey Bistro & Grill", "Bistro del Sol SRL",
+                "el-batey-bistro", "cat_dining", "loc_sosua",
+                "Sosúa seafood, steaks, fresh pasta and handcrafted Caribbean cocktails on Calle Pedro Clisante.",
+                "Mariscos frescos de Sosúa, carnes a la parrilla, pastas artesanales y cocteles caribeños en Calle Pedro Clisante.",
+                "approved", 1, "Calle Pedro Clisante #18, El Batey, Sosúa",
+                1, None, "+18095550211", "+18095550211", "orders@elbateybistro.com",
+                json.dumps({"monday_sunday": "11:30 AM - 10:30 PM"}),
+                "132-44556-1", "verified", admin_id
+            )
+        )
+        cur.execute("INSERT OR IGNORE INTO business_service_areas (business_id, location_id) VALUES (?, ?)", (r1_id, "loc_sosua"))
+
+        # Menu categories
+        cat_mains = "mcat_bistro_mains"
+        cat_drinks = "mcat_bistro_drinks"
+        cur.execute("INSERT INTO menu_categories (id, business_id, name_en, name_es, sort_order) VALUES (?, ?, ?, ?, ?)",
+                    (cat_mains, r1_id, "Fresh Catch & Grill", "Pescados y Parrilla", 1))
+        cur.execute("INSERT INTO menu_categories (id, business_id, name_en, name_es, sort_order) VALUES (?, ?, ?, ?, ?)",
+                    (cat_drinks, r1_id, "Tropical Beverages", "Bebidas Tropicales", 2))
+
+        # Menu items
+        m1 = "mi_red_snapper"
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 1)""",
+                    (m1, r1_id, cat_mains, "Whole Red Snapper with Tostones", "Chillo Entero con Tostones",
+                     "Freshly fried or grilled local red snapper served with garlic tostones and green salad.",
+                     "Chillo fresco frito o a la parrilla con tostones al ajillo y ensalada verde.", 750.0))
+        cur.execute("""INSERT INTO menu_modifiers (id, menu_item_id, group_name_en, group_name_es, name_en, name_es, price_delta, is_required)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    ("mod_chillo_garlic", m1, "Preparation", "Preparación", "Garlic Butter Glaze", "Al Ajillo", 50.0, 0))
+
+        m2 = "mi_churrasco"
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 2)""",
+                    (m2, r1_id, cat_mains, "Grilled Churrasco Steak 10oz", "Churrasco a la Parrilla 10oz",
+                     "Certified Angus skirt steak served with chimichurri sauce and yucca fries.",
+                     "Falda Angus a la parrilla con chimichurri casero y yuca frita.", 950.0))
+
+        m3 = "mi_passion_juice"
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 1)""",
+                    (m3, r1_id, cat_drinks, "Fresh Passion Fruit Juice", "Jugo Natural de Chinola",
+                     "Chilled natural Dominican passion fruit juice.", "Jugo natural frío de chinola dominicana.", 180.0))
+
+    # Pilot Restaurant 2: Playa Alicia Woodfire Pizza
+    r2_owner_id = "user_rest2_giovanni"
+    cur.execute("SELECT id FROM users WHERE email = 'giovanni@aliciapizza.com'")
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO users (id, email, password_hash, full_name, role)
+               VALUES (?, ?, ?, ?, ?)""",
+            (r2_owner_id, "giovanni@aliciapizza.com", hash_password("PilotPass2026!"), "Giovanni Moretti", "owner")
+        )
+
+    r2_id = "biz_playa_alicia_pizza"
+    cur.execute("SELECT id FROM businesses WHERE id = ?", (r2_id,))
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO businesses (
+                id, owner_id, trading_name, legal_name, slug, category_id, primary_location_id,
+                description_en, description_es, status, has_physical_location, address,
+                serves_entire_area, website_url, whatsapp, phone, public_email,
+                hours_json, rnc_tax_id, rnc_status, approved_by, approved_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+            (
+                r2_id, r2_owner_id, "Playa Alicia Woodfire Pizza", "Alicia Pizza SRL",
+                "playa-alicia-woodfire-pizza", "cat_dining", "loc_sosua",
+                "Authentic artisanal sourdough pizza baked in our oak wood-fired stone oven overlooking Playa Alicia.",
+                "Auténtica pizza artesanal con masa madre horneada en leña con vista a Playa Alicia.",
+                "approved", 1, "Calle Dr. Rosen #5, Playa Alicia, Sosúa",
+                1, None, "+18095550322", "+18095550322", "ciao@aliciapizza.com",
+                json.dumps({"tuesday_sunday": "12:00 PM - 11:00 PM"}),
+                "132-77889-2", "verified", admin_id
+            )
+        )
+        cur.execute("INSERT OR IGNORE INTO business_service_areas (business_id, location_id) VALUES (?, ?)", (r2_id, "loc_sosua"))
+
+        cat_pizzas = "mcat_pizza_pies"
+        cur.execute("INSERT INTO menu_categories (id, business_id, name_en, name_es, sort_order) VALUES (?, ?, ?, ?, ?)",
+                    (cat_pizzas, r2_id, "Artisan Woodfire Pizzas", "Pizzas a la Leña", 1))
+
+        p1 = "mi_margherita_dop"
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 1)""",
+                    (p1, r2_id, cat_pizzas, "Margherita Bufala", "Margarita con Mozzarella de Búfala",
+                     "San Marzano tomato sauce, fresh buffalo mozzarella, basil, extra virgin olive oil.",
+                     "Salsa San Marzano, mozzarella fresca de búfala, albahaca y aceite de oliva virgen extra.", 620.0))
+        cur.execute("""INSERT INTO menu_modifiers (id, menu_item_id, group_name_en, group_name_es, name_en, name_es, price_delta, is_required)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    ("mod_extra_bufala", p1, "Extra Cheese", "Queso Extra", "Extra Buffalo Mozzarella", "Doble Mozzarella", 120.0, 0))
+
+        p2 = "mi_diavola"
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 2)""",
+                    (p2, r2_id, cat_pizzas, "Spicy Diavola Pizza", "Pizza Diavola Picante",
+                     "Spicy Italian salami, crushed red pepper flakes, mozzarella, San Marzano tomatoes.",
+                     "Salami italiano picante, hojuelas de chile, mozzarella y salsa San Marzano.", 680.0))
+
+    # Pilot Restaurant 3: D'Sabor Criollo Dominicano
+    r3_owner_id = "user_rest3_juana"
+    cur.execute("SELECT id FROM users WHERE email = 'juana@saborcriollo.do'")
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO users (id, email, password_hash, full_name, role)
+               VALUES (?, ?, ?, ?, ?)""",
+            (r3_owner_id, "juana@saborcriollo.do", hash_password("PilotPass2026!"), "Juana Santana", "owner")
+        )
+
+    r3_id = "biz_sabor_criollo"
+    cur.execute("SELECT id FROM businesses WHERE id = ?", (r3_id,))
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO businesses (
+                id, owner_id, trading_name, legal_name, slug, category_id, primary_location_id,
+                description_en, description_es, status, has_physical_location, address,
+                serves_entire_area, website_url, whatsapp, phone, public_email,
+                hours_json, rnc_tax_id, rnc_status, approved_by, approved_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+            (
+                r3_id, r3_owner_id, "D'Sabor Criollo Dominicano", "Comidas del Norte SRL",
+                "sabor-criollo-dominicano", "cat_dining", "loc_sosua",
+                "Traditional Dominican homestyle cooking, famous mofongos, and fresh daily plato del día in Sosúa.",
+                "Comida típica dominicana casera, los mejores mofongos de chicharrón y plato del día en Sosúa.",
+                "approved", 1, "Calle Dr. Alejo Martínez #8, Los Charamicos, Sosúa",
+                1, None, "+18095550433", "+18095550433", "contacto@saborcriollo.do",
+                json.dumps({"monday_saturday": "10:30 AM - 9:00 PM", "sunday": "11:00 AM - 5:00 PM"}),
+                "132-99123-3", "verified", admin_id
+            )
+        )
+        cur.execute("INSERT OR IGNORE INTO business_service_areas (business_id, location_id) VALUES (?, ?)", (r3_id, "loc_sosua"))
+
+        cat_criollo = "mcat_criollo_specials"
+        cur.execute("INSERT INTO menu_categories (id, business_id, name_en, name_es, sort_order) VALUES (?, ?, ?, ?, ?)",
+                    (cat_criollo, r3_id, "Dominican Specialties", "Especialidades Criollas", 1))
+
+        d1 = "mi_mofongo_chicharron"
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 1)""",
+                    (d1, r3_id, cat_criollo, "Crispy Pork Belly Mofongo", "Mofongo de Chicharrón con Caldo",
+                     "Fried green plantains mashed with garlic, crispy pork belly cracklings, served with rich bone broth.",
+                     "Plátano verde majado con ajo y crujiente chicharrón de cerdo, servido con caldo caliente.", 480.0))
+        cur.execute("""INSERT INTO menu_modifiers (id, menu_item_id, group_name_en, group_name_es, name_en, name_es, price_delta, is_required)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    ("mod_extra_caldo", d1, "Broth & Gravy", "Caldo", "Extra Garlic Pork Broth", "Caldo Extra al Ajillo", 40.0, 0))
+
+        d2 = "mi_chivo_liniero"
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 2)""",
+                    (d2, r3_id, cat_criollo, "Braised Spicy Goat (Chivo Liniero)", "Chivo Liniero Guisado",
+                     "Tender goat meat slow-braised with oregano, scotch bonnet and dark Dominican rum, served with moro de guandules.",
+                     "Chivo tierno guisado a fuego lento con orégano criollo, servido con moro de guandules.", 540.0))
+
+    # -------------------------------------------------------------
+    # Multi-Vertical Benchmark: City Lights Sosúa (Hotel & Rooftop Lounge)
+    # -------------------------------------------------------------
+    cl_owner_id = "user_city_lights_owner"
+    cur.execute("SELECT id FROM users WHERE email = 'stay@citylightssosua.com'")
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO users (id, email, password_hash, full_name, role)
+               VALUES (?, ?, ?, ?, ?)""",
+            (cl_owner_id, "stay@citylightssosua.com", hash_password("CityLights2026!"), "City Lights Management", "owner")
+        )
+
+    cl_id = "biz_city_lights"
+    cur.execute("SELECT id FROM businesses WHERE id = ?", (cl_id,))
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO businesses (
+                id, owner_id, trading_name, legal_name, slug, category_id, primary_location_id,
+                description_en, description_es, status, has_physical_location, address,
+                serves_entire_area, website_url, whatsapp, phone, public_email,
+                hours_json, rnc_tax_id, rnc_status, approved_by, approved_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+            (
+                cl_id, cl_owner_id, "City Lights Boutique Hotel & Lounge", "City Lights Hospitality SRL",
+                "city-lights-sosua", "cat_tourism", "loc_sosua",
+                "Sosúa boutique hotel, rooftop pool lounge, premium private suites and comfortable dorm beds in El Batey.",
+                "Hotel boutique en Sosúa, terraza con piscina, suites privadas y cómodas camas de hospedaje en El Batey.",
+                "approved", 1, "Calle Dr. Rosen #22, El Batey, Sosúa",
+                1, None, "+18095550999", "+18095550999", "frontdesk@citylightssosua.com",
+                json.dumps({"reception": "24/7 Front Desk", "rooftop_lounge": "4:00 PM - 1:00 AM"}),
+                "133-11223-4", "verified", admin_id
+            )
+        )
+        cur.execute("INSERT OR IGNORE INTO business_service_areas (business_id, location_id) VALUES (?, ?)", (cl_id, "loc_sosua"))
+
+        # Lodging Units
+        units = [
+            ("unit_cl_101", cl_id, "Room 101", "suite", "Deluxe Ocean View Balcony Suite", "Suite Deluxe con Balcón y Vista al Mar",
+             "King bed, private balcony, air conditioning, smart TV, rainfall shower.",
+             "Cama king, balcón privado, aire acondicionado, smart TV, ducha de lluvia.", 2, 75.0, 1),
+            ("unit_cl_102", cl_id, "Room 102", "private_room", "Standard Garden Queen Room", "Habitación Estándar Queen con Vista al Jardín",
+             "Queen bed, silent inverter AC, mini-fridge, workspace, high-speed fiber Wi-Fi.",
+             "Cama queen, aire acondicionado silencioso, mini-nevera, escritorio, Wi-Fi fibra óptica.", 2, 55.0, 2),
+            ("unit_cl_b01", cl_id, "Bed B-1", "dorm_bed", "Traveler Single Bed in 4-Bed Co-living Dorm", "Cama Individual en Habitación Compartida de 4",
+             "Individual bunk with privacy curtain, personal reading light, power socket, and locked luggage drawer.",
+             "Litera con cortina de privacidad, lámpara de lectura, toma de corriente y gaveta con candado.", 1, 22.0, 3)
+        ]
+        for uid, ubid, unum, utype, uname_en, uname_es, udesc_en, udesc_es, ucap, uprice, uord in units:
+            cur.execute(
+                """INSERT INTO lodging_units (
+                    id, business_id, unit_number, unit_type, name_en, name_es, description_en, description_es,
+                    capacity, base_price_night, currency, is_available, sort_order
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'USD', 1, ?)""",
+                (uid, ubid, unum, utype, uname_en, uname_es, udesc_en, udesc_es, ucap, uprice, uord)
+            )
+
+        # Seed sample reservation for staff check-in test
+        cur.execute(
+            """INSERT INTO reservations (
+                id, reservation_code, business_id, unit_id, guest_name, guest_contact, guest_email,
+                check_in_date, check_out_date, nights, guest_count, nightly_rate, total_amount, currency,
+                status, payment_method, cash_collected, status_token
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, '2026-11-15', '2026-11-18', 3, 2, 75.0, 225.0, 'USD',
+                      'confirmed', 'cash_on_arrival', 0.0, ?)""",
+            (
+                "res_cl_demo1", "CL-2611-9842", cl_id, "unit_cl_101", "David Miller", "+18295551122",
+                "david@example.com", "tok_cl_demo_status_token"
+            )
+        )
+
     conn.commit()
     conn.close()
     print("Database successfully initialized and seeded with Sosúa pilot data!")

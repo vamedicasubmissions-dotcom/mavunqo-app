@@ -208,5 +208,120 @@ class TestMavunqoPhase1(unittest.TestCase):
         self.assertGreater(analytics["total_searches"], 0)
         self.assertIn("zero_result_searches", analytics)
 
+    # 10. Phase 2 Restaurant Ordering Pilot Tests
+    def test_phase2_ordering_lifecycle_and_reconciliation(self):
+        # Seed a test menu item directly
+        with self.service.get_connection() as conn:
+            conn.execute(
+                """INSERT INTO menu_items (id, business_id, name_en, name_es, price, currency, is_available)
+                   VALUES ('mi_test_pizza', 'biz_caribe_fix', 'Margherita Pizza', 'Pizza Margarita', 500.0, 'DOP', 1)"""
+            )
+            conn.execute(
+                """INSERT INTO menu_modifiers (id, menu_item_id, group_name_en, group_name_es, name_en, name_es, price_delta)
+                   VALUES ('mod_extra_cheese', 'mi_test_pizza', 'Toppings', 'Ingredientes', 'Extra Cheese', 'Queso Extra', 80.0)"""
+            )
+            conn.commit()
+
+        # 1. Fetch menu
+        menu = self.service.get_restaurant_menu("biz_caribe_fix")
+        self.assertEqual(menu["business_name"], "Caribe Fix Auto & AC")
+
+        # 2. Place guest order (Mavunqo-sourced)
+        order_res = self.service.place_order(
+            business_id="biz_caribe_fix",
+            customer_data={"name": "Maria Rodriguez", "phone": "8095550199"},
+            items=[{
+                "menu_item_id": "mi_test_pizza",
+                "quantity": 2,
+                "modifiers": [{"id": "mod_extra_cheese"}]
+            }],
+            fulfillment_type="pickup",
+            order_origin="mavunqo"
+        )
+        self.assertTrue(order_res["success"])
+        # Unit price = 500 + 80 = 580; Qty = 2; Subtotal = 1160; Pickup fee = 0; Total = 1160
+        self.assertEqual(order_res["total"], 1160.0)
+        status_token = order_res["status_token"]
+        order_id = order_res["order_id"]
+
+        # 3. Retrieve order via public status token (no account needed)
+        order_view = self.service.get_order_by_token(status_token)
+        self.assertEqual(order_view["customer_name"], "Maria Rodriguez")
+        self.assertEqual(order_view["status"], "pending")
+        self.assertEqual(len(order_view["items"]), 1)
+        self.assertEqual(order_view["items"][0]["quantity"], 2)
+
+        # 4. Merchant order queue & status transitions
+        merchant_orders = self.service.get_merchant_orders(user_id="user_rosa_autofix", business_id="biz_caribe_fix")
+        self.assertTrue(any(o["id"] == order_id for o in merchant_orders))
+
+        # Accept order with 25 min ETA
+        self.service.update_order_status("user_rosa_autofix", "biz_caribe_fix", order_id, "accepted", estimated_minutes=25)
+        # Advance to in_kitchen -> ready -> completed
+        self.service.update_order_status("user_rosa_autofix", "biz_caribe_fix", order_id, "in_kitchen")
+        self.service.update_order_status("user_rosa_autofix", "biz_caribe_fix", order_id, "ready")
+        self.service.update_order_status("user_rosa_autofix", "biz_caribe_fix", order_id, "completed", cash_received=1160.0)
+
+        # 5. Check fee statement (12% of 1160 DOP = 139.20 DOP accrued)
+        statement = self.service.get_merchant_fee_statement("user_rosa_autofix", "biz_caribe_fix")
+        self.assertEqual(statement["total_accrued_fees"], 139.20)
+        self.assertEqual(statement["total_pending_fees"], 0.0)
+
+        # 6. Verify cross-tenant isolation on orders
+        with self.assertRaises(PermissionError):
+            self.service.get_merchant_orders(user_id="user_carlos_villas", business_id="biz_caribe_fix")
+
+        with self.assertRaises(PermissionError):
+            self.service.update_order_status("user_carlos_villas", "biz_caribe_fix", order_id, "completed")
+
+    # 11. Multi-Vertical Hospitality & Stays (City Lights Benchmark)
+    def test_city_lights_hospitality_and_staff_checkin(self):
+        # 1. Fetch lodging units
+        units_res = self.service.get_lodging_units("biz_city_lights")
+        self.assertEqual(units_res["business_name"], "City Lights Boutique Hotel & Lounge")
+        self.assertGreaterEqual(len(units_res["units"]), 3)
+
+        suite = next(u for u in units_res["units"] if u["unit_type"] == "suite")
+
+        # 2. Book suite
+        booking_res = self.service.book_lodging_unit(
+            business_id="biz_city_lights",
+            unit_id=suite["id"],
+            guest_data={"name": "Sarah Connor", "contact": "+18095558833"},
+            check_in="2026-12-01",
+            check_out="2026-12-04",
+            guest_count=2
+        )
+        self.assertTrue(booking_res["success"])
+        # 3 nights * 75.0 = 225.0 USD
+        self.assertEqual(booking_res["total_amount"], 225.0)
+        res_id = booking_res["reservation_id"]
+
+        # 3. Staff retrieves reservations and processes check-in with cash collection
+        staff_res = self.service.get_staff_reservations("user_city_lights_owner", "biz_city_lights")
+        self.assertTrue(any(r["id"] == res_id for r in staff_res))
+
+        checkin_res = self.service.process_staff_checkin(
+            user_id="user_city_lights_owner",
+            business_id="biz_city_lights",
+            reservation_id=res_id,
+            cash_collected=225.0,
+            staff_notes="Guest checked in early, paid full cash."
+        )
+        self.assertTrue(checkin_res["success"])
+        self.assertEqual(checkin_res["status"], "checked_in")
+
+        # 4. Multi-tenant isolation: Carlos cannot access City Lights bookings
+        with self.assertRaises(PermissionError):
+            self.service.get_staff_reservations("user_carlos_villas", "biz_city_lights")
+
+    # 12. Bilingual AI Concierge Grounded Query
+    def test_ai_concierge_query(self):
+        res_en = self.service.ask_ai_concierge("hotel rooms in Sosúa", lang="en")
+        self.assertTrue(any("City Lights" in r["trading_name"] for r in res_en["recommendations"]))
+
+        res_es = self.service.ask_ai_concierge("reparar aire de carro", lang="es")
+        self.assertTrue(any("Caribe Fix" in r["trading_name"] for r in res_es["recommendations"]))
+
 if __name__ == "__main__":
     unittest.main()

@@ -152,6 +152,78 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             except PermissionError as e:
                 return self.send_json({"error": str(e)}, 403)
 
+        # Phase 2 Restaurant Ordering Endpoints
+        if path.startswith("/api/restaurants/") and path.endswith("/menu"):
+            parts = path.split("/")
+            slug_or_id = parts[3]
+            try:
+                return self.send_json(service.get_restaurant_menu(slug_or_id))
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 404)
+
+        if path.startswith("/api/orders/status"):
+            query = urllib.parse.parse_qs(parsed.query)
+            token = query.get("token", [""])[0]
+            try:
+                return self.send_json(service.get_order_by_token(token))
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 404)
+
+        if path.startswith("/api/owner/businesses/") and path.endswith("/orders"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            biz_id = parts[4]
+            try:
+                return self.send_json(service.get_merchant_orders(user["uid"], biz_id))
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path.startswith("/api/owner/businesses/") and path.endswith("/fee-statement"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            biz_id = parts[4]
+            try:
+                return self.send_json(service.get_merchant_fee_statement(user["uid"], biz_id))
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        # Multi-Vertical / Hospitality Endpoints
+        if path.startswith("/api/hospitality/") and path.endswith("/units"):
+            parts = path.split("/")
+            slug_or_id = parts[3]
+            try:
+                return self.send_json(service.get_lodging_units(slug_or_id))
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 404)
+
+        if path.startswith("/api/owner/businesses/") and path.endswith("/reservations"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            biz_id = parts[4]
+            try:
+                return self.send_json(service.get_staff_reservations(user["uid"], biz_id))
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        # AI Concierge Endpoint (GET)
+        if path == "/api/concierge":
+            query_params = urllib.parse.parse_qs(parsed.query)
+            q = query_params.get("q", [""])[0]
+            lang = query_params.get("lang", ["en"])[0]
+            return self.send_json(service.ask_ai_concierge(q, lang))
+
         # 2. Frontend Page Routes
         if path == "/" or path == "/index.html":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "index.html"))
@@ -159,6 +231,15 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path.startswith("/b/"):
             # Hosted storefront / profile route
             return self.send_file_response(os.path.join(FRONTEND_DIR, "storefront.html"))
+
+        if path == "/order/status":
+            return self.send_file_response(os.path.join(FRONTEND_DIR, "order_status.html"))
+
+        if path == "/orders":
+            return self.send_file_response(os.path.join(FRONTEND_DIR, "orders.html"))
+
+        if path == "/staff":
+            return self.send_file_response(os.path.join(FRONTEND_DIR, "staff.html"))
 
         if path == "/register":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "register.html"))
@@ -256,6 +337,87 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 return self.send_json({"error": str(e)}, 400)
 
+        # Phase 2: Place Guest Order
+        if path == "/api/orders":
+            data = self.read_json_body()
+            try:
+                res = service.place_order(
+                    business_id=data.get("business_id", ""),
+                    customer_data=data.get("customer", {}),
+                    items=data.get("items", []),
+                    fulfillment_type=data.get("fulfillment_type", "pickup"),
+                    delivery_address=data.get("delivery_address", ""),
+                    order_origin=data.get("order_origin", "mavunqo"),
+                    customer_notes=data.get("notes", "")
+                )
+                return self.send_json(res, 201)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        # Phase 2: Merchant Update Order Status
+        if path.startswith("/api/owner/businesses/") and "/orders/" in path and path.endswith("/status"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            biz_id = parts[4]
+            order_id = parts[6]
+            data = self.read_json_body()
+            try:
+                res = service.update_order_status(
+                    user_id=user["uid"],
+                    business_id=biz_id,
+                    order_id=order_id,
+                    new_status=data.get("status", ""),
+                    estimated_minutes=int(data.get("estimated_minutes", 0)),
+                    reason=data.get("reason", ""),
+                    cash_received=data.get("cash_received")
+                )
+                return self.send_json(res)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        # Multi-Vertical: Book Hospitality Lodging Unit (City Lights)
+        if path == "/api/hospitality/book":
+            data = self.read_json_body()
+            try:
+                res = service.book_lodging_unit(
+                    business_id=data.get("business_id", ""),
+                    unit_id=data.get("unit_id", ""),
+                    guest_data=data.get("guest", {}),
+                    check_in=data.get("check_in", ""),
+                    check_out=data.get("check_out", ""),
+                    guest_count=int(data.get("guest_count", 1))
+                )
+                return self.send_json(res, 201)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        # Multi-Vertical: Staff Check-in & Cash Collection
+        if path.startswith("/api/owner/businesses/") and "/reservations/" in path and path.endswith("/checkin"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            biz_id = parts[4]
+            res_id = parts[6]
+            data = self.read_json_body()
+            try:
+                res = service.process_staff_checkin(
+                    user_id=user["uid"],
+                    business_id=biz_id,
+                    reservation_id=res_id,
+                    cash_collected=float(data.get("cash_collected", 0.0)),
+                    staff_notes=data.get("notes", "")
+                )
+                return self.send_json(res)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
         # 4. Admin Approvals
         if path.startswith("/api/admin/applications/") and path.endswith("/approve"):
             user = self.get_auth_user()
@@ -308,9 +470,10 @@ def run_server(port=8080, db_path=None):
     if db_path:
         global service
         service = MavunqoService(db_path)
-    server_address = ('', port)
+    server_address = ('127.0.0.1', port)
+    socketserver.TCPServer.allow_reuse_address = True
     httpd = socketserver.TCPServer(server_address, MavunqoRequestHandler)
-    print(f"Mavunqo Phase 1 server running at http://localhost:{port}")
+    print(f"Mavunqo server active on http://127.0.0.1:{port} and http://localhost:{port}", flush=True)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

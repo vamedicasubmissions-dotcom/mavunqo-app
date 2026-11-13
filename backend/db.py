@@ -127,6 +127,142 @@ CREATE TABLE IF NOT EXISTS search_events (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Phase 2 Restaurant Ordering Pilot Schema
+CREATE TABLE IF NOT EXISTS menu_categories (
+    id TEXT PRIMARY KEY,
+    business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    name_en TEXT NOT NULL,
+    name_es TEXT NOT NULL,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS menu_items (
+    id TEXT PRIMARY KEY,
+    business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    category_id TEXT REFERENCES menu_categories(id) ON DELETE SET NULL,
+    name_en TEXT NOT NULL,
+    name_es TEXT NOT NULL,
+    description_en TEXT,
+    description_es TEXT,
+    price REAL NOT NULL,
+    currency TEXT DEFAULT 'DOP',
+    image_url TEXT,
+    is_available BOOLEAN DEFAULT 1,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS menu_modifiers (
+    id TEXT PRIMARY KEY,
+    menu_item_id TEXT NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
+    group_name_en TEXT NOT NULL,
+    group_name_es TEXT NOT NULL,
+    name_en TEXT NOT NULL,
+    name_es TEXT NOT NULL,
+    price_delta REAL DEFAULT 0.0,
+    currency TEXT DEFAULT 'DOP',
+    is_required BOOLEAN DEFAULT 0,
+    sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+    id TEXT PRIMARY KEY,
+    order_number TEXT UNIQUE NOT NULL,
+    business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    customer_name TEXT NOT NULL,
+    customer_phone TEXT NOT NULL,
+    customer_email TEXT,
+    order_origin TEXT NOT NULL CHECK(order_origin IN ('mavunqo', 'merchant')) DEFAULT 'mavunqo',
+    fulfillment_type TEXT NOT NULL CHECK(fulfillment_type IN ('pickup', 'delivery')) DEFAULT 'pickup',
+    delivery_address TEXT,
+    customer_notes TEXT,
+    status TEXT NOT NULL CHECK(status IN ('pending', 'accepted', 'in_kitchen', 'ready', 'completed', 'cancelled', 'declined')) DEFAULT 'pending',
+    subtotal REAL NOT NULL,
+    delivery_fee REAL DEFAULT 0.0,
+    total REAL NOT NULL,
+    currency TEXT DEFAULT 'DOP',
+    payment_method TEXT NOT NULL CHECK(payment_method IN ('cash')) DEFAULT 'cash',
+    cash_received REAL,
+    cash_reconciled BOOLEAN DEFAULT 0,
+    estimated_ready_at TIMESTAMP,
+    status_token TEXT UNIQUE NOT NULL,
+    status_token_expires_at TIMESTAMP NOT NULL,
+    decline_reason TEXT,
+    cancellation_reason TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS order_items (
+    id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    menu_item_id TEXT REFERENCES menu_items(id) ON DELETE SET NULL,
+    item_name_en TEXT NOT NULL,
+    item_name_es TEXT NOT NULL,
+    unit_price REAL NOT NULL,
+    quantity INTEGER NOT NULL CHECK(quantity > 0),
+    modifiers_json TEXT, -- array of selected modifier objects with name & price_delta
+    line_total REAL NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS fee_records (
+    id TEXT PRIMARY KEY,
+    order_id TEXT UNIQUE NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    order_origin TEXT NOT NULL,
+    commission_rate REAL NOT NULL, -- e.g. 0.12 for 12%
+    commissionable_amount REAL NOT NULL,
+    fee_amount REAL NOT NULL,
+    currency TEXT DEFAULT 'DOP',
+    status TEXT NOT NULL CHECK(status IN ('pending', 'accrued', 'reconciled', 'reversed')) DEFAULT 'pending',
+    reversal_reason TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Multi-Vertical Hospitality & Accommodations Schema (City Lights & Stays)
+CREATE TABLE IF NOT EXISTS lodging_units (
+    id TEXT PRIMARY KEY,
+    business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    unit_number TEXT NOT NULL,
+    unit_type TEXT NOT NULL CHECK(unit_type IN ('private_room', 'suite', 'dorm_bed', 'apartment')),
+    name_en TEXT NOT NULL,
+    name_es TEXT NOT NULL,
+    description_en TEXT,
+    description_es TEXT,
+    capacity INTEGER NOT NULL DEFAULT 2,
+    base_price_night REAL NOT NULL,
+    currency TEXT DEFAULT 'USD',
+    is_available BOOLEAN DEFAULT 1,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS reservations (
+    id TEXT PRIMARY KEY,
+    reservation_code TEXT UNIQUE NOT NULL,
+    business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    unit_id TEXT NOT NULL REFERENCES lodging_units(id) ON DELETE CASCADE,
+    guest_name TEXT NOT NULL,
+    guest_contact TEXT NOT NULL,
+    guest_email TEXT,
+    check_in_date TEXT NOT NULL, -- YYYY-MM-DD
+    check_out_date TEXT NOT NULL, -- YYYY-MM-DD
+    nights INTEGER NOT NULL,
+    guest_count INTEGER NOT NULL DEFAULT 1,
+    nightly_rate REAL NOT NULL,
+    total_amount REAL NOT NULL,
+    currency TEXT DEFAULT 'USD',
+    status TEXT NOT NULL CHECK(status IN ('confirmed', 'checked_in', 'checked_out', 'cancelled', 'no_show')) DEFAULT 'confirmed',
+    payment_method TEXT NOT NULL CHECK(payment_method IN ('cash_on_arrival')) DEFAULT 'cash_on_arrival',
+    cash_collected REAL DEFAULT 0.0,
+    staff_notes TEXT,
+    status_token TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_businesses_status ON businesses(status);
 CREATE INDEX IF NOT EXISTS idx_businesses_slug ON businesses(slug);
 CREATE INDEX IF NOT EXISTS idx_businesses_category ON businesses(category_id);
@@ -134,6 +270,12 @@ CREATE INDEX IF NOT EXISTS idx_businesses_location ON businesses(primary_locatio
 CREATE INDEX IF NOT EXISTS idx_services_business ON services(business_id);
 CREATE INDEX IF NOT EXISTS idx_change_requests_status ON change_requests(status);
 CREATE INDEX IF NOT EXISTS idx_audit_events_created ON audit_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_menu_items_biz ON menu_items(business_id);
+CREATE INDEX IF NOT EXISTS idx_orders_biz_status ON orders(business_id, status);
+CREATE INDEX IF NOT EXISTS idx_orders_token ON orders(status_token);
+CREATE INDEX IF NOT EXISTS idx_fee_records_biz ON fee_records(business_id);
+CREATE INDEX IF NOT EXISTS idx_lodging_units_biz ON lodging_units(business_id);
+CREATE INDEX IF NOT EXISTS idx_reservations_biz_status ON reservations(business_id, status);
 """
 
 def init_db(db_path: str):

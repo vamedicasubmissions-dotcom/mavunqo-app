@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Operations Hub | Mavunqo</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+  <style>
+    .staff-tab-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      background: var(--surface-subtle);
+      padding: 0.35rem;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border);
+    }
+    .staff-tab-btn {
+      flex: 1;
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-pill);
+      font-weight: 800;
+      font-size: 0.9rem;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: var(--transition);
+      text-align: center;
+    }
+    .staff-tab-btn.active {
+      background: var(--teal-primary);
+      color: #ffffff;
+      box-shadow: var(--shadow-sm);
+    }
+    .staff-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .staff-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        Mavunqo<span class="dot">.</span>
+        <span class="brand-pill">Staff Hub</span>
+      </a>
+
+      <div class="nav-actions">
+        <button onclick="logout();" class="btn btn-outline-white btn-sm">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 760px; padding-top: 1.5rem; padding-bottom: 5rem;">
+    <!-- Active Business Banner -->
+    <div style="margin-bottom: 1.25rem;">
+      <h1 id="bizTitle" style="font-size: 1.6rem; font-weight: 850; color: var(--teal-primary);">Staff Daily Operations</h1>
+      <p id="bizSubtitle" style="color: var(--text-secondary); font-size: 0.95rem;">Fast Check-in, Order Tickets & Cash Reconciliation</p>
+    </div>
+
+    <!-- Mode Switcher -->
+    <div class="staff-tab-bar">
+      <button class="staff-tab-btn active" id="tabStaysBtn" onclick="switchTab('stays');">🏨 Stays & Check-in</button>
+      <button class="staff-tab-btn" id="tabOrdersBtn" onclick="switchTab('orders');">🍽️ Food & Kitchen</button>
+    </div>
+
+    <!-- Tab 1: Hospitality / Stays (City Lights) -->
+    <section id="staysSection">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="font-size: 1.15rem; font-weight: 800;">Guest Arrivals & Stays</h3>
+        <button onclick="loadReservations();" class="btn btn-outline btn-sm">↻ Refresh</button>
+      </div>
+      <div id="reservationsList">
+        <div class="state-box">Loading arrivals...</div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Restaurant Orders Queue -->
+    <section id="ordersSection" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="font-size: 1.15rem; font-weight: 800;">Active Kitchen Tickets</h3>
+        <button onclick="loadOrders();" class="btn btn-outline btn-sm">↻ Refresh</button>
+      </div>
+      <div id="ordersList">
+        <div class="state-box">Loading kitchen queue...</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Mobile Navigation -->
+  <nav class="bottom-nav">
+    <a href="/" class="bottom-nav-item">
+      <span class="icon">🔍</span>
+      <span>Directory</span>
+    </a>
+    <a href="/staff" class="bottom-nav-item active">
+      <span class="icon">⚡</span>
+      <span>Staff Hub</span>
+    </a>
+    <a href="/dashboard" class="bottom-nav-item">
+      <span class="icon">📊</span>
+      <span>Dashboard</span>
+    </a>
+  </nav>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login';
+    }
+
+    let currentBusinessId = null;
+
+    async function init() {
+      try {
+        const res = await fetch('/api/owner/businesses', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          window.location.href = '/login';
+          return;
+        }
+        const businesses = await res.json();
+        if (businesses.length === 0) {
+          document.getElementById('reservationsList').innerHTML = '<div class="state-box">No business managed by this account.</div>';
+          return;
+        }
+        // Prefer City Lights if present, otherwise first
+        const cl = businesses.find(b => b.slug === 'city-lights-sosua') || businesses[0];
+        currentBusinessId = cl.id;
+        document.getElementById('bizTitle').textContent = cl.trading_name;
+
+        loadReservations();
+        loadOrders();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function switchTab(tab) {
+      document.getElementById('tabStaysBtn').classList.toggle('active', tab === 'stays');
+      document.getElementById('tabOrdersBtn').classList.toggle('active', tab === 'orders');
+      document.getElementById('staysSection').style.display = tab === 'stays' ? 'block' : 'none';
+      document.getElementById('ordersSection').style.display = tab === 'orders' ? 'block' : 'none';
+    }
+
+    async function loadReservations() {
+      if (!currentBusinessId) return;
+      try {
+        const res = await fetch(`/api/owner/businesses/${currentBusinessId}/reservations`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          document.getElementById('reservationsList').innerHTML = '<div class="state-box">No stays configured for this business.</div>';
+          return;
+        }
+        const reservations = await res.json();
+        renderReservations(reservations);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function renderReservations(list) {
+      const container = document.getElementById('reservationsList');
+      if (list.length === 0) {
+        container.innerHTML = '<div class="state-box">No arrivals or reservations found.</div>';
+        return;
+      }
+
+      container.innerHTML = list.map(r => {
+        let action = '';
+        if (r.status === 'confirmed') {
+          action = `
+            <div style="margin-top: 0.8rem; display: flex; gap: 0.5rem;">
+              <button class="btn btn-primary btn-sm" onclick="checkin('${r.id}', ${r.total_amount});">
+                Collect ${r.total_amount.toFixed(2)} ${r.currency} Cash & Check-In
+              </button>
+            </div>
+          `;
+        } else if (r.status === 'checked_in') {
+          action = `<div style="margin-top: 0.5rem; font-size: 0.85rem; color: #16a34a; font-weight: 800;">✓ Checked In — Cash Collected: ${r.cash_collected.toFixed(2)} ${r.currency}</div>`;
+        }
+
+        return `
+          <div class="staff-card">
+            <div class="staff-card-header">
+              <div>
+                <strong style="font-size: 1.1rem; color: var(--teal-primary);">${r.reservation_code}</strong>
+                <span style="margin-left: 0.5rem; font-weight: 750;">${r.guest_name}</span>
+              </div>
+              <span class="uber-storefront-badge" style="background: ${r.status === 'checked_in' ? '#dcfce7' : '#fef3c7'}; color: ${r.status === 'checked_in' ? '#15803d' : '#92400e'};">
+                ${r.status.toUpperCase()}
+              </span>
+            </div>
+
+            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.4rem;">
+              <strong>${r.unit_number}:</strong> ${r.unit_name_en} • ${r.nights} Nights (${r.check_in_date} to ${r.check_out_date})
+            </div>
+
+            <div style="font-size: 0.88rem; color: var(--text-muted);">
+              📞 Contact: ${r.guest_contact} | Rate: ${r.nightly_rate.toFixed(2)} ${r.currency}/night
+            </div>
+
+            ${action}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function checkin(resId, amount) {
+      const notes = prompt("Staff notes or room key assignment (optional):", "Key handed over, cash collected in full.");
+      if (notes === null) return;
+
+      try {
+        const res = await fetch(`/api/owner/businesses/${currentBusinessId}/reservations/${resId}/checkin`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            cash_collected: amount,
+            notes: notes
+          })
+        });
+
+        if (res.ok) {
+          loadReservations();
+        } else {
+          const err = await res.json();
+          alert(err.error || "Failed to process check-in.");
+        }
+      } catch (e) {
+        alert("Network error.");
+      }
+    }
+
+    async function loadOrders() {
+      if (!currentBusinessId) return;
+      try {
+        const res = await fetch(`/api/owner/businesses/${currentBusinessId}/orders`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const orders = await res.json();
+        const container = document.getElementById('ordersList');
+        if (orders.length === 0) {
+          container.innerHTML = '<div class="state-box">No food/beverage tickets.</div>';
+          return;
+        }
+
+        container.innerHTML = orders.map(o => `
+          <div class="staff-card">
+            <div class="staff-card-header">
+              <strong>${o.order_number}</strong>
+              <span class="uber-storefront-badge">${o.status}</span>
+            </div>
+            <div style="font-size: 0.9rem;">${o.customer_name} (${o.customer_phone})</div>
+            <div style="font-weight: 800; margin-top: 0.4rem;">Total: ${o.total.toFixed(2)} ${o.currency} (Cash)</div>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
