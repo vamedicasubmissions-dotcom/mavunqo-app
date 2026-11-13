@@ -1089,6 +1089,11 @@ class MavunqoService:
                 fb_biz = conn.execute(fallback_sql, fallback_params).fetchall()
                 recs = [dict(b) for b in fb_biz]
 
+            if any(k in query for k in ["fish", "pescado", "seafood", "marisco", "chillo"]):
+                fb = conn.execute("SELECT id, trading_name, slug, description_en, description_es, whatsapp, phone FROM businesses WHERE id = 'biz_el_batey_bistro'").fetchone()
+                if fb and not any(r["id"] == "biz_el_batey_bistro" for r in recs):
+                    recs.append(dict(fb))
+
             if "hotel" in query or "room" in query or "stay" in query or "hospedaje" in query or "dorm" in query:
                 cl = conn.execute("SELECT id, trading_name, slug FROM businesses WHERE id = 'biz_city_lights'").fetchone()
                 if cl and not any(r["id"] == "biz_city_lights" for r in recs):
@@ -1143,6 +1148,18 @@ class MavunqoService:
                 "aeropuerto": {
                     "en": "Gregorio Luperón Airport (POP) is just 15 minutes away from Sosua.",
                     "es": "El Aeropuerto Gregorio Luperón (POP) está a solo 15 minutos de Sosúa."
+                },
+                "fish": {
+                    "en": "For the best fresh fish and seafood on the North Coast, Playa Sosua is famous for beachfront fish shacks serving freshly caught whole Red Snapper (Chillo) with tostones and avocado. On the Mavunqo platform, El Batey Bistro & Grill serves fresh local catch daily. Nearby Maimon is also known island-wide as the coastal fish village.",
+                    "es": "Para el mejor pescado fresco y mariscos en la Costa Norte, Playa Sosúa es famosa por sus puestos frente al mar que preparan Chillo frito al momento con tostones y aguacate. En Mavunqo, El Batey Bistro & Grill ofrece pescado fresco del día. Además, la cercana zona de Maimón es reconocida en todo el país como la capital del pescado."
+                },
+                "seafood": {
+                    "en": "For fresh seafood in Sosua, visit Playa Sosua beach shacks for whole fried red snapper, or order from El Batey Bistro & Grill on Calle Pedro Clisante.",
+                    "es": "Para mariscos frescos en Sosúa, los chiringuitos de Playa Sosúa son legendarios para chillo frito, o puede ordenar en El Batey Bistro & Grill."
+                },
+                "pescado": {
+                    "en": "For fresh local fish in Sosua, Playa Sosua and El Batey Bistro offer great red snapper and garlic tostones.",
+                    "es": "Para el mejor pescado en Sosúa, Playa Sosúa y El Batey Bistro ofrecen excelente chillo entero fresco con tostones."
                 },
                 "taxi": {
                     "en": "Local transportation options in Sosua include official tourist taxi stands (outside Supermercado Playero and Pedro Clisante), motoconchos (local motorcycle taxis for short trips), and guaguas / carritos públicos along Highway 5.",
