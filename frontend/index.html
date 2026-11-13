@@ -156,7 +156,8 @@
         "cat_health": "💆",
         "cat_auto": "🚗",
         "cat_prof": "💼",
-        "cat_tourism": "🌴"
+        "cat_tourism": "🌴",
+        "cat_grocery": "🛒"
       };
 
       categoriesList.forEach(c => {
@@ -249,7 +250,7 @@
 
           <div class="uber-card-actions">
             <a href="/b/${b.slug}" class="btn btn-primary btn-sm" style="flex: 1; text-align: center; font-weight: 750; padding: 0.65rem 1rem;">
-              ${b.category_slug === 'dining-food' ? '🍽️ Order Food' : (b.category_slug === 'hospitality-tourism' ? '🏨 Reserve Stay' : '⚡ Request Service via Mavunqo')}
+              ${b.category_slug === 'dining-food' ? '🍽️ Order Food' : (b.category_slug === 'groceries-colmados' ? '🛒 Order Groceries' : (b.category_slug === 'hospitality-tourism' ? '🏨 Reserve Stay' : '⚡ Request Service via Mavunqo'))}
             </a>
           </div>
         `;

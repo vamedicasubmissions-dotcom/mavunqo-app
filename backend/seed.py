@@ -37,6 +37,7 @@ def seed_database(db_path: str):
         ("cat_auto", "auto-transport", "Automotive & Transport", "Automotriz y Transporte", "car", 4),
         ("cat_prof", "professional-services", "Professional Services", "Servicios Profesionales", "briefcase", 5),
         ("cat_tourism", "hospitality-tourism", "Tourism & Activities", "Turismo y Actividades", "palmtree", 6),
+        ("cat_grocery", "groceries-colmados", "Supermarkets & Colmados", "Supermercados y Colmados", "shopping-cart", 7),
     ]
     for cid, cslug, cname_en, cname_es, cicon, corder in categories:
         cur.execute("SELECT id FROM categories WHERE id = ?", (cid,))
@@ -413,6 +414,151 @@ def seed_database(db_path: str):
                 "david@example.com", "tok_cl_demo_status_token"
             )
         )
+
+
+    # -------------------------------------------------------------
+    # Supermarkets & Colmados (Sosúa Grocery & Convenience Delivery)
+    # -------------------------------------------------------------
+    # Business 1: Supermercado Playero (Premier Supermarket & Imported Goods)
+    sup1_owner = "user_sup1_playero"
+    cur.execute("SELECT id FROM users WHERE email = 'orders@superplayero.com'")
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO users (id, email, password_hash, full_name, role)
+               VALUES (?, ?, ?, ?, ?)""",
+            (sup1_owner, "orders@superplayero.com", hash_password("PlayeroPass2026!"), "Supermercado Playero Admin", "owner")
+        )
+
+    b_playero = "biz_super_playero"
+    cur.execute("SELECT id FROM businesses WHERE id = ?", (b_playero,))
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO businesses (
+                id, owner_id, trading_name, legal_name, slug, category_id, primary_location_id,
+                description_en, description_es, status, has_physical_location, address,
+                serves_entire_area, website_url, whatsapp, phone, public_email,
+                hours_json, rnc_tax_id, rnc_status, approved_by, approved_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+            (
+                b_playero, sup1_owner, "Supermercado Playero", "Supermercado Playero SAS",
+                "supermercado-playero", "cat_grocery", "loc_sosua",
+                "Sosúa's primary full-scale supermarket: fresh produce, prime meats, European & US imported specialties, bakery and pantry staples.",
+                "El supermercado principal de Sosúa: carnes de primera, productos importados, panadería fresca y víveres.",
+                "approved", 1, "Carretera Sosúa - Cabarete Km 1, El Batey, Sosúa",
+                1, None, "+18095550611", "+18095550611", "deliveries@superplayero.com",
+                json.dumps({"monday_saturday": "8:00 AM - 9:00 PM", "sunday": "9:00 AM - 6:00 PM"}),
+                "101-55443-1", "verified", admin_id
+            )
+        )
+        cur.execute("INSERT OR IGNORE INTO business_service_areas (business_id, location_id) VALUES (?, ?)", (b_playero, "loc_sosua"))
+
+        cat_essentials = "gcat_playero_essentials"
+        cat_pantry = "gcat_playero_pantry"
+        cat_drinks = "gcat_playero_beverages"
+        cur.execute("INSERT INTO menu_categories (id, business_id, name_en, name_es, sort_order) VALUES (?, ?, ?, ?, ?)",
+                    (cat_essentials, b_playero, "Fresh Essentials & Dairy", "Lácteos y Frescos", 1))
+        cur.execute("INSERT INTO menu_categories (id, business_id, name_en, name_es, sort_order) VALUES (?, ?, ?, ?, ?)",
+                    (cat_pantry, b_playero, "Pantry, Bread & Snacks", "Despensa, Pan y Snacks", 2))
+        cur.execute("INSERT INTO menu_categories (id, business_id, name_en, name_es, sort_order) VALUES (?, ?, ?, ?, ?)",
+                    (cat_drinks, b_playero, "Water, Juices & Spirits", "Agua, Bebidas y Licores", 3))
+
+        # Items
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 1)""",
+                    ("gi_water_botellon", b_playero, cat_drinks, "5-Gallon Drinking Water Jug (Refill / Delivery)", "Botellón de Agua 5 Galones (Recarga)",
+                     "Pure filtered drinking water 5-gallon jug delivered to your villa or condo.",
+                     "Botellón de 5 galones de agua purificada entregado a su villa o apartamento.", 95.0))
+
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 2)""",
+                    ("gi_presidente_pack", b_playero, cat_drinks, "Presidente Beer 6-Pack (Cold)", "Cerveza Presidente 6-Pack (Bien Fría)",
+                     "Dominican iconic pilsner beer, delivered cold.",
+                     "La cerveza insignia dominicana, entregada vestida de novia.", 540.0))
+
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 1)""",
+                    ("gi_milk_dos_pinos", b_playero, cat_essentials, "Dos Pinos Whole Milk 1L", "Leche Entera Dos Pinos 1L",
+                     "Pasteurized whole dairy milk box.", "Leche entera pasteurizada 1 litro.", 115.0))
+
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 2)""",
+                    ("gi_eggs_crate", b_playero, cat_essentials, "Farm Fresh Eggs (Crate of 12)", "Huevos Frescos de Granja (Docena)",
+                     "Grade A fresh domestic eggs.", "Docena de huevos frescos de granja.", 145.0))
+
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 1)""",
+                    ("gi_bread_pan_sobao", b_playero, cat_pantry, "Fresh Artisanal Pan Sobao Loaf", "Pan Sobao Artesanal Fresco",
+                     "Freshly baked soft Dominican bakery loaf.", "Pan sobao tradicional recién horneado.", 80.0))
+
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 2)""",
+                    ("gi_cafe_santo_domingo", b_playero, cat_pantry, "Café Santo Domingo Ground 1lb (453g)", "Café Santo Domingo Molido 1lb",
+                     "Iconic Dominican aromatic dark roasted ground coffee.", "Café dominicano tostado y molido de primera calidad.", 320.0))
+
+    # Business 2: Colmado La Tambora (Fast 20-Min Neighborhood Corner Store Delivery)
+    sup2_owner = "user_sup2_colmado"
+    cur.execute("SELECT id FROM users WHERE email = 'tambora@colmadososua.com'")
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO users (id, email, password_hash, full_name, role)
+               VALUES (?, ?, ?, ?, ?)""",
+            (sup2_owner, "tambora@colmadososua.com", hash_password("ColmadoPass2026!"), "Colmado La Tambora", "owner")
+        )
+
+    b_tambora = "biz_colmado_tambora"
+    cur.execute("SELECT id FROM businesses WHERE id = ?", (b_tambora,))
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO businesses (
+                id, owner_id, trading_name, legal_name, slug, category_id, primary_location_id,
+                description_en, description_es, status, has_physical_location, address,
+                serves_entire_area, website_url, whatsapp, phone, public_email,
+                hours_json, rnc_tax_id, rnc_status, approved_by, approved_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+            (
+                b_tambora, sup2_owner, "Colmado La Tambora (Express Delivery)", "La Tambora Delivery SRL",
+                "colmado-la-tambora-express", "cat_grocery", "loc_sosua",
+                "Traditional Dominican neighborhood colmado: 20-minute express motorcycle delivery of cold ice bags, cold beers, sodas, plantains, snacks and phone recargas in Sosúa.",
+                "Colmado tradicional con servicio a domicilio en 20 minutos: fundas de hielo, cervezas vestidas de novia, plátanos, víveres y recargas.",
+                "approved", 1, "Calle Ayuntamiento #14, El Batey, Sosúa",
+                1, None, "+18095550722", "+18095550722", "pedidos@colmadososua.com",
+                json.dumps({"monday_sunday": "7:00 AM - 12:00 AM"}),
+                "101-88992-4", "verified", admin_id
+            )
+        )
+        cur.execute("INSERT OR IGNORE INTO business_service_areas (business_id, location_id) VALUES (?, ?)", (b_tambora, "loc_sosua"))
+
+        cat_col_rapid = "gcat_col_rapid"
+        cat_col_pantry = "gcat_col_pantry"
+        cur.execute("INSERT INTO menu_categories (id, business_id, name_en, name_es, sort_order) VALUES (?, ?, ?, ?, ?)",
+                    (cat_col_rapid, b_tambora, "Fast Delivery Essentials", "Lo Más Pedido al Colmado", 1))
+        cur.execute("INSERT INTO menu_categories (id, business_id, name_en, name_es, sort_order) VALUES (?, ?, ?, ?, ?)",
+                    (cat_col_pantry, b_tambora, "Daily Produce & Kitchen", "Víveres y Cocina", 2))
+
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 1)""",
+                    ("ci_ice_bag", b_tambora, cat_col_rapid, "Large Bag of Tube Ice (Funda de Hielo)", "Funda de Hielo en Tubitos",
+                     "Clean tube ice bag delivered cold in minutes.", "Funda grande de hielo en tubo limpio y purificado.", 75.0))
+
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 2)""",
+                    ("ci_presidente_grande", b_tambora, cat_col_rapid, "Presidente Grande (Cerveza Vestida de Novia)", "Presidente Grande Fría",
+                     "650ml Grande Presidente, sub-zero cold.", "Cerveza grande bien fría.", 200.0))
+
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 3)""",
+                    ("ci_ron_barcelo", b_tambora, cat_col_rapid, "Ron Barceló Imperial 700ml", "Ron Barceló Imperial 700ml",
+                     "Premium aged Dominican dark sipping rum.", "Ron dominicano prémium añejado.", 1150.0))
+
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 1)""",
+                    ("ci_platanos_pack", b_tambora, cat_col_pantry, "Fresh Green Plantains (Pack of 5)", "Plátanos Verdes (Ramillete de 5)",
+                     "Freshly harvested Cibao green plantains for tostones or mangú.", "Plátanos verdes frescos ideales para tostones o mangú.", 125.0))
+
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 2)""",
+                    ("ci_salami_induveca", b_tambora, cat_col_pantry, "Induveca Super Especial Salami 1lb", "Salami Induveca Súper Especial 1lb",
+                     "Dominican household favorite salami for breakfast or frito combo.", "El salami preferido de las familias dominicanas.", 185.0))
 
     # -------------------------------------------------------------
     # Seed Initial Motorcycle Drivers & Delivery Capacity in Sosúa

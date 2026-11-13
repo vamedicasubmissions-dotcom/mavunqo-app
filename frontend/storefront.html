@@ -279,7 +279,7 @@
         currentBusiness = await res.json();
 
         // Check if restaurant category -> fetch structured menu & delivery capacity
-        if (currentBusiness.category_slug === 'dining-food') {
+        if (currentBusiness.category_slug === 'dining-food' || currentBusiness.category_slug === 'groceries-colmados') {
           try {
             const [mRes, capRes] = await Promise.all([
               fetch(`/api/restaurants/${slug}/menu`),
@@ -322,7 +322,7 @@
 
       // Delivery badge for dining
       const delBadge = document.getElementById("bizDeliveryBadge");
-      if (b.category_slug === 'dining-food' && deliveryCapacity) {
+      if ((b.category_slug === 'dining-food' || b.category_slug === 'groceries-colmados') && deliveryCapacity) {
         delBadge.style.display = 'inline-block';
         if (deliveryCapacity.delivery_available) {
           delBadge.style.background = '#dcfce7';
@@ -370,7 +370,19 @@
       const contactPanel = ctaList.closest('.uber-sidebar-panel');
       ctaList.innerHTML = "";
 
-      if (b.category_slug === 'dining-food') {
+      if (b.category_slug === 'dining-food' || b.category_slug === 'groceries-colmados') {
+        const isGrocery = b.category_slug === 'groceries-colmados';
+        ctaList.innerHTML = `
+          <div style="background: rgba(17, 107, 98, 0.08); border: 1px solid rgba(17, 107, 98, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
+            <div style="font-weight: 800; font-size: 0.9rem; color: var(--teal-primary); margin-bottom: 0.25rem;">⚡ Order Directly on Mavunqo</div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
+              ${isGrocery ? 'Order groceries, drinking water botellones, cold beers & snacks with 20-40 min motorcycle delivery.' : 'Select items from the menu to order for delivery or pickup with cash-on-delivery tracking & driver protection.'}
+            </p>
+          </div>
+          <button class="btn btn-primary" style="width: 100%; font-weight: 800;" onclick="document.getElementById('servicesMenuContainer').scrollIntoView({behavior: 'smooth'});">
+            ${isGrocery ? '🛒 Browse Aisles & Order' : '🍽️ Browse Menu & Order'}
+          </button>
+        `;
         // Restaurant: Push ordering through Mavunqo
         ctaList.innerHTML = `
           <div style="background: rgba(17, 107, 98, 0.08); border: 1px solid rgba(17, 107, 98, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
@@ -416,7 +428,7 @@
       sContainer.innerHTML = "";
 
       // CASE 1: RESTAURANT (Food ordering active)
-      if (b.category_slug === 'dining-food' && restaurantMenu && restaurantMenu.categories) {
+      if ((b.category_slug === 'dining-food' || b.category_slug === 'groceries-colmados') && restaurantMenu && restaurantMenu.categories) {
         renderRestaurantMenu(restaurantMenu.categories, sContainer);
         updateCartBar();
         return;
