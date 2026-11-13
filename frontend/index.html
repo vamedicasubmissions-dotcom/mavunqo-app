@@ -248,19 +248,9 @@
           </div>
 
           <div class="uber-card-actions">
-            <a href="/b/${b.slug}" class="btn btn-primary btn-sm" style="flex: 1; text-align: center; font-weight: 750;">
-              ${b.category_slug === 'dining-food' ? '🍽️ Order Food' : (b.category_slug === 'hospitality-tourism' ? '🏨 Reserve Stay' : (hasExternalSite ? i18n[currentLang].view_profile_btn : i18n[currentLang].view_storefront_btn))}
+            <a href="/b/${b.slug}" class="btn btn-primary btn-sm" style="flex: 1; text-align: center; font-weight: 750; padding: 0.65rem 1rem;">
+              ${b.category_slug === 'dining-food' ? '🍽️ Order Food' : (b.category_slug === 'hospitality-tourism' ? '🏨 Reserve Stay' : '⚡ Request Service via Mavunqo')}
             </a>
-
-            ${(b.category_slug !== 'dining-food' && b.category_slug !== 'hospitality-tourism') ? `
-            <div style="display: flex; gap: 0.5rem;">
-              ${b.whatsapp ? `
-                <a href="https://wa.me/${b.whatsapp.replace(/[^0-9]/g, '')}?text=${waMsg}" target="_blank" class="btn btn-success btn-sm">
-                  WhatsApp
-                </a>` : ''}
-              ${b.phone ? `<a href="tel:${b.phone}" class="btn btn-outline btn-sm">📞</a>` : ''}
-            </div>
-            ` : ''}
           </div>
         `;
         grid.appendChild(card);

@@ -397,25 +397,18 @@
           </button>
         `;
       } else {
-        // Trade & professional services: direct verified lead routing
-        if (b.whatsapp) {
-          const waNum = b.whatsapp.replace(/[^0-9]/g, '');
-          const waMsg = currentLang === "es"
-            ? encodeURIComponent(`Hola ${b.trading_name}, vi su negocio en Mavunqo y me gustaría información sobre sus servicios.`)
-            : encodeURIComponent(`Hello ${b.trading_name}, I found your business on Mavunqo and would like to inquire about your services.`);
-          ctaList.innerHTML += `
-            <a href="https://wa.me/${waNum}?text=${waMsg}" target="_blank" class="btn btn-success" style="width: 100%; margin-bottom: 0.65rem;">
-              💬 WhatsApp (${b.whatsapp})
-            </a>
-          `;
-        }
-        if (b.phone) {
-          ctaList.innerHTML += `
-            <a href="tel:${b.phone}" class="btn btn-primary" style="width: 100%; margin-bottom: 0.65rem;">
-              📞 Call ${b.phone}
-            </a>
-          `;
-        }
+        // Trade & Automotive Services (Caribe Fix, etc.): 100% Platform Locked! No personal phone/WhatsApp
+        ctaList.innerHTML = `
+          <div style="background: rgba(17, 107, 98, 0.08); border: 1px solid rgba(17, 107, 98, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
+            <div style="font-weight: 800; font-size: 0.9rem; color: var(--teal-primary); margin-bottom: 0.25rem;">🔒 Mavunqo Protected Booking</div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
+              Request diagnostic, mobile repair, or emergency service directly through Mavunqo. We protect your phone number & coordinate arrival.
+            </p>
+          </div>
+          <button class="btn btn-primary" style="width: 100%; font-weight: 800; padding: 0.75rem;" onclick="openContactModal();">
+            ⚡ Request Service / Appointment
+          </button>
+        `;
       }
 
       // Main Catalog: Render based on business type
@@ -446,12 +439,20 @@
 
           const card = document.createElement("div");
           card.className = "uber-menu-card";
+          card.style.display = "flex";
+          card.style.justifyContent = "space-between";
+          card.style.alignItems = "center";
           card.innerHTML = `
-            <div>
-              <div class="uber-menu-name">${sName}</div>
+            <div style="flex: 1; padding-right: 1rem;">
+              <div class="uber-menu-name" style="font-size: 1.05rem;">${sName}</div>
               <div class="uber-menu-desc">${sDesc || ''}</div>
             </div>
-            <div class="uber-menu-price">${priceText}</div>
+            <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem;">
+              <div class="uber-menu-price">${priceText}</div>
+              <button class="btn btn-primary btn-sm" onclick="requestSpecificService('${escapeAttr(sName)}', '${escapeAttr(priceText)}');" style="font-size: 0.78rem; font-weight: 750;">
+                Book Service
+              </button>
+            </div>
           `;
           sContainer.appendChild(card);
         });
@@ -770,6 +771,11 @@ A confirmation has been registered for front desk check-in.`);
         btn.disabled = false;
         btn.textContent = "Confirm Booking";
       }
+    }
+
+    function requestSpecificService(serviceName, price) {
+      document.getElementById("contactMessage").value = `I would like to book "${serviceName}" (${price}) for my vehicle/home. Please confirm technician availability.`;
+      openContactModal();
     }
 
     function openContactModal() {

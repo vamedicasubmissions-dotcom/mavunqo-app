@@ -125,13 +125,12 @@
         </form>
       </div>
 
-      <!-- Contact Restaurant Backup -->
+      <!-- Safe Order Support -->
       <div class="uber-sidebar-panel" style="text-align: center; padding: 1rem;">
-        <h4 style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Direct Restaurant Contact (Backup)</h4>
-        <div style="display: flex; gap: 0.75rem; justify-content: center;">
-          <a id="btnCall" href="#" class="btn btn-outline btn-sm" style="flex: 1;">Call Phone</a>
-          <a id="btnWhatsapp" href="#" class="btn btn-outline btn-sm" style="flex: 1; border-color: #25d366; color: #25d366;">WhatsApp</a>
-        </div>
+        <h4 style="font-size: 0.85rem; font-weight: 750; color: var(--primary); margin-bottom: 0.35rem;">🛡️ Mavunqo Order Protection</h4>
+        <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
+          All communication is handled safely through the live chat above. If you need urgent support, our Sosúa concierge team is on standby.
+        </p>
       </div>
     </div>
   </main>
@@ -228,18 +227,7 @@
       document.getElementById('orderDeliveryFee').textContent = `${(o.delivery_fee || 0).toFixed(2)} ${o.currency}`;
       document.getElementById('orderTotal').textContent = `${o.total.toFixed(2)} ${o.currency}`;
 
-      // Contacts
-      if (o.business_phone) {
-        document.getElementById('btnCall').href = `tel:${o.business_phone}`;
-      } else {
-        document.getElementById('btnCall').style.display = 'none';
-      }
-
-      if (o.business_whatsapp) {
-        document.getElementById('btnWhatsapp').href = `https://wa.me/${o.business_whatsapp.replace(/[^0-9]/g, '')}`;
-      } else {
-        document.getElementById('btnWhatsapp').style.display = 'none';
-      }
+// Direct contacts bypassed in favor of Masked In-App Chat
     }
 
         let chatInterval = null;
