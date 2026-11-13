@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 64" width="320" height="64">
+  <defs>
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#116B62"/>
+      <stop offset="100%" stop-color="#09433D"/>
+    </linearGradient>
+    <linearGradient id="amberHGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCD34D"/>
+      <stop offset="100%" stop-color="#F3A64A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon Mark -->
+  <g transform="translate(4, 6) scale(0.1)">
+    <rect width="512" height="512" rx="112" fill="url(#headerGrad)"/>
+    <circle cx="368" cy="144" r="42" fill="url(#amberHGrad)"/>
+    <!-- M Symbol -->
+    <path d="M 112 376 L 112 176 C 112 154 130 136 152 136 C 174 136 192 154 192 176 L 192 376 C 192 398 174 416 152 416 C 130 416 112 398 112 376 Z" fill="#FFFFFF"/>
+    <path d="M 192 208 C 210 160 236 136 256 136 C 276 136 302 160 320 208 L 320 376 C 320 398 302 416 280 416 C 258 416 240 398 240 376 L 240 252 C 235 240 225 240 220 252 L 220 376 C 220 398 202 416 180 416 C 172 416 168 412 168 404 L 192 208 Z" fill="#4FD1C5"/>
+    <path d="M 320 208 L 344 168 C 354 152 372 144 390 152 C 408 160 416 178 416 196 L 416 376 C 416 398 398 416 376 416 C 354 416 336 398 336 376 L 336 240 C 336 220 324 212 320 208 Z" fill="#FFFFFF"/>
+    <circle cx="256" cy="356" r="14" fill="url(#amberHGrad)"/>
+  </g>
+
+  <!-- Typography: MAVUNQO -->
+  <text x="68" y="42" font-family="-apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'Inter', sans-serif" font-size="30" font-weight="900" fill="#FFFFFF" letter-spacing="-0.03em">
+    Mavunqo
+  </text>
+
+  <!-- Sun Amber Accent Dot -->
+  <circle cx="206" cy="38" r="4.5" fill="url(#amberHGrad)"/>
+</svg>
