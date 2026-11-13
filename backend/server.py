@@ -470,7 +470,7 @@ def run_server(port=8080, db_path=None):
     if db_path:
         global service
         service = MavunqoService(db_path)
-    server_address = ('127.0.0.1', port)
+    server_address = ('0.0.0.0', port)
     socketserver.TCPServer.allow_reuse_address = True
     httpd = socketserver.TCPServer(server_address, MavunqoRequestHandler)
     print(f"Mavunqo server active on http://127.0.0.1:{port} and http://localhost:{port}", flush=True)
