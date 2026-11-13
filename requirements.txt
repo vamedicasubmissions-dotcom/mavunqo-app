@@ -1,0 +1,2 @@
+# Mavunqo Zero-Dependency Core Python Runtime
+# Uses Python standard library only (sqlite3, http.server, socketserver, json, hashlib, hmac)

@@ -1,8 +1,8 @@
 services:
   - type: web
-    name: mavunqo
+    name: mavunqo-app
     env: python
-    buildCommand: "python -m backend.seed"
+    buildCommand: "pip install -r requirements.txt && python -m backend.seed"
     startCommand: "python -m backend.server"
     plan: free
     envVars:
