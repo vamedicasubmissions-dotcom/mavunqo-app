@@ -315,6 +315,17 @@ CREATE TABLE IF NOT EXISTS delivery_capacity_settings (
 
 CREATE INDEX IF NOT EXISTS idx_drivers_status_loc ON drivers(status, location_id);
 CREATE INDEX IF NOT EXISTS idx_dispatches_status ON delivery_dispatches(status);
+
+-- Masked Order In-App Relay Chat Schema
+CREATE TABLE IF NOT EXISTS order_messages (
+    id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    sender_role TEXT NOT NULL CHECK(sender_role IN ('customer', 'driver', 'restaurant')),
+    sender_name TEXT NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_order_messages_order ON order_messages(order_id, created_at);
 """
 
 def init_db(db_path: str):

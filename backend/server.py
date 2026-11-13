@@ -217,6 +217,16 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 return self.send_json({"error": str(e)}, 400)
 
+        # Order In-App Masked Chat Messages (GET)
+        if path == "/api/orders/messages":
+            query_params = urllib.parse.parse_qs(parsed.query)
+            token = query_params.get("token", [""])[0]
+            order_id = query_params.get("order_id", [""])[0]
+            try:
+                return self.send_json(service.get_order_messages(order_id=order_id, status_token=token))
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
         # AI Concierge Endpoint (GET)
         if path == "/api/concierge":
             query_params = urllib.parse.parse_qs(parsed.query)
@@ -415,6 +425,26 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return self.send_json(res)
             except PermissionError as e:
                 return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        # Order In-App Masked Chat Post (POST)
+        if path == "/api/orders/messages":
+            data = self.read_json_body()
+            token = data.get("token", "")
+            order_id = data.get("order_id", "")
+            msg = data.get("message", "")
+            sender_role = data.get("sender_role", "customer")
+            sender_name = data.get("sender_name", "")
+            try:
+                res = service.post_order_message(
+                    message=msg,
+                    sender_role=sender_role,
+                    sender_name=sender_name,
+                    order_id=order_id,
+                    status_token=token
+                )
+                return self.send_json(res, 201)
             except Exception as e:
                 return self.send_json({"error": str(e)}, 400)
 

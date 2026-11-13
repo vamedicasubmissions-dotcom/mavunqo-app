@@ -193,7 +193,15 @@
               </div>
             </div>
 
-            ${actionButtons ? `<div class="action-btn-row">${actionButtons}</div>` : ''}
+            <!-- Order Masked In-App Chat Modal Launcher -->
+            <div style="margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center;">
+              <button class="btn btn-outline btn-sm" onclick="openOrderChat('${o.id}', '${o.order_number}')" style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem;">
+                <span>💬</span> <span>Order Chat (Masked)</span>
+              </button>
+              <span style="font-size: 0.75rem; color: var(--text-secondary);">🔒 No phone exposed</span>
+            </div>
+
+            ${actionButtons ? `<div class="action-btn-row" style="margin-top: 0.6rem;">${actionButtons}</div>` : ''}
           </div>
         `;
       }).join('');
@@ -231,7 +239,132 @@
       window.location.href = '/login';
     }
 
+    
+    let activeChatOrderId = null;
+    let modalChatInterval = null;
+
+    function openOrderChat(orderId, orderNum) {
+      activeChatOrderId = orderId;
+      document.getElementById('chatModalTitle').textContent = `Order ${orderNum} Chat`;
+      const modal = document.getElementById('orderChatModal');
+      modal.style.display = 'flex';
+      loadModalChat();
+      if (modalChatInterval) clearInterval(modalChatInterval);
+      modalChatInterval = setInterval(loadModalChat, 4000);
+    }
+
+    function closeOrderChat() {
+      document.getElementById('orderChatModal').style.display = 'none';
+      if (modalChatInterval) clearInterval(modalChatInterval);
+      activeChatOrderId = null;
+    }
+
+    async function loadModalChat() {
+      if (!activeChatOrderId) return;
+      try {
+        const res = await fetch(`/api/orders/messages?order_id=${activeChatOrderId}`);
+        if (!res.ok) return;
+        const messages = await res.json();
+        const container = document.getElementById('modalChatHistory');
+
+        if (messages.length === 0) {
+          container.innerHTML = `<div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; margin: auto;">No messages on this order yet. Send a note to the customer or driver!</div>`;
+          return;
+        }
+
+        container.innerHTML = messages.map(m => {
+          const isStaff = m.sender_role === 'restaurant';
+          const align = isStaff ? 'flex-end' : 'flex-start';
+          const bg = isStaff ? 'var(--primary)' : '#ffffff';
+          const color = isStaff ? '#ffffff' : 'var(--text-primary)';
+          const border = isStaff ? 'none' : '1px solid var(--border)';
+          const roleBadge = isStaff ? 'Kitchen / Staff' : (m.sender_role === 'driver' ? '🏍️ Driver' : `👤 ${escapeHtml(m.sender_name || 'Customer')}`);
+
+          return `
+            <div style="align-self: ${align}; max-width: 80%; background: ${bg}; color: ${color}; padding: 0.45rem 0.75rem; border-radius: 8px; font-size: 0.85rem; border: ${border}; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+              <div style="font-size: 0.65rem; opacity: 0.8; margin-bottom: 0.2rem; font-weight: 700;">${roleBadge} • ${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div>
+              <div>${escapeHtml(m.message)}</div>
+            </div>
+          `;
+        }).join('');
+
+        container.scrollTop = container.scrollHeight;
+      } catch (e) {
+        console.error("Modal chat poll error", e);
+      }
+    }
+
+    async function handleSendStaffMessage(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('modalChatInput');
+      const text = input.value.trim();
+      if (!text || !activeChatOrderId) return;
+
+      const sendBtn = document.getElementById('modalSendBtn');
+      sendBtn.disabled = true;
+      try {
+        const res = await fetch('/api/orders/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order_id: activeChatOrderId,
+            message: text,
+            sender_role: 'restaurant',
+            sender_name: 'Kitchen Staff'
+          })
+        });
+        if (res.ok) {
+          input.value = '';
+          await loadModalChat();
+        }
+      } catch (err) {
+        alert("Failed to send message.");
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    function sendQuickReply(msg) {
+      const input = document.getElementById('modalChatInput');
+      input.value = msg;
+      input.focus();
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
     document.addEventListener('DOMContentLoaded', init);
   </script>
+
+  <!-- Masked Chat Modal for Kitchen / Staff -->
+  <div id="orderChatModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: #ffffff; border-radius: 12px; max-width: 480px; width: 100%; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+      <div style="padding: 1rem; background: var(--primary); color: #ffffff; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-weight: 750; font-size: 1rem;" id="chatModalTitle">Order Chat</div>
+          <div style="font-size: 0.75rem; opacity: 0.9;">🔒 Masked Relay (Customer & Driver)</div>
+        </div>
+        <button onclick="closeOrderChat()" style="background: none; border: none; color: #ffffff; font-size: 1.4rem; cursor: pointer;">&times;</button>
+      </div>
+
+      <div id="modalChatHistory" style="padding: 1rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 0.5rem; background: var(--bg-alt); min-height: 200px; max-height: 340px;">
+        <div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; margin: auto;">Loading messages...</div>
+      </div>
+
+      <!-- Quick Canned Replies -->
+      <div style="padding: 0.5rem 1rem; background: #ffffff; border-top: 1px solid var(--border); display: flex; gap: 0.4rem; overflow-x: auto;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="sendQuickReply('Food is being boxed up now!')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; white-space: nowrap;">📦 Boxed up now</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="sendQuickReply('Driver just picked up your order and is en route!')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; white-space: nowrap;">🏍️ Driver en route</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="sendQuickReply('Got it! Extra limes added.')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; white-space: nowrap;">🍋 Limes added</button>
+      </div>
+
+      <form onsubmit="handleSendStaffMessage(event)" style="padding: 0.75rem 1rem; background: #ffffff; border-top: 1px solid var(--border); display: flex; gap: 0.5rem;">
+        <input type="text" id="modalChatInput" placeholder="Reply to customer / driver..." style="flex: 1; padding: 0.6rem 0.75rem; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem;" required>
+        <button type="submit" id="modalSendBtn" class="btn btn-primary" style="padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 700;">Send</button>
+      </form>
+    </div>
+  </div>
+
 </body>
 </html>

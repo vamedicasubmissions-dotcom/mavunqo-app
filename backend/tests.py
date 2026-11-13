@@ -391,5 +391,53 @@ class TestMavunqoPhase1(unittest.TestCase):
             conn.execute("UPDATE drivers SET status = 'online' WHERE location_id = 'loc_sosua'")
             conn.commit()
 
+
+    # 14. Masked In-App Relay Chat
+    def test_masked_order_chat_relay(self):
+        # 1. Place a sample food order
+        order_res = self.service.place_order(
+            business_id="biz_el_batey_bistro",
+            customer_data={
+                "name": "Alex Privacy",
+                "phone": "+1-809-555-0199",
+                "email": "alex@privacy.com"
+            },
+            items=[{"menu_item_id": "mi_churrasco", "quantity": 1}],
+            fulfillment_type="delivery",
+            delivery_address="Sosua Ocean Village Villa 402"
+        )
+        token = order_res["status_token"]
+        order_id = order_res["order_id"]
+
+        # 2. Customer posts a note via status token (no phone exposed)
+        msg1 = self.service.post_order_message(
+            message="Please leave at guard gate 4B.",
+            sender_role="customer",
+            sender_name="Alex P.",
+            status_token=token
+        )
+        self.assertTrue(msg1["success"])
+        self.assertEqual(msg1["sender_role"], "customer")
+
+        # 3. Kitchen / restaurant replies via order_id
+        msg2 = self.service.post_order_message(
+            message="Understood, extra sauces included!",
+            sender_role="restaurant",
+            sender_name="Kitchen",
+            order_id=order_id
+        )
+        self.assertTrue(msg2["success"])
+        self.assertEqual(msg2["sender_role"], "restaurant")
+
+        # 4. Fetch messages via token (customer side)
+        customer_feed = self.service.get_order_messages(status_token=token)
+        self.assertEqual(len(customer_feed), 2)
+        self.assertEqual(customer_feed[0]["message"], "Please leave at guard gate 4B.")
+        self.assertEqual(customer_feed[1]["message"], "Understood, extra sauces included!")
+
+        # 5. Fetch messages via order_id (staff/merchant side)
+        staff_feed = self.service.get_order_messages(order_id=order_id)
+        self.assertEqual(len(staff_feed), 2)
+
 if __name__ == "__main__":
     unittest.main()

@@ -1436,3 +1436,66 @@ class MavunqoService:
             conn.commit()
 
         return {"success": True, "location_id": location_id, "override_active": override_active}
+
+    # -------------------------------------------------------------
+    # Masked Order In-App Relay Chat
+    # -------------------------------------------------------------
+    def get_order_messages(self, order_id: str = "", status_token: str = ""):
+        with self.get_connection() as conn:
+            if status_token:
+                order = conn.execute("SELECT id FROM orders WHERE status_token = ?", (status_token,)).fetchone()
+                if not order:
+                    raise ValueError("Invalid order token.")
+                oid = order["id"]
+            elif order_id:
+                oid = order_id
+            else:
+                raise ValueError("Must provide either order_id or status_token.")
+
+            rows = conn.execute(
+                "SELECT id, sender_role, sender_name, message, created_at FROM order_messages WHERE order_id = ? ORDER BY created_at ASC",
+                (oid,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def post_order_message(self, message: str, sender_role: str, sender_name: str,
+                           order_id: str = "", status_token: str = ""):
+        clean_msg = (message or "").strip()
+        if not clean_msg:
+            raise ValueError("Message cannot be empty.")
+        if sender_role not in ('customer', 'driver', 'restaurant'):
+            sender_role = 'customer'
+
+        with self.get_connection() as conn:
+            if status_token:
+                order = conn.execute("SELECT id, customer_name FROM orders WHERE status_token = ?", (status_token,)).fetchone()
+                if not order:
+                    raise ValueError("Invalid order token.")
+                oid = order["id"]
+                if not sender_name:
+                    sender_name = order["customer_name"] or "Customer"
+            elif order_id:
+                order = conn.execute("SELECT id FROM orders WHERE id = ?", (order_id,)).fetchone()
+                if not order:
+                    raise ValueError("Order not found.")
+                oid = order_id
+                if not sender_name:
+                    sender_name = "Restaurant" if sender_role == "restaurant" else "Driver"
+            else:
+                raise ValueError("Must provide either order_id or status_token.")
+
+            mid = f"msg_{uuid.uuid4().hex[:12]}"
+            conn.execute(
+                "INSERT INTO order_messages (id, order_id, sender_role, sender_name, message) VALUES (?, ?, ?, ?, ?)",
+                (mid, oid, sender_role, sender_name, clean_msg)
+            )
+            conn.commit()
+
+            return {
+                "success": True,
+                "message_id": mid,
+                "order_id": oid,
+                "sender_role": sender_role,
+                "sender_name": sender_name,
+                "message": clean_msg
+            }
