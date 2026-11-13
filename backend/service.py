@@ -1094,16 +1094,85 @@ class MavunqoService:
                 if cl and not any(r["id"] == "biz_city_lights" for r in recs):
                     recs.insert(0, dict(cl))
 
+            # Regional Knowledge Base (Knowledge of Sosua, Cabarete, Puerto Plata outside the platform)
+            regional_knowledge = {
+                "atm": {
+                    "en": "In Sosua, the primary ATMs and banks are Banco Popular, Banreservas, and Scotiabank located on Calle Pedro Clisante and Highway 5. You can withdraw Dominican Pesos (DOP) and USD with international Visa/Mastercard.",
+                    "es": "En Sosúa, los principales cajeros automáticos y bancos son Banco Popular, Banreservas y Scotiabank en la Calle Pedro Clisante y Carretera Sosúa-Cabarete. Puede retirar pesos (DOP) y dólares con tarjetas internacionales."
+                },
+                "banco": {
+                    "en": "In Sosua, you will find Banco Popular, Banreservas, and BHD León on Calle Pedro Clisante and near Supermercado Playero.",
+                    "es": "En Sosúa encontrará sucursales de Banco Popular, Banreservas y BHD León en la Calle Pedro Clisante y cerca de Playero."
+                },
+                "beach": {
+                    "en": "The two famous beaches in Sosua are Playa Sosua (great for snorkeling, beach shacks, and water sports) and Playa Alicia (peaceful golden sand beach with calm waters and sunset views near El Batey). In Cabarete, Kite Beach and Cabarete Bay are world-famous for kitesurfing.",
+                    "es": "Las dos playas principales en Sosúa son Playa Sosúa (excelente para snorkel, chiringuitos y deportes acuáticos) y Playa Alicia (playa tranquila de arena dorada en El Batey). En Cabarete, Kite Beach y la Bahía son famosas para kitesurf."
+                },
+                "playa": {
+                    "en": "The two famous beaches in Sosua are Playa Sosua and Playa Alicia in El Batey. Cabarete is 15 minutes away for kitesurfing and beachfront nightlife.",
+                    "es": "Las dos playas más populares en Sosúa son Playa Sosúa y Playa Alicia en El Batey. A 15 minutos en Cabarete está Kite Beach para deportes acuáticos y restaurantes sobre la arena."
+                },
+                "pharmacy": {
+                    "en": "Trusted pharmacies in Sosua include Farmacia Sosua and Farmacia Carol on Pedro Clisante and near Supermercado Playero, open 7 days a week.",
+                    "es": "Farmacias reconocidas en Sosúa incluyen Farmacia Sosúa y Farmacia Carol en la Calle Pedro Clisante y cerca de Supermercado Playero."
+                },
+                "farmacia": {
+                    "en": "Trusted pharmacies in Sosua include Farmacia Sosua and Farmacia Carol on Pedro Clisante, open daily.",
+                    "es": "En Sosúa tiene Farmacia Sosúa y Farmacia Carol sobre la Calle Pedro Clisante y frente al Supermercado Playero."
+                },
+                "grocery": {
+                    "en": "The main international grocery stores are Supermercado Playero (El Batey, Sosua) and Super Pola (Highway 5 between Sosua and Cabarete). They stock North American, European, and Dominican products.",
+                    "es": "Los supermercados principales son Supermercado Playero (El Batey, Sosúa) y Super Pola (Carretera Sosúa-Cabarete), con amplia variedad de productos locales e importados."
+                },
+                "supermercado": {
+                    "en": "Supermercado Playero in El Batey and Super Pola on Highway 5 are the primary supermarkets in the area.",
+                    "es": "Supermercado Playero en El Batey y Super Pola en la Carretera Sosúa-Cabarete son los supermercados principales."
+                },
+                "hospital": {
+                    "en": "For emergency medical care in Sosua, Centro Medico Cabarete (CMC) on Highway 5 is a modern private hospital with 24/7 bilingual emergency services, lab, and imaging.",
+                    "es": "Para emergencias médicas en Sosúa, el Centro Médico Cabarete (CMC) en la Carretera 5 ofrece atención 24/7 con personal bilingüe, laboratorio y urgencias."
+                },
+                "medico": {
+                    "en": "Centro Medico Cabarete (CMC) on Highway 5 offers 24/7 medical emergency care for Sosua and Cabarete.",
+                    "es": "Centro Médico Cabarete (CMC) en la Carretera 5 cuenta con emergencias médicas 24/7 para Sosúa y Cabarete."
+                },
+                "airport": {
+                    "en": "The closest airport is Gregorio Luperón International Airport (POP) in Puerto Plata, approximately 15 minutes drive from Sosua. Santiago Airport (STI) is about 90 minutes away.",
+                    "es": "El aeropuerto más cercano es el Aeropuerto Internacional Gregorio Luperón (POP) en Puerto Plata, a unos 15 minutos de Sosúa. El aeropuerto de Santiago (STI) queda a 90 minutos."
+                },
+                "aeropuerto": {
+                    "en": "Gregorio Luperón Airport (POP) is just 15 minutes away from Sosua.",
+                    "es": "El Aeropuerto Gregorio Luperón (POP) está a solo 15 minutos de Sosúa."
+                },
+                "taxi": {
+                    "en": "Local transportation options in Sosua include official tourist taxi stands (outside Supermercado Playero and Pedro Clisante), motoconchos (local motorcycle taxis for short trips), and guaguas / carritos públicos along Highway 5.",
+                    "es": "En Sosúa tiene paradas oficiales de taxis turísticos (frente a Supermercado Playero), motoconchos para viajes cortos y carritos/guaguas públicas por la Carretera 5."
+                }
+            }
+
+            # Check if query matches regional North Coast knowledge
+            extra_info = ""
+            for key, info_dict in regional_knowledge.items():
+                if key in query:
+                    extra_info = info_dict.get(lang, info_dict["en"])
+                    break
+
             if recs:
                 if lang == "es":
-                    ans = f"Encontré {len(recs)} opciones recomendadas para su búsqueda. Puede ver los detalles, reservar o comunicarse directamente por WhatsApp."
+                    ans = f"Encontré opciones registradas en Mavunqo para su búsqueda: {', '.join(r['trading_name'] for r in recs)}."
                 else:
-                    ans = f"I found {len(recs)} verified options matching your request. You can explore their menu or suites, place an order, or connect via WhatsApp."
+                    ans = f"Here are verified options on Mavunqo: {', '.join(r['trading_name'] for r in recs)}."
+                
+                if extra_info:
+                    ans += f"\n\n💡 Local guide note: {extra_info}"
             else:
-                if lang == "es":
-                    ans = "No encontré un resultado exacto en este momento. Puede explorar todas las categorías en el directorio o comunicarse con soporte."
+                if extra_info:
+                    ans = extra_info
                 else:
-                    ans = "I couldn't find an exact match in our verified directory yet. You can browse categories or contact our Sosúa support team directly."
+                    if lang == "es":
+                        ans = "Aunque este comercio no está todavía registrado en el portal Mavunqo, Sosúa y la Costa Norte ofrecen excelentes opciones. Puede explorar el directorio general o solicitar asistencia directa por WhatsApp."
+                    else:
+                        ans = "While this specific business is not yet on the Mavunqo platform, Sosúa and the North Coast have great local options. You can explore our verified directory or reach out via WhatsApp for a direct local recommendation."
 
             return {
                 "query": query,
