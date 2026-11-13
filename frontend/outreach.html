@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Merchant WhatsApp Outreach Hub | Mavunqo</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+  <style>
+    .outreach-lead-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .pitch-preview {
+      background: var(--surface-subtle);
+      border-left: 4px solid var(--teal-primary);
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.92rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      margin-top: 0.75rem;
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        Mavunqo<span class="dot">.</span>
+        <span class="brand-pill">Outreach Hub</span>
+      </a>
+
+      <div class="nav-actions">
+        <a href="/admin" class="btn btn-outline-white btn-sm">Admin Portal</a>
+        <a href="/" class="btn btn-white btn-sm">Directory</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 920px; padding-top: 2rem; padding-bottom: 5rem;">
+    <div style="margin-bottom: 1.5rem;">
+      <h1 style="font-size: 1.8rem; font-weight: 850; color: var(--teal-primary);">Google Maps Merchant WhatsApp Outreach</h1>
+      <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+        Paste business details or Google Maps info to instantly generate personalized, high-converting WhatsApp invitation messages and 1-click send links.
+      </p>
+    </div>
+
+    <!-- Lead Input Card -->
+    <div class="form-card" style="margin: 0 0 2rem 0; max-width: 100%;">
+      <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 1rem;">1. Add Merchant Details from Google Maps</h3>
+      
+      <div class="form-row">
+        <div>
+          <label>Business Name *</label>
+          <input type="text" id="leadName" class="input-field" placeholder="e.g. Sosúa Sunset Grill">
+        </div>
+        <div>
+          <label>WhatsApp / Phone Number *</label>
+          <input type="text" id="leadPhone" class="input-field" placeholder="e.g. 809-555-1234 or +1809...">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Category</label>
+          <input type="text" id="leadCat" class="input-field" placeholder="e.g. Restaurant, Villa Rental, Auto Repair">
+        </div>
+        <div>
+          <label>Language</label>
+          <select id="leadLang" class="input-field">
+            <option value="es" selected>Spanish (Español)</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+        <button class="btn btn-primary" onclick="generatePitch();">✨ Generate WhatsApp Invite & Link</button>
+        <button class="btn btn-outline" onclick="loadSampleSosuaLeads();">Load Sosúa Sample Leads</button>
+      </div>
+    </div>
+
+    <!-- Generated Leads / Outreach Queue -->
+    <h3 style="font-size: 1.25rem; font-weight: 850; margin-bottom: 1rem;">2. WhatsApp Outreach Ready Queue</h3>
+    <div id="leadsQueue"></div>
+  </main>
+
+  <script>
+    const sampleSosuaLeads = [
+      { name: "Playa Alicia Sunset Cafe", phone: "+18095551122", category: "Dining & Drinks", lang: "es" },
+      { name: "Sosúa Surf & Kiteschool", phone: "+18095553344", category: "Tourism & Water Sports", lang: "es" },
+      { name: "North Coast Villa Care", phone: "+18095557788", category: "Property Management & Maintenance", lang: "es" }
+    ];
+
+    function cleanPhone(phone) {
+      if (!phone) return "";
+      let d = phone.replace(/[^0-9]/g, '');
+      if (d.length === 10 && (d.startsWith('809') || d.startsWith('829') || d.startsWith('849'))) {
+        d = '1' + d;
+      }
+      return d;
+    }
+
+    function buildPitch(name, cat, lang) {
+      const regLink = window.location.origin + "/register";
+      if (lang === "es") {
+        return `¡Hola equipo de *${name}*! 👋 Saludos desde Sosúa.\n\nLos vimos en Google Maps y nos encantó su trabajo en *${cat}*.\n\nEstamos lanzando *Mavunqo*, el nuevo directorio y portal comercial para Sosúa y la Costa Norte. Queremos incluir a *${name}* con un perfil y vitrina digital gratuita (con menú/servicios y botón directo a su WhatsApp).\n\n✨ Es *100% gratuito* y toma menos de 2 minutos registrarse aquí:\n👉 ${regLink}\n\n¿Tienen alguna pregunta o les gustaría que les ayudemos a configurarlo gratis? ¡Quedamos a su orden!`;
+      } else {
+        return `Hi team at *${name}*! 👋 Greetings from Sosúa.\n\nWe found your business on Google Maps and love what you're doing in *${cat}*.\n\nWe are launching *Mavunqo*, the local directory and commerce platform for Sosúa and the North Coast. We'd love to feature *${name}* with a free listing and hosted storefront (with your services/menu and direct WhatsApp button).\n\n✨ It is *100% free* and takes 2 minutes to activate here:\n👉 ${regLink}\n\nLet us know if you have any questions or if you'd like us to set up your profile for you!`;
+      }
+    }
+
+    function renderCard(lead) {
+      const clean = cleanPhone(lead.phone);
+      const pitch = buildPitch(lead.name, lead.category, lead.lang);
+      const waUrl = `https://wa.me/${clean}?text=${encodeURIComponent(pitch)}`;
+
+      const div = document.createElement('div');
+      div.className = 'outreach-lead-card';
+      div.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <strong style="font-size: 1.2rem; color: var(--teal-primary);">${lead.name}</strong>
+            <div style="font-size: 0.88rem; color: var(--text-secondary); margin-top: 0.2rem;">
+              🏷️ ${lead.category} • 📍 Sosúa • 📞 ${lead.phone}
+            </div>
+          </div>
+          <a href="${waUrl}" target="_blank" class="btn btn-success">
+            💬 Open WhatsApp Chat
+          </a>
+        </div>
+
+        <div class="pitch-preview">${pitch}</div>
+      `;
+      return div;
+    }
+
+    function generatePitch() {
+      const name = document.getElementById('leadName').value.trim();
+      const phone = document.getElementById('leadPhone').value.trim();
+      const cat = document.getElementById('leadCat').value.trim() || "Comercio Local";
+      const lang = document.getElementById('leadLang').value;
+
+      if (!name || !phone) {
+        alert("Please provide the Business Name and WhatsApp phone number.");
+        return;
+      }
+
+      const card = renderCard({ name, phone, category: cat, lang });
+      const q = document.getElementById('leadsQueue');
+      q.insertBefore(card, q.firstChild);
+
+      document.getElementById('leadName').value = '';
+      document.getElementById('leadPhone').value = '';
+    }
+
+    function loadSampleSosuaLeads() {
+      const q = document.getElementById('leadsQueue');
+      q.innerHTML = '';
+      sampleSosuaLeads.forEach(lead => {
+        q.appendChild(renderCard(lead));
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadSampleSosuaLeads);
+  </script>
+</body>
+</html>
