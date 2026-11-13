@@ -323,5 +323,73 @@ class TestMavunqoPhase1(unittest.TestCase):
         res_es = self.service.ask_ai_concierge("reparar aire de carro", lang="es")
         self.assertTrue(any("Caribe Fix" in r["trading_name"] for r in res_es["recommendations"]))
 
+    # 13. Automatic Delivery Capacity Control & Gas-Saving Dispatch Gate
+    def test_automatic_delivery_capacity_and_dispatch_gate(self):
+        # 1. Capacity check in Sosua (2 drivers online * 2 max = 4 max delivery capacity)
+        cap = self.service.get_delivery_capacity("loc_sosua")
+        self.assertTrue(cap["delivery_available"])
+        self.assertEqual(cap["active_drivers_count"], 2)
+        self.assertEqual(cap["total_delivery_capacity"], 4)
+
+        # 2. Place a valid delivery order
+        order_res = self.service.place_order(
+            business_id="biz_el_batey_bistro",
+            customer_data={"name": "Lucas Scott", "phone": "8095559988"},
+            items=[{"menu_item_id": "mi_churrasco", "quantity": 1}],
+            fulfillment_type="delivery",
+            delivery_address="Playa Chiquita Condos #4B, Sosua"
+        )
+        self.assertTrue(order_res["success"])
+        order_id = order_res["order_id"]
+
+        # Verify driver is NOT dispatched yet while order is pending/in prep (Gasoline savings!)
+        with self.service.get_connection() as conn:
+            disp = conn.execute("SELECT * FROM delivery_dispatches WHERE order_id = ?", (order_id,)).fetchone()
+            self.assertIsNone(disp)
+
+        # 3. Simulate kitchen marking order 'ready' -> triggers driver dispatch!
+        self.service.update_order_status("user_rest1_marco", "biz_el_batey_bistro", order_id, "accepted", estimated_minutes=20)
+        self.service.update_order_status("user_rest1_marco", "biz_el_batey_bistro", order_id, "in_kitchen")
+        self.service.update_order_status("user_rest1_marco", "biz_el_batey_bistro", order_id, "ready")
+
+        with self.service.get_connection() as conn:
+            disp = conn.execute("SELECT * FROM delivery_dispatches WHERE order_id = ?", (order_id,)).fetchone()
+            self.assertIsNotNone(disp)
+            self.assertEqual(disp["status"], "dispatched")
+            self.assertIsNotNone(disp["driver_id"])
+
+        # 4. Test delivery pause when drivers are offline or capacity full
+        with self.service.get_connection() as conn:
+            conn.execute("UPDATE drivers SET status = 'offline' WHERE location_id = 'loc_sosua'")
+            conn.commit()
+
+        cap_paused = self.service.get_delivery_capacity("loc_sosua")
+        self.assertFalse(cap_paused["delivery_available"])
+        self.assertTrue(cap_paused["pickup_always_available"])
+
+        # Attempting delivery order raises error
+        with self.assertRaises(ValueError):
+            self.service.place_order(
+                business_id="biz_el_batey_bistro",
+                customer_data={"name": "Test Blocked", "phone": "8095551111"},
+                items=[{"menu_item_id": "mi_churrasco", "quantity": 1}],
+                fulfillment_type="delivery",
+                delivery_address="Sosua Ocean Village"
+            )
+
+        # But pickup order SUCCEEDS even when delivery is paused!
+        pickup_res = self.service.place_order(
+            business_id="biz_el_batey_bistro",
+            customer_data={"name": "Pickup Hero", "phone": "8095551111"},
+            items=[{"menu_item_id": "mi_churrasco", "quantity": 1}],
+            fulfillment_type="pickup"
+        )
+        self.assertTrue(pickup_res["success"])
+
+        # 5. Restore drivers online
+        with self.service.get_connection() as conn:
+            conn.execute("UPDATE drivers SET status = 'online' WHERE location_id = 'loc_sosua'")
+            conn.commit()
+
 if __name__ == "__main__":
     unittest.main()

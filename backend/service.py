@@ -556,8 +556,13 @@ class MavunqoService:
         if fulfillment_type not in ("pickup", "delivery"):
             fulfillment_type = "pickup"
 
-        if fulfillment_type == "delivery" and not (delivery_address or "").strip():
-            raise ValueError("Delivery address is required for delivery orders.")
+        if fulfillment_type == "delivery":
+            if not (delivery_address or "").strip():
+                raise ValueError("Delivery address is required for delivery orders.")
+            # Automatic capacity control check
+            cap = self.get_delivery_capacity(location_id="loc_sosua")
+            if not cap["delivery_available"]:
+                raise ValueError(f"Delivery unavailable: {cap['reason']}")
 
         if order_origin not in ("mavunqo", "merchant"):
             order_origin = "mavunqo"
@@ -800,6 +805,8 @@ class MavunqoService:
             # If completing order, record cash receipt & reconcile fee
             cash_rec = cash_received if cash_received is not None else (order["total"] if new_status == "completed" else None)
             cash_reconciled = 1 if new_status == "completed" else 0
+            if new_status == 'ready':
+                self.dispatch_driver_on_ready(order_id)
 
             conn.execute(
                 """UPDATE orders
@@ -1103,3 +1110,152 @@ class MavunqoService:
                 "answer": ans,
                 "recommendations": recs
             }
+
+
+    # -------------------------------------------------------------
+    # Delivery Capacity Control & Gas-Saving Dispatch Engine
+    # -------------------------------------------------------------
+    def get_delivery_capacity(self, location_id: str = "loc_sosua"):
+        with self.get_connection() as conn:
+            settings = conn.execute(
+                "SELECT * FROM delivery_capacity_settings WHERE location_id = ?",
+                (location_id,)
+            ).fetchone()
+            
+            is_paused_manual = bool(settings["is_delivery_paused"]) if settings else False
+            override_active = bool(settings["override_active"]) if settings else False
+            max_per_driver = settings["max_orders_per_driver"] if settings else 2
+
+            # Count online drivers in this location
+            drivers = conn.execute(
+                "SELECT id, full_name, status, max_concurrent_orders FROM drivers WHERE location_id = ? AND status IN ('online', 'on_delivery')",
+                (location_id,)
+            ).fetchall()
+            online_driver_count = len(drivers)
+
+            # Count active in-flight delivery orders (accepted, in_kitchen, ready)
+            active_deliveries = conn.execute(
+                """SELECT COUNT(o.id) AS cnt
+                   FROM orders o
+                   JOIN businesses b ON o.business_id = b.id
+                   WHERE b.primary_location_id = ?
+                     AND o.fulfillment_type = 'delivery'
+                     AND o.status IN ('accepted', 'in_kitchen', 'ready')""",
+                (location_id,)
+            ).fetchone()["cnt"]
+
+            total_capacity = sum(d["max_concurrent_orders"] for d in drivers) if drivers else 0
+
+            # Delivery allowed condition
+            if override_active:
+                delivery_available = True
+                status_reason = "Manager capacity override active"
+            elif is_paused_manual:
+                delivery_available = False
+                status_reason = settings["pause_reason"] or "Delivery temporarily paused by operations."
+            elif online_driver_count == 0:
+                delivery_available = False
+                status_reason = "No motorcycle drivers currently available in this area."
+            elif active_deliveries >= total_capacity:
+                delivery_available = False
+                status_reason = "Motorcycle delivery is at maximum safe capacity. Pickup available immediately."
+            else:
+                delivery_available = True
+                status_reason = "Delivery available"
+
+            return {
+                "location_id": location_id,
+                "delivery_available": delivery_available,
+                "pickup_always_available": True,
+                "active_drivers_count": online_driver_count,
+                "active_delivery_orders": active_deliveries,
+                "total_delivery_capacity": total_capacity,
+                "reason": status_reason,
+                "override_active": override_active
+            }
+
+    def dispatch_driver_on_ready(self, order_id: str):
+        """
+        Gasoline-saving readiness gate:
+        Drivers are NOT dispatched until restaurant confirms order is READY.
+        """
+        with self.get_connection() as conn:
+            order = conn.execute(
+                """SELECT o.*, b.primary_location_id, b.trading_name AS biz_name
+                   FROM orders o
+                   JOIN businesses b ON o.business_id = b.id
+                   WHERE o.id = ?""",
+                (order_id,)
+            ).fetchone()
+
+            if not order:
+                raise ValueError("Order not found.")
+            if order["fulfillment_type"] != "delivery":
+                return {"dispatched": False, "reason": "Not a delivery order."}
+
+            # Find least busy online driver in this location
+            driver = conn.execute(
+                """SELECT d.id, d.full_name, d.phone,
+                          (SELECT COUNT(*) FROM delivery_dispatches dd WHERE dd.driver_id = d.id AND dd.status IN ('dispatched', 'picked_up')) as active_jobs
+                   FROM drivers d
+                   WHERE d.location_id = ? AND d.status IN ('online', 'on_delivery')
+                   ORDER BY active_jobs ASC, d.updated_at ASC
+                   LIMIT 1""",
+                (order["primary_location_id"],)
+            ).fetchone()
+
+            disp_id = f"dsp_{uuid.uuid4().hex[:12]}"
+            driver_id = driver["id"] if driver else None
+            status = "dispatched" if driver else "queued_for_ready"
+
+            conn.execute(
+                """INSERT INTO delivery_dispatches (id, order_id, driver_id, status, dispatched_at)
+                   VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                   ON CONFLICT(order_id) DO UPDATE SET
+                       driver_id = COALESCE(excluded.driver_id, driver_id),
+                       status = excluded.status,
+                       dispatched_at = CURRENT_TIMESTAMP,
+                       updated_at = CURRENT_TIMESTAMP""",
+                (disp_id, order_id, driver_id, status)
+            )
+
+            if driver:
+                conn.execute("UPDATE drivers SET status = 'on_delivery', updated_at = CURRENT_TIMESTAMP WHERE id = ?", (driver["id"],))
+
+            conn.commit()
+
+            return {
+                "dispatched": bool(driver),
+                "order_id": order_id,
+                "driver_id": driver["id"] if driver else None,
+                "driver_name": driver["full_name"] if driver else "Awaiting available driver",
+                "driver_phone": driver["phone"] if driver else None
+            }
+
+    def set_manager_capacity_override(self, user_id: str, location_id: str, override_active: bool, reason: str = ""):
+        with self.get_connection() as conn:
+            # Must be an admin user
+            admin = conn.execute("SELECT id, role FROM users WHERE id = ? AND role = 'admin'", (user_id,)).fetchone()
+            if not admin:
+                raise PermissionError("Only platform administrators can override delivery capacity.")
+
+            conn.execute(
+                """UPDATE delivery_capacity_settings
+                   SET override_active = ?,
+                       override_reason = ?,
+                       override_by = ?,
+                       updated_at = CURRENT_TIMESTAMP
+                   WHERE location_id = ?""",
+                (1 if override_active else 0, reason, user_id, location_id)
+            )
+
+            conn.execute(
+                """INSERT INTO audit_events (id, actor_id, action, target_type, target_id, details_json)
+                   VALUES (?, ?, 'delivery_capacity_override', 'location', ?, ?)""",
+                (f"aud_{uuid.uuid4().hex[:12]}", user_id, location_id, json.dumps({
+                    "override_active": override_active, "reason": reason
+                }))
+            )
+            conn.commit()
+
+        return {"success": True, "location_id": location_id, "override_active": override_active}

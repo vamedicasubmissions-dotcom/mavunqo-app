@@ -276,6 +276,45 @@ CREATE INDEX IF NOT EXISTS idx_orders_token ON orders(status_token);
 CREATE INDEX IF NOT EXISTS idx_fee_records_biz ON fee_records(business_id);
 CREATE INDEX IF NOT EXISTS idx_lodging_units_biz ON lodging_units(business_id);
 CREATE INDEX IF NOT EXISTS idx_reservations_biz_status ON reservations(business_id, status);
+
+-- Automatic Delivery Capacity Control & Motorcycle Dispatch Schema
+CREATE TABLE IF NOT EXISTS drivers (
+    id TEXT PRIMARY KEY,
+    full_name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    vehicle_type TEXT NOT NULL DEFAULT 'motorcycle',
+    status TEXT NOT NULL CHECK(status IN ('online', 'on_delivery', 'offline')) DEFAULT 'online',
+    max_concurrent_orders INTEGER NOT NULL DEFAULT 2,
+    location_id TEXT NOT NULL REFERENCES locations(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS delivery_dispatches (
+    id TEXT PRIMARY KEY,
+    order_id TEXT UNIQUE NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    driver_id TEXT REFERENCES drivers(id) ON DELETE SET NULL,
+    status TEXT NOT NULL CHECK(status IN ('queued_for_ready', 'dispatched', 'picked_up', 'delivered', 'cancelled')) DEFAULT 'queued_for_ready',
+    dispatched_at TIMESTAMP,
+    picked_up_at TIMESTAMP,
+    delivered_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS delivery_capacity_settings (
+    location_id TEXT PRIMARY KEY REFERENCES locations(id) ON DELETE CASCADE,
+    is_delivery_paused BOOLEAN DEFAULT 0,
+    pause_reason TEXT,
+    max_orders_per_driver INTEGER NOT NULL DEFAULT 2,
+    override_active BOOLEAN DEFAULT 0,
+    override_reason TEXT,
+    override_by TEXT REFERENCES users(id),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_drivers_status_loc ON drivers(status, location_id);
+CREATE INDEX IF NOT EXISTS idx_dispatches_status ON delivery_dispatches(status);
 """
 
 def init_db(db_path: str):

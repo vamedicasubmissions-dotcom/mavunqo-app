@@ -414,6 +414,29 @@ def seed_database(db_path: str):
             )
         )
 
+    # -------------------------------------------------------------
+    # Seed Initial Motorcycle Drivers & Delivery Capacity in Sosúa
+    # -------------------------------------------------------------
+    cur.execute("SELECT location_id FROM delivery_capacity_settings WHERE location_id = 'loc_sosua'")
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO delivery_capacity_settings (location_id, is_delivery_paused, pause_reason, max_orders_per_driver)
+               VALUES ('loc_sosua', 0, NULL, 2)"""
+        )
+
+    drivers_data = [
+        ("drv_sosua_1", "Rafael Santana", "+18095554411", "motorcycle", "online", 2, "loc_sosua"),
+        ("drv_sosua_2", "Miguel Angel Batista", "+18095554422", "motorcycle", "online", 2, "loc_sosua"),
+    ]
+    for did, dname, dphone, dtype, dstatus, dcap, dloc in drivers_data:
+        cur.execute("SELECT id FROM drivers WHERE id = ?", (did,))
+        if not cur.fetchone():
+            cur.execute(
+                """INSERT INTO drivers (id, full_name, phone, vehicle_type, status, max_concurrent_orders, location_id)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (did, dname, dphone, dtype, dstatus, dcap, dloc)
+            )
+
     conn.commit()
     conn.close()
     print("Database successfully initialized and seeded with Sosúa pilot data!")
