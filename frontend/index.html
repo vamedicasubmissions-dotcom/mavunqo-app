@@ -39,7 +39,7 @@
       <form id="searchForm" class="uber-search-grid" onsubmit="event.preventDefault(); handleSearch();">
         <div class="uber-input-wrap">
           <span class="uber-input-icon">🔍</span>
-          <input type="text" id="searchInput" class="uber-input" placeholder="What service or business are you looking for?" data-i18n="search_input_placeholder">
+          <input type="text" id="searchInput" class="uber-input" placeholder="Search business by name or type (e.g. Yaha, Auto, Pizza, Boutique)..." oninput="debounceSearch();">
         </div>
         
         <div class="uber-input-wrap">
@@ -177,6 +177,14 @@
       if (btnEl) btnEl.classList.add("active");
       document.getElementById("categorySelect").value = catId;
       handleSearch();
+    }
+
+    let searchDebounceTimer = null;
+    function debounceSearch() {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        handleSearch();
+      }, 250);
     }
 
     async function handleSearch() {

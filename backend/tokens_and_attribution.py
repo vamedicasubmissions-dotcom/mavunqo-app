@@ -11,8 +11,18 @@ TOKEN_VALIDITY_SECONDS = 1800  # 30 minutes
 
 # Configurable standard commission rate (can be overridden via environment variable)
 # Default is 0.11 (11%) across all acquisition channels during initial launch
-STANDARD_COMMISSION_RATE = float(os.environ.get("MAVUNQO_LAUNCH_COMMISSION_RATE", "0.11"))
-STANDARD_RULE_VERSION = os.environ.get("MAVUNQO_FEE_RULE_VERSION", "v1_launch_11pct_2026")
+STANDARD_COMMISSION_RATE = float(os.environ.get("MAVUNQO_LAUNCH_COMMISSION_RATE", "0.12"))
+STANDARD_RULE_VERSION = os.environ.get("MAVUNQO_FEE_RULE_VERSION", "v1_tiered_2026")
+
+CATEGORY_COMMISSION_RATES = {
+    "cat_grocery": 0.05,        # 5% Supermarkets & Groceries
+    "cat_dining": 0.09,         # 9% Restaurants & Food
+    "cat_fashion": 0.10,        # 10% Clothing & Boutiques
+    "cat_tourism": 0.10,        # 10% Hotels & Lodging
+    "cat_auto": 0.12,           # 12% Auto Repair
+    "cat_health": 0.12,         # 12% Massage & Spas
+    "mavunqo_general": 0.12     # 12% Standard Platform Rate
+}
 
 def generate_attribution_signature(business_id: str, campaign: str, secret: str = SECRET_KEY) -> str:
     """Generate an HMAC-SHA256 signature for merchant attribution link."""
@@ -36,15 +46,18 @@ def build_merchant_qr_link(base_url: str, business_id: str, campaign: str = "cou
     }
     return f"{base_url.rstrip('/')}/order/wa?{urlencode(params)}"
 
-def compute_order_fee(source_type: str, subtotal: float) -> Tuple[float, float, float, str]:
+def compute_order_fee(source_type: str, subtotal: float, category_id: Optional[str] = None) -> Tuple[float, float, float, str]:
     """
-    Compute order fee based on standard initial launch policy:
-    - 11% standard commission for ALL Mavunqo orders (both Mavunqo-acquired and merchant-acquired).
-    - Source attribution is strictly tracked for reporting, CAC, and 90-day cohort analysis.
-    - Commission rate is configurable via MAVUNQO_LAUNCH_COMMISSION_RATE.
+    Compute order fee based on official tier rates:
+    - 5% Supermarkets & Groceries
+    - 9% Restaurants & Food
+    - 12% Mavunqo Standard Platform Rate
     - Returns: (commission_rate, commission_amount, merchant_payout, rule_version)
     """
-    rate = STANDARD_COMMISSION_RATE
+    if category_id and category_id in CATEGORY_COMMISSION_RATES:
+        rate = CATEGORY_COMMISSION_RATES[category_id]
+    else:
+        rate = STANDARD_COMMISSION_RATE
     rule_version = STANDARD_RULE_VERSION
     commission_amount = round(subtotal * rate, 2)
     merchant_payout = round(subtotal - commission_amount, 2)
