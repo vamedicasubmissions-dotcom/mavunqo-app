@@ -123,17 +123,37 @@
           <input type="number" id="itemPrice" step="0.01" min="1" required class="input-field" placeholder="1850.00">
         </div>
 
-        <div style="margin-bottom: 12px;">
-          <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 4px;">Product Photo (Upload or Link) *</label>
-          <div style="display: flex; gap: 8px; margin-bottom: 6px;">
-            <input type="file" id="itemPhotoFile" accept="image/*" style="display: none;" onchange="handleProductPhotoUpload(this);">
-            <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('itemPhotoFile').click();">📁 Upload Photo from Device</button>
-            <span id="uploadStatusText" style="font-size: 0.8rem; color: #16a34a; align-self: center;"></span>
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 4px;">Product Photo *</label>
+          
+          <!-- Hidden file input & Hidden URL input -->
+          <input type="file" id="itemPhotoFile" accept="image/*" style="display: none;" onchange="handleProductPhotoUpload(this);">
+          <input type="hidden" id="itemPhotoUrl">
+
+          <!-- Upload Drop/Click Box -->
+          <div id="photoUploadBox" onclick="document.getElementById('itemPhotoFile').click();" style="border: 2px dashed #cbd5e1; border-radius: 8px; padding: 14px; text-align: center; cursor: pointer; background: #f8fafc; transition: all 0.2s;">
+            <div id="uploadPrompt">
+              <span style="font-size: 1.8rem;">📸</span>
+              <div style="font-weight: 700; font-size: 0.9rem; color: var(--teal-primary); margin-top: 4px;">Tap to Upload Photo from Device</div>
+              <small style="color: #64748b; font-size: 0.75rem;">Select any photo from your phone or computer</small>
+            </div>
+            
+            <div id="productPhotoPreviewContainer" style="display: none; align-items: center; justify-content: center; gap: 12px;">
+              <img id="productPhotoPreview" src="" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #94a3b8;">
+              <div style="text-align: left;">
+                <div style="color: #16a34a; font-weight: 800; font-size: 0.9rem;">✓ Photo Ready</div>
+                <button type="button" class="btn btn-outline btn-sm" style="margin-top: 4px; padding: 2px 8px; font-size: 0.75rem;" onclick="event.stopPropagation(); document.getElementById('itemPhotoFile').click();">Change Photo</button>
+              </div>
+            </div>
           </div>
-          <input type="url" id="itemPhotoUrl" class="input-field" placeholder="https://... or uploaded image path">
-          <small style="color: #64748B; font-size: 0.75rem;">Upload photo directly from phone/laptop or paste any direct image URL</small>
-          <div id="productPhotoPreviewContainer" style="margin-top: 6px; display: none;">
-            <img id="productPhotoPreview" src="" style="width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1;">
+          <span id="uploadStatusText" style="font-size: 0.8rem; display: block; margin-top: 4px;"></span>
+
+          <!-- Optional manual URL toggle for external links -->
+          <div style="margin-top: 6px; text-align: right;">
+            <a href="javascript:void(0);" onclick="toggleManualUrl();" style="font-size: 0.75rem; color: #64748b; text-decoration: underline;">Or paste external web link instead</a>
+          </div>
+          <div id="manualUrlContainer" style="display: none; margin-top: 6px;">
+            <input type="text" id="manualUrlInput" class="input-field" placeholder="https://..." oninput="syncManualUrl(this.value);">
           </div>
         </div>
 
@@ -287,12 +307,22 @@
 
             <div class="form-row">
               <div>
-                <label>Cover Photo URL</label>
-                <input type="url" name="cover_image_url" class="input-field" value="${b.cover_image_url || ''}" placeholder="https://...">
+                <label>Cover Photo (Tap to upload or paste)</label>
+                <div style="display: flex; gap: 8px;">
+                  <input type="file" id="coverFileInput_${b.id}" accept="image/*" style="display: none;" onchange="uploadStorefrontAsset(this, 'cover_${b.id}', 'cover_status_${b.id}');">
+                  <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('coverFileInput_${b.id}').click();">📁 Upload Cover</button>
+                  <span id="cover_status_${b.id}" style="font-size: 0.8rem; color: #16a34a; align-self: center;"></span>
+                </div>
+                <input type="text" id="cover_${b.id}" name="cover_image_url" class="input-field" value="${b.cover_image_url || ''}" placeholder="Direct photo upload or link..." style="margin-top: 6px;">
               </div>
               <div>
-                <label>Logo Photo URL</label>
-                <input type="url" name="logo_url" class="input-field" value="${b.logo_url || ''}" placeholder="https://...">
+                <label>Logo Photo (Tap to upload or paste)</label>
+                <div style="display: flex; gap: 8px;">
+                  <input type="file" id="logoFileInput_${b.id}" accept="image/*" style="display: none;" onchange="uploadStorefrontAsset(this, 'logo_${b.id}', 'logo_status_${b.id}');">
+                  <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('logoFileInput_${b.id}').click();">📁 Upload Logo</button>
+                  <span id="logo_status_${b.id}" style="font-size: 0.8rem; color: #16a34a; align-self: center;"></span>
+                </div>
+                <input type="text" id="logo_${b.id}" name="logo_url" class="input-field" value="${b.logo_url || ''}" placeholder="Direct photo upload or link..." style="margin-top: 6px;">
               </div>
             </div>
 
@@ -333,6 +363,37 @@
       }
     }
 
+    async function uploadStorefrontAsset(inputEl, targetInputId, statusId) {
+      if (!inputEl.files || inputEl.files.length === 0) return;
+      const file = inputEl.files[0];
+      const statusEl = document.getElementById(statusId);
+      if (statusEl) { statusEl.style.color = "#2563eb"; statusEl.innerText = "Uploading..."; }
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const res = await fetch("/api/upload", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ image: e.target.result, filename: file.name })
+          });
+          const data = await res.json();
+          if (res.ok && data.url) {
+            document.getElementById(targetInputId).value = data.url;
+            if (statusEl) { statusEl.style.color = "#16a34a"; statusEl.innerText = "✓ Ready!"; }
+          } else {
+            if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.innerText = "Upload failed"; }
+          }
+        } catch (err) {
+          if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.innerText = "Upload error"; }
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
     async function handleProductPhotoUpload(inputEl) {
       if (!inputEl.files || inputEl.files.length === 0) return;
       const file = inputEl.files[0];
@@ -358,10 +419,11 @@
           if (res.ok && data.url) {
             document.getElementById("itemPhotoUrl").value = data.url;
             statusText.style.color = "#16a34a";
-            statusText.innerText = "✓ Uploaded!";
+            statusText.innerText = "";
             const prev = document.getElementById("productPhotoPreview");
             prev.src = data.url;
-            document.getElementById("productPhotoPreviewContainer").style.display = "block";
+            document.getElementById("uploadPrompt").style.display = "none";
+            document.getElementById("productPhotoPreviewContainer").style.display = "flex";
           } else {
             statusText.style.color = "#dc2626";
             statusText.innerText = data.error || "Upload failed";
@@ -374,6 +436,21 @@
       reader.readAsDataURL(file);
     }
 
+    function toggleManualUrl() {
+      const container = document.getElementById("manualUrlContainer");
+      container.style.display = container.style.display === "none" ? "block" : "none";
+    }
+
+    function syncManualUrl(val) {
+      document.getElementById("itemPhotoUrl").value = val;
+      const prev = document.getElementById("productPhotoPreview");
+      if (val && (val.startsWith("http") || val.startsWith("/"))) {
+        prev.src = val;
+        document.getElementById("uploadPrompt").style.display = "none";
+        document.getElementById("productPhotoPreviewContainer").style.display = "flex";
+      }
+    }
+
     function openAddProductModal(bizId) {
       document.getElementById("itemBizId").value = bizId;
       document.getElementById("itemId").value = "";
@@ -382,7 +459,10 @@
       document.getElementById("itemPhotoUrl").value = "";
       document.getElementById("itemDescEn").value = "";
       document.getElementById("uploadStatusText").innerText = "";
+      document.getElementById("uploadPrompt").style.display = "block";
       document.getElementById("productPhotoPreviewContainer").style.display = "none";
+      document.getElementById("manualUrlContainer").style.display = "none";
+      document.getElementById("manualUrlInput").value = "";
       document.getElementById("modalProductTitle").innerText = "Add Item to Catalog";
       document.getElementById("productModal").style.display = "flex";
     }
@@ -398,10 +478,14 @@
       document.getElementById("uploadStatusText").innerText = "";
       if (url) {
         document.getElementById("productPhotoPreview").src = url;
-        document.getElementById("productPhotoPreviewContainer").style.display = "block";
+        document.getElementById("uploadPrompt").style.display = "none";
+        document.getElementById("productPhotoPreviewContainer").style.display = "flex";
       } else {
+        document.getElementById("uploadPrompt").style.display = "block";
         document.getElementById("productPhotoPreviewContainer").style.display = "none";
       }
+      document.getElementById("manualUrlContainer").style.display = "none";
+      document.getElementById("manualUrlInput").value = url;
       document.getElementById("modalProductTitle").innerText = "Edit Item, Price & Photo";
       document.getElementById("productModal").style.display = "flex";
     }
@@ -413,10 +497,15 @@
     async function submitProductForm() {
       const bizId = document.getElementById("itemBizId").value;
       const itemId = document.getElementById("itemId").value;
+      const photoVal = document.getElementById("itemPhotoUrl").value;
+      if (!photoVal) {
+        alert("Please tap 'Tap to Upload Photo from Device' to select a photo for this item.");
+        return;
+      }
       const payload = {
         name_en: document.getElementById("itemNameEn").value,
         price: parseFloat(document.getElementById("itemPrice").value),
-        image_url: document.getElementById("itemPhotoUrl").value,
+        image_url: photoVal,
         description_en: document.getElementById("itemDescEn").value
       };
 
