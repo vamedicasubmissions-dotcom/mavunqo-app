@@ -67,7 +67,11 @@
 
           <!-- Location & Hours -->
           <div class="uber-sidebar-panel">
-            <h4 class="uber-sidebar-title">Location & Operating Hours</h4>
+            <h4 class="uber-sidebar-title">Location & Store Info</h4>
+            <div id="storeEmailRow" class="contact-item-row" style="display: none; margin-bottom: 0.5rem;">
+              <span style="font-size: 1.1rem;">✉️</span>
+              <a id="bizEmailLink" href="#" style="font-weight: 600; color: var(--teal-primary); word-break: break-all;"></a>
+            </div>
             <div id="physicalAddressRow" class="contact-item-row">
               <span style="font-size: 1.1rem;">📍</span>
               <span id="bizAddress" style="font-weight: 600;"></span>
@@ -345,6 +349,17 @@
         document.getElementById("serviceAreasRow").style.display = "none";
       }
 
+      // Public Email
+      const emailRow = document.getElementById("storeEmailRow");
+      const emailLink = document.getElementById("bizEmailLink");
+      if (b.public_email) {
+        emailRow.style.display = "flex";
+        emailLink.href = "mailto:" + b.public_email;
+        emailLink.textContent = b.public_email;
+      } else {
+        emailRow.style.display = "none";
+      }
+
       // Hours
       const hoursBox = document.getElementById("bizHoursContent");
       if (b.hours && Object.keys(b.hours).length > 0) {
@@ -370,7 +385,10 @@
       const contactPanel = ctaList.closest('.uber-sidebar-panel');
       ctaList.innerHTML = "";
 
-      if (b.category_slug === 'dining-food' || b.category_slug === 'groceries-colmados') {
+      if (b.category_slug === 'dining-food' || b.category_slug === 'groceries-colmados' || b.category_slug === 'clothing-fashion') {
+        const isClothing = b.category_slug === 'clothing-fashion';
+        const isGrocery = b.category_slug === 'groceries-colmados';
+        const btnText = isClothing ? '🛍️ Browse Collection & Order' : (isGrocery ? '🛒 Browse Aisles & Order' : '🍽️ Browse Menu & Order');
         const isGrocery = b.category_slug === 'groceries-colmados';
         ctaList.innerHTML = `
           <div style="background: rgba(17, 107, 98, 0.08); border: 1px solid rgba(17, 107, 98, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
@@ -428,7 +446,7 @@
       sContainer.innerHTML = "";
 
       // CASE 1: RESTAURANT (Food ordering active)
-      if ((b.category_slug === 'dining-food' || b.category_slug === 'groceries-colmados') && restaurantMenu && restaurantMenu.categories) {
+      if ((b.category_slug === 'dining-food' || b.category_slug === 'groceries-colmados' || b.category_slug === 'clothing-fashion') && restaurantMenu && restaurantMenu.categories) {
         renderRestaurantMenu(restaurantMenu.categories, sContainer);
         updateCartBar();
         return;
@@ -492,17 +510,24 @@
                 ? `<div style="font-size: 0.8rem; color: var(--amber-dark); margin-top: 0.25rem;">Optional: ${it.modifiers.map(m => (currentLang === 'es' ? m.name_es : m.name_en) + ' (+' + m.price_delta + ' ' + it.currency + ')').join(', ')}</div>` 
                 : '';
 
+              const photoThumb = it.image_url 
+                ? `<img src="${it.image_url}" alt="${itName}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">`
+                : '';
+
               return `
-                <div class="uber-menu-card" style="display: flex; justify-content: space-between; align-items: center;">
-                  <div style="flex: 1; padding-right: 1rem;">
-                    <div class="uber-menu-name" style="font-size: 1.05rem;">${itName}</div>
-                    <div class="uber-menu-desc">${itDesc || ''}</div>
-                    ${modsText}
+                <div class="uber-menu-card" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                  <div style="display: flex; gap: 1rem; align-items: center; flex: 1;">
+                    ${photoThumb}
+                    <div>
+                      <div class="uber-menu-name" style="font-size: 1.05rem;">${itName}</div>
+                      <div class="uber-menu-desc">${itDesc || ''}</div>
+                      ${modsText}
+                    </div>
                   </div>
-                  <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem;">
+                  <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; flex-shrink: 0;">
                     <span style="font-weight: 850; font-size: 1.05rem; color: var(--text-primary);">${it.price.toFixed(2)} ${it.currency}</span>
                     <button class="btn btn-primary btn-sm" onclick="addToCart('${it.id}', '${escapeAttr(itName)}', ${it.price}, '${it.currency}');" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
-                      + Add
+                      + Add to Cart
                     </button>
                   </div>
                 </div>

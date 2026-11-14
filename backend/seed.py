@@ -562,19 +562,19 @@ def seed_database(db_path: str):
                      "Dominican household favorite salami for breakfast or frito combo.", "El salami preferido de las familias dominicanas.", 185.0))
 
     # -------------------------------------------------------------
-    # Clothing Store: Yahaira Boutique / Tropical Waves Beachwear
+    # Clothing Store: Yaha Style RD
     # -------------------------------------------------------------
     cloth_owner = "user_clothe_yahaira"
-    cur.execute("SELECT id FROM users WHERE email = 'yahaira@tropicalwavesboutique.com'")
+    cur.execute("SELECT id FROM users WHERE email = 'yahastylerd@gmail.com' OR email = 'yahaira@tropicalwavesboutique.com'")
     if not cur.fetchone():
         cur.execute(
             """INSERT INTO users (id, email, password_hash, full_name, role)
                VALUES (?, ?, ?, ?, ?)""",
-            (cloth_owner, "yahaira@tropicalwavesboutique.com", hash_password("BoutiquePass2026!"), "Yahaira", "owner")
+            (cloth_owner, "yahastylerd@gmail.com", hash_password("YahaStyle2026!"), "Yahaira Garcia", "owner")
         )
 
-    b_clothe = "biz_tropical_waves_boutique"
-    cur.execute("SELECT id FROM businesses WHERE id = ?", (b_clothe,))
+    b_clothe = "biz_yaha_style_rd"
+    cur.execute("SELECT id FROM businesses WHERE id = ? OR slug = 'yaha-style-rd'", (b_clothe,))
     if not cur.fetchone():
         cur.execute(
             """INSERT INTO businesses (
@@ -584,12 +584,12 @@ def seed_database(db_path: str):
                 hours_json, rnc_tax_id, rnc_status, approved_by, approved_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
             (
-                b_clothe, cloth_owner, "Yahaira Tropical Beachwear Boutique", "Yahaira Moda y Playa SRL",
-                "yahaira-tropical-beachwear-boutique", "cat_fashion", "loc_sosua",
+                b_clothe, cloth_owner, "Yaha Style RD", "Yaha Style RD - Yahaira Garcia",
+                "yaha-style-rd", "cat_fashion", "loc_sosua",
                 "Coastal beachwear, rashguards, tropical summer linen dresses, swimsuits, sun hats, and surf accessories on Calle Pedro Clisante in Sosua.",
                 "Boutique de ropa playera, vestidos frescos de lino caribeño, trajes de baño, sombreros y licras de surf en Calle Pedro Clisante.",
                 "approved", 1, "Calle Pedro Clisante #28, El Batey, Sosúa",
-                1, None, "+18095550833", "+18095550833", "orders@tropicalwavesboutique.com",
+                1, None, "+18296414722", "+18296414722", "orders@tropicalwavesboutique.com",
                 json.dumps({"monday_saturday": "9:30 AM - 8:00 PM", "sunday": "10:00 AM - 4:00 PM"}),
                 "131-44781-9", "verified", admin_id
             )
