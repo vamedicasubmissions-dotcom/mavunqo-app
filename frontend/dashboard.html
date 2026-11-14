@@ -37,6 +37,36 @@
       border-bottom: 1px solid var(--border);
       padding-bottom: 0.75rem;
     }
+    .catalog-item-card {
+      background: #F8FAFC;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .catalog-thumb {
+      width: 70px;
+      height: 70px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: #E2E8F0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    .item-info {
+      flex: 1;
+    }
+    .item-price-tag {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #0F5132;
+    }
   </style>
 </head>
 <body>
@@ -50,6 +80,7 @@
       </a>
 
       <div class="nav-actions">
+        <a href="/merchant/ops" class="btn btn-outline-white btn-sm">Live Order Board</a>
         <a href="/" class="btn btn-outline-white btn-sm">Public Directory</a>
         <button onclick="logout();" class="btn btn-white btn-sm">Sign Out</button>
       </div>
@@ -61,7 +92,7 @@
     <div class="uber-admin-header">
       <div>
         <h1 style="font-size: 2rem; font-weight: 900; letter-spacing: -0.03em;">Merchant Dashboard</h1>
-        <p style="color: #aaaaaa; font-size: 1rem; margin-top: 0.25rem;">Manage your storefront, services, and live customer inquiries.</p>
+        <p style="color: #aaaaaa; font-size: 1rem; margin-top: 0.25rem;">Manage your storefront, product pricing, photos, and live customer inquiries.</p>
       </div>
       <div>
         <a href="/register" class="btn btn-white btn-sm">+ Add Another Listing</a>
@@ -72,6 +103,52 @@
       <!-- Injected owned business listings -->
     </div>
   </main>
+
+  <!-- Modal: Add / Edit Product with Price & Photo -->
+  <div id="productModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: #FFF; border-radius: 12px; max-width: 500px; width: 100%; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+      <h3 style="margin-top: 0; font-size: 1.25rem; font-weight: 800;" id="modalProductTitle">Add Item to Catalog</h3>
+      
+      <form id="productForm" onsubmit="event.preventDefault(); submitProductForm();">
+        <input type="hidden" id="itemBizId">
+        <input type="hidden" id="itemId">
+
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 4px;">Item / Product Name *</label>
+          <input type="text" id="itemNameEn" required class="input-field" placeholder="e.g. Caribbean White Linen Shirt">
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 4px;">Selling Price (RD$) *</label>
+          <input type="number" id="itemPrice" step="0.01" min="1" required class="input-field" placeholder="1850.00">
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 4px;">Product Photo (Upload or Link) *</label>
+          <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+            <input type="file" id="itemPhotoFile" accept="image/*" style="display: none;" onchange="handleProductPhotoUpload(this);">
+            <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('itemPhotoFile').click();">📁 Upload Photo from Device</button>
+            <span id="uploadStatusText" style="font-size: 0.8rem; color: #16a34a; align-self: center;"></span>
+          </div>
+          <input type="url" id="itemPhotoUrl" class="input-field" placeholder="https://... or uploaded image path">
+          <small style="color: #64748B; font-size: 0.75rem;">Upload photo directly from phone/laptop or paste any direct image URL</small>
+          <div id="productPhotoPreviewContainer" style="margin-top: 6px; display: none;">
+            <img id="productPhotoPreview" src="" style="width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1;">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 4px;">Description</label>
+          <textarea id="itemDescEn" class="input-field" style="height: 60px;" placeholder="100% natural breathable linen fabric, perfect for beachwear."></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-outline" onclick="closeProductModal();">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveProduct">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <footer class="footer">
     <div class="footer-container">
@@ -84,6 +161,8 @@
     if (!token) {
       window.location.href = "/login";
     }
+
+    let activeBusinessId = null;
 
     async function loadDashboard() {
       try {
@@ -116,10 +195,14 @@
       }
 
       for (const b of list) {
-        const cntRes = await fetch(`/api/owner/businesses/${b.id}/contacts`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
+        activeBusinessId = b.id;
+        const [cntRes, catRes] = await Promise.all([
+          fetch(`/api/owner/businesses/${b.id}/contacts`, { headers: { "Authorization": `Bearer ${token}` } }),
+          fetch(`/api/owner/businesses/${b.id}/catalog`, { headers: { "Authorization": `Bearer ${token}` } })
+        ]);
+
         const contacts = await cntRes.json();
+        const catalog = await catRes.json();
 
         let statusBadge = "";
         if (b.status === "approved") {
@@ -139,14 +222,43 @@
                 <h2 style="font-size: 1.8rem; font-weight: 900; letter-spacing: -0.03em;">${b.trading_name}</h2>
                 ${statusBadge}
               </div>
-              <p style="color: var(--text-secondary); font-size: 0.95rem;">📍 ${b.location_name} &bull; ${b.category_name} &bull; Storefront URL: <code>/b/${b.slug}</code></p>
+              <p style="color: var(--text-secondary); font-size: 0.95rem;">📍 ${b.location_name} &bull; ${b.category_name} &bull; Storefront: <code>/b/${b.slug}</code></p>
             </div>
-            <div>
-              ${b.status === 'approved' ? `<a href="/b/${b.slug}" target="_blank" class="btn btn-primary btn-sm">View Storefront ↗</a>` : ''}
+            <div style="display: flex; gap: 8px;">
+              ${b.status === 'approved' ? `<a href="/b/${b.slug}" target="_blank" class="btn btn-outline btn-sm">View Storefront ↗</a>` : ''}
+              <button onclick="openAddProductModal('${b.id}');" class="btn btn-primary btn-sm">+ Add Item / Photo</button>
             </div>
           </div>
 
-          <!-- Edit Profile Form -->
+          <!-- Product Catalog Section (Price and Photos) -->
+          <div style="margin-bottom: 2.5rem;">
+            <div class="uber-panel-title">
+              <span>Catalog & Products (${catalog.length || 0})</span>
+              <button onclick="openAddProductModal('${b.id}');" class="btn btn-primary btn-sm">+ Add Item / Set Price</button>
+            </div>
+
+            <div id="catalogList_${b.id}">
+              ${(catalog && catalog.length > 0) ? catalog.map(it => `
+                <div class="catalog-item-card">
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    ${it.image_url ? `<img src="${it.image_url}" class="catalog-thumb" alt="${it.name_en}">` : `<div class="catalog-thumb">🛍️</div>`}
+                    <div class="item-info">
+                      <div style="font-weight: 800; font-size: 1.05rem;">${it.name_en}</div>
+                      <div style="color: #64748B; font-size: 0.85rem;">${it.description_en || ''}</div>
+                      ${it.category_name ? `<span style="font-size: 0.75rem; background: #E2E8F0; padding: 2px 6px; border-radius: 4px;">${it.category_name}</span>` : ''}
+                    </div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 16px;">
+                    <span class="item-price-tag">RD$ ${parseFloat(it.price).toFixed(2)}</span>
+                    <button class="btn btn-outline btn-sm" onclick="editProduct('${b.id}', '${it.id}', '${escape(it.name_en)}', ${it.price}, '${escape(it.image_url || '')}', '${escape(it.description_en || '')}')">Edit Price / Photo</button>
+                    <button class="btn btn-outline btn-sm" style="color: #DC2626;" onclick="deleteProduct('${b.id}', '${it.id}')">Delete</button>
+                  </div>
+                </div>
+              `).join("") : `<p style="color: var(--text-muted); font-size: 0.95rem;">No items entered yet. Click '+ Add Item / Set Price' to enter your products, prices, and photos.</p>`}
+            </div>
+          </div>
+
+          <!-- Storefront Settings Profile -->
           <div class="uber-panel-title">
             <span>Storefront Settings</span>
           </div>
@@ -175,26 +287,16 @@
 
             <div class="form-row">
               <div>
-                <label>External Website Link (Optional)</label>
-                <input type="url" name="website_url" class="input-field" value="${b.website_url || ''}" placeholder="https://...">
+                <label>Cover Photo URL</label>
+                <input type="url" name="cover_image_url" class="input-field" value="${b.cover_image_url || ''}" placeholder="https://...">
               </div>
               <div>
-                <label>Legal Business Name (Protected)</label>
-                <input type="text" name="legal_name" class="input-field" value="${b.legal_name || ''}">
+                <label>Logo Photo URL</label>
+                <input type="url" name="logo_url" class="input-field" value="${b.logo_url || ''}" placeholder="https://...">
               </div>
             </div>
 
-            <div style="margin-bottom: 1.25rem;">
-              <label>Description (English)</label>
-              <textarea name="description_en" class="input-field" style="height: 70px;">${b.description_en || ''}</textarea>
-            </div>
-
-            <div style="margin-bottom: 1.5rem;">
-              <label>Description (Spanish)</label>
-              <textarea name="description_es" class="input-field" style="height: 70px;">${b.description_es || ''}</textarea>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <button type="submit" class="btn btn-primary">Save Profile Changes</button>
           </form>
 
           <!-- Direct Inquiries Feed -->
@@ -231,12 +333,139 @@
       }
     }
 
+    async function handleProductPhotoUpload(inputEl) {
+      if (!inputEl.files || inputEl.files.length === 0) return;
+      const file = inputEl.files[0];
+      const statusText = document.getElementById("uploadStatusText");
+      statusText.style.color = "#2563eb";
+      statusText.innerText = "Uploading photo...";
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const res = await fetch("/api/upload", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              image: e.target.result,
+              filename: file.name
+            })
+          });
+          const data = await res.json();
+          if (res.ok && data.url) {
+            document.getElementById("itemPhotoUrl").value = data.url;
+            statusText.style.color = "#16a34a";
+            statusText.innerText = "✓ Uploaded!";
+            const prev = document.getElementById("productPhotoPreview");
+            prev.src = data.url;
+            document.getElementById("productPhotoPreviewContainer").style.display = "block";
+          } else {
+            statusText.style.color = "#dc2626";
+            statusText.innerText = data.error || "Upload failed";
+          }
+        } catch (err) {
+          statusText.style.color = "#dc2626";
+          statusText.innerText = "Network error uploading photo";
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function openAddProductModal(bizId) {
+      document.getElementById("itemBizId").value = bizId;
+      document.getElementById("itemId").value = "";
+      document.getElementById("itemNameEn").value = "";
+      document.getElementById("itemPrice").value = "";
+      document.getElementById("itemPhotoUrl").value = "";
+      document.getElementById("itemDescEn").value = "";
+      document.getElementById("uploadStatusText").innerText = "";
+      document.getElementById("productPhotoPreviewContainer").style.display = "none";
+      document.getElementById("modalProductTitle").innerText = "Add Item to Catalog";
+      document.getElementById("productModal").style.display = "flex";
+    }
+
+    function editProduct(bizId, itemId, name, price, photoUrl, desc) {
+      document.getElementById("itemBizId").value = bizId;
+      document.getElementById("itemId").value = itemId;
+      document.getElementById("itemNameEn").value = unescape(name);
+      document.getElementById("itemPrice").value = price;
+      const url = unescape(photoUrl);
+      document.getElementById("itemPhotoUrl").value = url;
+      document.getElementById("itemDescEn").value = unescape(desc);
+      document.getElementById("uploadStatusText").innerText = "";
+      if (url) {
+        document.getElementById("productPhotoPreview").src = url;
+        document.getElementById("productPhotoPreviewContainer").style.display = "block";
+      } else {
+        document.getElementById("productPhotoPreviewContainer").style.display = "none";
+      }
+      document.getElementById("modalProductTitle").innerText = "Edit Item, Price & Photo";
+      document.getElementById("productModal").style.display = "flex";
+    }
+
+    function closeProductModal() {
+      document.getElementById("productModal").style.display = "none";
+    }
+
+    async function submitProductForm() {
+      const bizId = document.getElementById("itemBizId").value;
+      const itemId = document.getElementById("itemId").value;
+      const payload = {
+        name_en: document.getElementById("itemNameEn").value,
+        price: parseFloat(document.getElementById("itemPrice").value),
+        image_url: document.getElementById("itemPhotoUrl").value,
+        description_en: document.getElementById("itemDescEn").value
+      };
+
+      const isEdit = Boolean(itemId);
+      const url = isEdit ? `/api/owner/businesses/${bizId}/catalog/${itemId}` : `/api/owner/businesses/${bizId}/catalog`;
+      const method = isEdit ? "PUT" : "POST";
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          closeProductModal();
+          loadDashboard();
+        } else {
+          const err = await res.json();
+          alert(err.error || "Failed to save product.");
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function deleteProduct(bizId, itemId) {
+      if (!confirm("Are you sure you want to remove this item from your catalog?")) return;
+      try {
+        const res = await fetch(`/api/owner/businesses/${bizId}/catalog/${itemId}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          loadDashboard();
+        } else {
+          alert("Error deleting item.");
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
     async function saveProfile(bizId, formEl) {
       const formData = new FormData(formEl);
       const payload = {};
-      formData.forEach((val, key) => {
-        payload[key] = val;
-      });
+      formData.forEach((val, key) => { payload[key] = val; });
 
       try {
         const res = await fetch(`/api/owner/businesses/${bizId}`, {
@@ -249,27 +478,22 @@
         });
         const data = await res.json();
         if (res.ok) {
-          let msg = "Storefront updated successfully!";
-          if (data.pending_approval && data.pending_approval.length > 0) {
-            msg += `\nSensitive fields (${data.pending_approval.join(", ")}) were submitted for admin review.`;
-          }
-          alert(msg);
+          alert("Profile and photos updated successfully!");
           loadDashboard();
         } else {
-          alert("Error updating profile: " + data.error);
+          alert(data.error || "Failed to update profile.");
         }
       } catch (err) {
-        alert("Network error.");
+        console.error(err);
       }
     }
 
     function logout() {
       localStorage.removeItem("mavunqo_token");
-      localStorage.removeItem("mavunqo_user");
       window.location.href = "/login";
     }
 
-    document.addEventListener("DOMContentLoaded", loadDashboard);
+    window.onload = loadDashboard;
   </script>
 </body>
 </html>

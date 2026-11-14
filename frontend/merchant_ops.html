@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MAVUNQO — Operaciones de Comercio & WhatsApp Orders</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    :root {
+      --primary: #0F5132;
+      --primary-light: #E8F5E9;
+      --secondary: #D97706;
+      --dark: #1E293B;
+      --light: #F8FAFC;
+      --border: #E2E8F0;
+      --danger: #DC2626;
+      --warning: #F59E0B;
+      --info: #0284C7;
+      --card-bg: #FFFFFF;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #F1F5F9;
+      margin: 0;
+      padding: 0;
+      color: var(--dark);
+    }
+    .header {
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #0F5132;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge-role {
+      background: #E2E8F0;
+      color: #475569;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+    .status-nav {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .tab-btn.active {
+      background: #0F5132;
+      color: #FFFFFF;
+      border-color: #0F5132;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      position: relative;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .order-number {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #0F5132;
+    }
+    .aging-pill {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #F1F5F9;
+      color: #475569;
+    }
+    .aging-pill.alert {
+      background: #FEE2E2;
+      color: #DC2626;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .customer-alias {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 4px;
+    }
+    .privacy-notice {
+      font-size: 0.75rem;
+      color: #64748B;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .items-list {
+      background: #F8FAFC;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 0.875rem;
+    }
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .item-row:last-child {
+      margin-bottom: 0;
+    }
+    .cash-banner {
+      background: #FEF3C7;
+      border-left: 4px solid #F59E0B;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #92400E;
+      margin-bottom: 14px;
+    }
+    .action-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .btn {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-primary { background: #0F5132; color: #FFF; }
+    .btn-warning { background: #F59E0B; color: #FFF; }
+    .btn-danger { background: #DC2626; color: #FFF; }
+    .btn-secondary { background: #E2E8F0; color: #334155; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: #475569; }
+    
+    /* Modal styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .modal {
+      background: #FFFFFF;
+      border-radius: 12px;
+      max-width: 480px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .modal-warning {
+      background: #FEF2F2;
+      border-left: 4px solid #DC2626;
+      padding: 12px;
+      font-size: 0.85rem;
+      color: #991B1B;
+      margin-bottom: 16px;
+      line-height: 1.4;
+      border-radius: 4px;
+    }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="brand-title">
+      <span>MAVUNQO</span>
+      <span style="font-weight: normal; color: #64748B;">| Panel de Operaciones</span>
+      <span class="badge-role" id="userRoleBadge">Personal de Cocina</span>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button class="btn btn-outline" onclick="exportSanitizedCSV()">📥 Exportar CSV (Sin Números)</button>
+      <button class="btn btn-secondary" onclick="loadOrders()">🔄 Actualizar</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="status-nav">
+      <button class="tab-btn active" onclick="filterOrders('all', this)">Todos (<span id="countAll">0</span>)</button>
+      <button class="tab-btn" onclick="filterOrders('pending', this)">Nuevos (<span id="countPending">0</span>)</button>
+      <button class="tab-btn" onclick="filterOrders('accepted', this)">Aceptados</button>
+      <button class="tab-btn" onclick="filterOrders('in_kitchen', this)">En Preparación</button>
+      <button class="tab-btn" onclick="filterOrders('ready', this)">Listos</button>
+      <button class="tab-btn" onclick="filterOrders('completed', this)">Entregados</button>
+      <button class="tab-btn" onclick="filterOrders('exception', this)">Excepciones</button>
+    </div>
+
+    <div class="grid" id="ordersGrid">
+      <div style="grid-column: 1/-1; text-align: center; padding: 48px; color: #64748B;">
+        Cargando pedidos de cocina y mostrador...
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal: Fallback Manual de WhatsApp con Aviso de Privacidad -->
+  <div class="modal-overlay" id="fallbackModal">
+    <div class="modal">
+      <div class="modal-title">⚠️ Contacto Directo WhatsApp (Excepción)</div>
+      <div class="modal-warning">
+        <strong>Aviso de Cumplimiento MAVUNQO:</strong><br>
+        Al realizar el traspaso directo, el número telefónico del cliente podría ser revelado al comercio. MAVUNQO no puede controlar comunicaciones posteriores fuera de la plataforma. El pedido y resultado final deben permanecer registrados en MAVUNQO.
+      </div>
+      <div class="form-group">
+        <label>Motivo Obligatorio de Operación:</label>
+        <textarea id="fallbackReason" rows="3" placeholder="Ej: Falla de conexión del repartidor o aclaración urgente de alérgeno..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="btn btn-secondary" onclick="closeModal('fallbackModal')">Cancelar</button>
+        <button class="btn btn-danger" onclick="submitFallbackHandoff()">Confirmar y Registrar Handoff</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Registro de Cobro en Efectivo -->
+  <div class="modal-overlay" id="cashModal">
+    <div class="modal">
+      <div class="modal-title">💵 Registro de Cobro en Efectivo</div>
+      <div class="form-group">
+        <label>Total Pendiente (RD$):</label>
+        <input type="text" id="cashDueDisplay" readonly style="background: #F8FAFC; font-weight: bold;">
+      </div>
+      <div class="form-group">
+        <label>Monto Real Cobrado (RD$):</label>
+        <input type="number" id="cashCollectedInput" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Nota o Discrepancia (opcional):</label>
+        <input type="text" id="cashExceptionNote" placeholder="Ej: Cliente dio propina voluntaria de 50 pesos...">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="btn btn-secondary" onclick="closeModal('cashModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="submitCashCollection()">Guardar Registro</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Propuesta de Sustitución de Plato -->
+  <div class="modal-overlay" id="subModal">
+    <div class="modal">
+      <div class="modal-title">🔄 Proponer Sustitución de Producto</div>
+      <div class="form-group">
+        <label>Producto no disponible:</label>
+        <input type="text" id="subOriginalName" readonly style="background: #F8FAFC;">
+      </div>
+      <div class="form-group">
+        <label>ID del Producto Sustituto:</label>
+        <input type="text" id="subProposedId" placeholder="menu_xxx">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="btn btn-secondary" onclick="closeModal('subModal')">Cancelar</button>
+        <button class="btn btn-warning" onclick="submitSubstitution()">Enviar Propuesta</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentBusinessId = 'biz_el_batey_bistro';
+    let currentOrders = [];
+    let activeFilter = 'all';
+    let selectedOrderId = null;
+    let selectedOriginalItemId = null;
+
+    async function loadOrders() {
+      const token = localStorage.getItem('mavunqo_token') || '';
+      try {
+        const res = await fetch(`/api/merchant/dashboard/orders?business_id=${currentBusinessId}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        if (res.status === 401 || res.status === 403) {
+          // Fallback or demo prompt
+          document.getElementById('ordersGrid').innerHTML = `
+            <div style="grid-column: 1/-1; background: #FFF; padding: 32px; border-radius: 8px; text-align: center;">
+              <h3>Sesión Requerida</h3>
+              <p>Por favor inicia sesión con tus credenciales de comercio para acceder al panel seguro de MAVUNQO.</p>
+              <a href="/login" class="btn btn-primary">Iniciar Sesión</a>
+            </div>`;
+          return;
+        }
+        currentOrders = await res.json();
+        renderOrders();
+      } catch (err) {
+        console.error("Error loading orders:", err);
+      }
+    }
+
+    function renderOrders() {
+      const grid = document.getElementById('ordersGrid');
+      let filtered = currentOrders;
+      if (activeFilter === 'pending') filtered = currentOrders.filter(o => o.status === 'pending');
+      else if (activeFilter === 'accepted') filtered = currentOrders.filter(o => o.status === 'accepted');
+      else if (activeFilter === 'in_kitchen') filtered = currentOrders.filter(o => o.status === 'in_kitchen');
+      else if (activeFilter === 'ready') filtered = currentOrders.filter(o => o.status === 'ready');
+      else if (activeFilter === 'completed') filtered = currentOrders.filter(o => o.status === 'completed');
+      else if (activeFilter === 'exception') filtered = currentOrders.filter(o => o.cash_status === 'exception' || o.status === 'cancelled');
+
+      document.getElementById('countAll').innerText = currentOrders.length;
+      document.getElementById('countPending').innerText = currentOrders.filter(o => o.status === 'pending').length;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 48px; color: #64748B;">No hay pedidos en esta sección.</div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(o => {
+        const isAlert = o.aging_alert ? 'alert' : '';
+        const itemsHtml = (o.items || []).map(i => `
+          <div class="item-row">
+            <span><strong>${i.quantity}x</strong> ${i.item_name_en}</span>
+            <span>RD$ ${i.line_total.toFixed(2)}</span>
+          </div>
+        `).join('');
+
+        return `
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <span class="order-number">${o.order_number}</span>
+                <span style="font-size: 0.8rem; color: #64748B; margin-left: 6px;">[${o.status.toUpperCase()}]</span>
+              </div>
+              <span class="aging-pill ${isAlert}">⏱️ Hace ${o.aging_minutes} min</span>
+            </div>
+
+            <div class="customer-alias">👤 ${o.customer_alias}</div>
+            <div class="privacy-notice">
+              🔒 Contacto protegido por MAVUNQO (Solo identificador seguro)
+            </div>
+
+            <div class="items-list">
+              ${itemsHtml}
+              <div style="margin-top: 8px; border-top: 1px dashed var(--border); padding-top: 6px; display: flex; justify-content: space-between; font-weight: 700;">
+                <span>Total a Cobrar:</span>
+                <span>RD$ ${o.total.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div class="cash-banner">
+              💵 Efectivo Pendiente: RD$ ${o.cash_due.toFixed(2)} | Estado: <strong>${o.cash_status}</strong>
+            </div>
+
+            <div class="action-group">
+              ${o.status === 'pending' ? `<button class="btn btn-primary" onclick="updateStatus('${o.id}', 'accepted')">Aceptar Pedido</button>` : ''}
+              ${o.status === 'accepted' ? `<button class="btn btn-primary" onclick="updateStatus('${o.id}', 'in_kitchen')">Enviar a Cocina</button>` : ''}
+              ${o.status === 'in_kitchen' ? `<button class="btn btn-warning" onclick="updateStatus('${o.id}', 'ready')">Marcar Listo</button>` : ''}
+              ${o.status === 'ready' ? `<button class="btn btn-primary" onclick="updateStatus('${o.id}', 'completed')">Completar Entrega</button>` : ''}
+              
+              <button class="btn btn-secondary" onclick="openCashModal('${o.id}', ${o.cash_due})">Registrar Cobro</button>
+              <button class="btn btn-danger" onclick="openFallbackModal('${o.id}')">Traspaso WhatsApp</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterOrders(status, btn) {
+      activeFilter = status;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderOrders();
+    }
+
+    async function updateStatus(orderId, newStatus) {
+      const token = localStorage.getItem('mavunqo_token') || '';
+      try {
+        const res = await fetch(`/api/merchant/orders/${orderId}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ business_id: currentBusinessId, status: newStatus })
+        });
+        if (res.ok) {
+          loadOrders();
+        } else {
+          alert('Error actualizando estado del pedido.');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function openCashModal(orderId, cashDue) {
+      selectedOrderId = orderId;
+      document.getElementById('cashDueDisplay').value = cashDue.toFixed(2);
+      document.getElementById('cashCollectedInput').value = cashDue.toFixed(2);
+      document.getElementById('cashModal').style.display = 'flex';
+    }
+
+    async function submitCashCollection() {
+      const amount = parseFloat(document.getElementById('cashCollectedInput').value) || 0;
+      const notes = document.getElementById('cashExceptionNote').value;
+      const token = localStorage.getItem('mavunqo_token') || '';
+      try {
+        const res = await fetch(`/api/merchant/orders/${selectedOrderId}/cash-record`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ business_id: currentBusinessId, amount_collected: amount, notes: notes })
+        });
+        if (res.ok) {
+          closeModal('cashModal');
+          loadOrders();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function openFallbackModal(orderId) {
+      selectedOrderId = orderId;
+      document.getElementById('fallbackModal').style.display = 'flex';
+    }
+
+    async function submitFallbackHandoff() {
+      const reason = document.getElementById('fallbackReason').value;
+      if (!reason || reason.trim().length < 5) {
+        alert('Debe proporcionar un motivo de operación específico.');
+        return;
+      }
+      const token = localStorage.getItem('mavunqo_token') || '';
+      try {
+        const res = await fetch(`/api/merchant/orders/${selectedOrderId}/fallback-handoff`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ business_id: currentBusinessId, reason: reason })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Handoff registrado en MAVUNQO.\nWhatsApp de destino: ${data.merchant_whatsapp || 'Directo'}`);
+          closeModal('fallbackModal');
+        } else {
+          alert(data.error || 'Acceso restringido.');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function exportSanitizedCSV() {
+      const token = localStorage.getItem('mavunqo_token') || '';
+      window.location.href = `/api/merchant/export/orders?business_id=${currentBusinessId}`;
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    window.onload = loadOrders;
+  </script>
+</body>
+</html>

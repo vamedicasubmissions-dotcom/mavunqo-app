@@ -209,6 +209,16 @@ class MavunqoService:
                 idx += 1
             final_slug = test_slug
 
+            # Ensure at least one description is provided, fallback to the other if only one language is filled
+            description_en = (description_en or "").strip()
+            description_es = (description_es or "").strip()
+            if not description_en and not description_es:
+                raise ValueError("A business description is required.")
+            if not description_en:
+                description_en = description_es
+            if not description_es:
+                description_es = description_en
+
             biz_id = f"biz_{uuid.uuid4().hex[:12]}"
             # Status is strictly PENDING until approved by admin
             conn.execute(
@@ -464,6 +474,89 @@ class MavunqoService:
             return [dict(r) for r in rows]
 
     # -------------------------------------------------------------
+    # Merchant Catalog & Menu Item Management (Price, Photos, Availability)
+    # -------------------------------------------------------------
+    def get_merchant_catalog_items(self, user_id: str, business_id: str):
+        if not self.verify_business_ownership(user_id, business_id):
+            raise PermissionError("Access denied.")
+
+        with self.get_connection() as conn:
+            rows = conn.execute(
+                """SELECT mi.*, mc.name_en AS category_name
+                   FROM menu_items mi
+                   LEFT JOIN menu_categories mc ON mi.category_id = mc.id
+                   WHERE mi.business_id = ?
+                   ORDER BY mi.sort_order ASC, mi.name_en ASC""",
+                (business_id,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def add_merchant_catalog_item(self, user_id: str, business_id: str, item_data: dict):
+        if not self.verify_business_ownership(user_id, business_id):
+            raise PermissionError("Access denied.")
+
+        name_en = (item_data.get("name_en") or "").strip()
+        name_es = (item_data.get("name_es") or name_en).strip()
+        price = float(item_data.get("price", 0.0))
+        image_url = (item_data.get("image_url") or "").strip()
+        description_en = (item_data.get("description_en") or "").strip()
+        description_es = (item_data.get("description_es") or "").strip()
+        category_id = item_data.get("category_id")
+
+        if not name_en:
+            raise ValueError("Item name is required.")
+        if price <= 0:
+            raise ValueError("Item price must be greater than zero.")
+
+        item_id = f"item_{uuid.uuid4().hex[:10]}"
+        with self.get_connection() as conn:
+            conn.execute(
+                """INSERT INTO menu_items (
+                    id, business_id, category_id, name_en, name_es, description_en, description_es,
+                    price, currency, image_url, is_available
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', ?, 1)""",
+                (item_id, business_id, category_id, name_en, name_es, description_en, description_es, price, image_url)
+            )
+            conn.commit()
+
+        return {"success": True, "item_id": item_id, "name_en": name_en, "price": price, "image_url": image_url}
+
+    def update_merchant_catalog_item(self, user_id: str, business_id: str, item_id: str, item_data: dict):
+        if not self.verify_business_ownership(user_id, business_id):
+            raise PermissionError("Access denied.")
+
+        allowed_fields = ["name_en", "name_es", "description_en", "description_es", "price", "image_url", "is_available"]
+        updates = {k: v for k, v in item_data.items() if k in allowed_fields}
+
+        if "price" in updates:
+            updates["price"] = float(updates["price"])
+            if updates["price"] <= 0:
+                raise ValueError("Price must be greater than zero.")
+
+        if not updates:
+            return {"success": True, "updated": False}
+
+        set_clause = ", ".join([f"{k} = ?" for k in updates.keys()])
+        values = list(updates.values())
+        values.extend([item_id, business_id])
+
+        with self.get_connection() as conn:
+            conn.execute(f"UPDATE menu_items SET {set_clause} WHERE id = ? AND business_id = ?", values)
+            conn.commit()
+
+        return {"success": True, "item_id": item_id, "updated_fields": list(updates.keys())}
+
+    def delete_merchant_catalog_item(self, user_id: str, business_id: str, item_id: str):
+        if not self.verify_business_ownership(user_id, business_id):
+            raise PermissionError("Access denied.")
+
+        with self.get_connection() as conn:
+            conn.execute("DELETE FROM menu_items WHERE id = ? AND business_id = ?", (item_id, business_id))
+            conn.commit()
+
+        return {"success": True, "deleted_item_id": item_id}
+
+    # -------------------------------------------------------------
     # Phase 2: Restaurant Menu Management & Ordering Pilot
     # -------------------------------------------------------------
     def get_restaurant_menu(self, business_id_or_slug: str):
@@ -672,7 +765,8 @@ class MavunqoService:
             # Accrue preliminary fee record:
             # 12% for Mavunqo-sourced orders, 0% (or configurable lower rate) for merchant-originated orders.
             # Delivery fee is excluded from commission base.
-            commission_rate = 0.12 if order_origin == "mavunqo" else 0.00
+            from .tokens_and_attribution import STANDARD_COMMISSION_RATE
+            commission_rate = STANDARD_COMMISSION_RATE
             commissionable_amount = subtotal
             fee_amount = round(commissionable_amount * commission_rate, 2)
             fee_id = f"fee_{uuid.uuid4().hex[:12]}"

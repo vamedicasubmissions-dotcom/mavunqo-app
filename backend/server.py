@@ -35,12 +35,18 @@ import urllib.parse
 from .db import init_db
 from .auth import hash_password, verify_password, generate_token, verify_token
 from .service import MavunqoService
+from .whatsapp_gateway import verify_webhook_signature, record_and_check_idempotency, process_inbound_opt_keywords
+from .whatsapp_bot import WhatsAppOrderBot
+from .whatsapp_ordering_service import WhatsAppOrderingService
+from .tokens_and_attribution import build_merchant_qr_link, generate_attribution_signature
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "mavunqo.db")
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 
 service = MavunqoService(DB_PATH)
+wa_service = WhatsAppOrderingService(DB_PATH)
+wa_bot = WhatsAppOrderBot(DB_PATH)
 
 class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -169,6 +175,19 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 return self.send_json({"error": str(e)}, 404)
 
+        if path.startswith("/api/owner/businesses/") and path.endswith("/catalog"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            biz_id = parts[4]
+            try:
+                return self.send_json(service.get_merchant_catalog_items(user["uid"], biz_id))
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
         if path.startswith("/api/owner/businesses/") and path.endswith("/orders"):
             user = self.get_auth_user()
             if not user:
@@ -234,6 +253,81 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             lang = query_params.get("lang", ["en"])[0]
             return self.send_json(service.ask_ai_concierge(q, lang))
 
+        # WhatsApp Webhook Challenge Verification (GET)
+        if path == "/api/whatsapp/webhook":
+            hub_mode = query.get("hub.mode", [""])[0]
+            hub_challenge = query.get("hub.challenge", [""])[0]
+            hub_token = query.get("hub.verify_token", [""])[0]
+            if hub_mode == "subscribe" and hub_token == "mavunqo_wa_verify_2026":
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+                self.wfile.write(hub_challenge.encode("utf-8"))
+                return
+            return self.send_json({"error": "Forbidden"}, 403)
+
+        # Secure Single-Use Order Checkout Details (GET)
+        if path == "/api/orders/secure-checkout":
+            token = query.get("token", [""])[0]
+            with service.get_connection() as conn:
+                tok_row = conn.execute(
+                    "SELECT * FROM secure_order_tokens WHERE token = ? AND status = 'active'",
+                    (token,)
+                ).fetchone()
+                if not tok_row:
+                    return self.send_json({"error": "Invalid or revoked checkout token"}, 404)
+                import time
+                if tok_row["expires_at"] < int(time.time()):
+                    return self.send_json({"error": "Checkout link has expired"}, 410)
+                
+                biz = conn.execute("SELECT * FROM businesses WHERE id = ?", (tok_row["business_id"],)).fetchone()
+                return self.send_json({
+                    "token": token,
+                    "business": {
+                        "id": biz["id"],
+                        "name": biz["trading_name"],
+                        "cash_only": bool(biz["cash_only"]),
+                        "delivery_enabled": bool(biz["delivery_enabled"])
+                    },
+                    "expires_at": tok_row["expires_at"]
+                })
+
+        # Merchant Operational Dashboard Orders (GET)
+        if path.startswith("/api/merchant/dashboard/orders"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            biz_id = query.get("business_id", [""])[0]
+            status_filter = query.get("status", [""])[0]
+            try:
+                orders = wa_service.get_merchant_operational_orders(user["uid"], biz_id, status_filter)
+                return self.send_json(orders)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        # Privacy-Sanitized CSV Export (GET)
+        if path.startswith("/api/merchant/export/orders"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            biz_id = query.get("business_id", [""])[0]
+            try:
+                csv_data = wa_service.generate_sanitized_csv_export(user["uid"], biz_id)
+                body = csv_data.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/csv; charset=utf-8")
+                self.send_header("Content-Disposition", f'attachment; filename="orders_{biz_id}.csv"')
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
         # 2. Frontend Page Routes
         if path == "/" or path == "/index.html":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "index.html"))
@@ -260,6 +354,12 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/dashboard":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "dashboard.html"))
 
+        if path == "/merchant/ops" or path == "/merchant/orders":
+            return self.send_file_response(os.path.join(FRONTEND_DIR, "merchant_ops.html"))
+
+        if path == "/order/checkout":
+            return self.send_file_response(os.path.join(FRONTEND_DIR, "checkout.html"))
+
         if path == "/admin":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "admin.html"))
 
@@ -274,6 +374,14 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 content_type = "application/javascript"
             elif full_path.endswith(".html"):
                 content_type = "text/html; charset=utf-8"
+            elif full_path.endswith(".jpg") or full_path.endswith(".jpeg"):
+                content_type = "image/jpeg"
+            elif full_path.endswith(".png"):
+                content_type = "image/png"
+            elif full_path.endswith(".webp"):
+                content_type = "image/webp"
+            elif full_path.endswith(".gif"):
+                content_type = "image/gif"
             return self.send_file_response(full_path, content_type)
 
         return self.send_error(404, "Not Found")
@@ -281,6 +389,44 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+
+        # Photo Upload endpoint for clothing/food catalog & storefronts
+        if path == "/api/upload":
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            data = self.read_json_body()
+            data_url = data.get("image", "")
+            filename = data.get("filename", "upload.jpg")
+            if not data_url:
+                return self.send_json({"error": "No image data provided"}, 400)
+
+            import base64
+            import uuid
+            try:
+                if "," in data_url:
+                    header, base64_data = data_url.split(",", 1)
+                else:
+                    base64_data = data_url
+
+                raw_bytes = base64.b64decode(base64_data)
+                ext = ".jpg"
+                if "png" in filename.lower() or "png" in data_url[:30]:
+                    ext = ".png"
+                elif "webp" in filename.lower() or "webp" in data_url[:30]:
+                    ext = ".webp"
+
+                unique_name = f"photo_{uuid.uuid4().hex[:12]}{ext}"
+                save_dir = os.path.join(FRONTEND_DIR, "uploads")
+                os.makedirs(save_dir, exist_ok=True)
+                target_path = os.path.join(save_dir, unique_name)
+                with open(target_path, "wb") as img_f:
+                    img_f.write(raw_bytes)
+
+                public_url = f"/frontend/uploads/{unique_name}"
+                return self.send_json({"url": public_url, "filename": unique_name}, 201)
+            except Exception as e:
+                return self.send_json({"error": f"Failed to process image: {str(e)}"}, 400)
 
         # 1. Login
         if path == "/api/auth/login":
@@ -365,6 +511,21 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return self.send_json({"error": str(e)}, 400)
 
         # Phase 2: Merchant Update Order Status
+        if path.startswith("/api/owner/businesses/") and path.endswith("/catalog"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            biz_id = parts[4]
+            data = self.read_json_body()
+            try:
+                res = service.add_merchant_catalog_item(user["uid"], biz_id, data)
+                return self.send_json(res, 201)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
         if path.startswith("/api/owner/businesses/") and "/orders/" in path and path.endswith("/status"):
             user = self.get_auth_user()
             if not user:
@@ -448,6 +609,194 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 return self.send_json({"error": str(e)}, 400)
 
+        # WhatsApp Inbound Webhook (POST)
+        if path == "/api/whatsapp/webhook":
+            content_length = int(self.headers.get("Content-Length", 0))
+            payload_bytes = self.rfile.read(content_length)
+            raw_payload = payload_bytes.decode("utf-8")
+            sig_header = self.headers.get("X-Hub-Signature-256", "")
+            
+            # Verify signature if header present
+            if sig_header and not verify_webhook_signature(payload_bytes, sig_header):
+                return self.send_json({"error": "Invalid signature"}, 401)
+                
+            try:
+                event_data = json.loads(raw_payload)
+            except Exception:
+                return self.send_json({"error": "Malformed JSON"}, 400)
+                
+            import uuid
+            event_id = event_data.get("id", "evt_" + uuid.uuid4().hex[:12])
+            entry = event_data.get("entry", [{}])[0]
+            changes = entry.get("changes", [{}])[0]
+            val = changes.get("value", {})
+            messages = val.get("messages", [])
+            
+            if not messages:
+                return self.send_json({"status": "acknowledged"})
+                
+            msg = messages[0]
+            msg_id = msg.get("id", "msg_" + uuid.uuid4().hex[:12])
+            from_phone = msg.get("from", "")
+            text_body = msg.get("text", {}).get("body", "")
+            
+            # Idempotency guard
+            if not record_and_check_idempotency(DB_PATH, event_id, msg_id, "message", raw_payload):
+                return self.send_json({"status": "duplicate_ignored"}, 200)
+                
+            # Check opt keywords (STOP / START)
+            opt_resp = process_inbound_opt_keywords(DB_PATH, from_phone, text_body)
+            if opt_resp:
+                return self.send_json({"status": "opt_handled", "response": opt_resp})
+                
+            # Process via Grounded WhatsApp Bot
+            bot_result = wa_bot.handle_message(from_phone, text_body)
+            return self.send_json({"status": "processed", "bot": bot_result})
+
+        # Confirm Secure Single-Use Order (POST)
+        if path == "/api/orders/secure-checkout/confirm":
+            data = self.read_json_body()
+            token = data.get("token", "")
+            with service.get_connection() as conn:
+                tok = conn.execute(
+                    "SELECT * FROM secure_order_tokens WHERE token = ? AND status = 'active'",
+                    (token,)
+                ).fetchone()
+                if not tok:
+                    return self.send_json({"error": "Single-use token already consumed, revoked or invalid."}, 400)
+                import time
+                if tok["expires_at"] < int(time.time()):
+                    conn.execute("UPDATE secure_order_tokens SET status = 'expired' WHERE token = ?", (token,))
+                    conn.commit()
+                    return self.send_json({"error": "Token has expired."}, 410)
+                
+                # Consume token immediately
+                conn.execute("UPDATE secure_order_tokens SET status = 'consumed' WHERE token = ?", (token,))
+                conn.commit()
+                
+            try:
+                res = wa_service.create_whatsapp_assisted_order(
+                    business_id=data.get("business_id", ""),
+                    customer_phone=data.get("customer_phone", "8095551234"),
+                    items=data.get("items", []),
+                    fulfillment_type=data.get("fulfillment_type", "delivery"),
+                    delivery_address=data.get("delivery_address", ""),
+                    customer_notes=data.get("notes", ""),
+                    attribution_payload=data.get("attribution")
+                )
+                return self.send_json(res, 201)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        # Merchant Ops: Update Status (POST)
+        if path.startswith("/api/merchant/orders/") and path.endswith("/status"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            order_id = parts[4]
+            data = self.read_json_body()
+            try:
+                res = wa_service.update_order_status_by_staff(
+                    user_id=user["uid"],
+                    business_id=data.get("business_id", ""),
+                    order_id=order_id,
+                    new_status=data.get("status", ""),
+                    notes=data.get("notes", "")
+                )
+                return self.send_json(res)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        # Merchant Ops: Record Cash Collection (POST)
+        if path.startswith("/api/merchant/orders/") and path.endswith("/cash-record"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            order_id = parts[4]
+            data = self.read_json_body()
+            try:
+                res = wa_service.record_cash_collection(
+                    user_id=user["uid"],
+                    business_id=data.get("business_id", ""),
+                    order_id=order_id,
+                    amount_collected=float(data.get("amount_collected", 0.0)),
+                    is_exception=bool(data.get("is_exception", False)),
+                    exception_notes=data.get("notes", "")
+                )
+                return self.send_json(res)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        # Merchant Ops: Propose Substitution (POST)
+        if path.startswith("/api/merchant/orders/") and path.endswith("/substitutions"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            order_id = parts[4]
+            data = self.read_json_body()
+            try:
+                res = wa_service.propose_item_substitution(
+                    user_id=user["uid"],
+                    business_id=data.get("business_id", ""),
+                    order_id=order_id,
+                    original_item_id=data.get("original_item_id", ""),
+                    proposed_item_id=data.get("proposed_item_id", "")
+                )
+                return self.send_json(res)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        # Merchant Ops: Controlled Manual WhatsApp Fallback (POST)
+        if path.startswith("/api/merchant/orders/") and path.endswith("/fallback-handoff"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            order_id = parts[4]
+            data = self.read_json_body()
+            try:
+                res = wa_service.initiate_manual_whatsapp_fallback(
+                    user_id=user["uid"],
+                    business_id=data.get("business_id", ""),
+                    order_id=order_id,
+                    reason=data.get("reason", "")
+                )
+                return self.send_json(res)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        # Break-Glass Exceptional Customer Access (POST)
+        if path.startswith("/api/admin/orders/") and path.endswith("/exceptional-access"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            order_id = parts[4]
+            data = self.read_json_body()
+            try:
+                res = wa_service.break_glass_exceptional_access(
+                    user_id=user["uid"],
+                    business_id=data.get("business_id", ""),
+                    order_id=order_id,
+                    reason=data.get("reason", "")
+                )
+                return self.send_json(res)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
         # 4. Admin Approvals
         if path.startswith("/api/admin/applications/") and path.endswith("/approve"):
             user = self.get_auth_user()
@@ -480,6 +829,22 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
 
+        if path.startswith("/api/owner/businesses/") and "/catalog/" in path:
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            biz_id = parts[4]
+            item_id = parts[6]
+            data = self.read_json_body()
+            try:
+                res = service.update_merchant_catalog_item(user["uid"], biz_id, item_id, data)
+                return self.send_json(res)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
         if path.startswith("/api/owner/businesses/"):
             user = self.get_auth_user()
             if not user:
@@ -488,6 +853,27 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             data = self.read_json_body()
             try:
                 res = service.update_business_profile(user["uid"], biz_id, data)
+                return self.send_json(res)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        return self.send_error(404, "Not Found")
+
+    def do_DELETE(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+
+        if path.startswith("/api/owner/businesses/") and "/catalog/" in path:
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            biz_id = parts[4]
+            item_id = parts[6]
+            try:
+                res = service.delete_merchant_catalog_item(user["uid"], biz_id, item_id)
                 return self.send_json(res)
             except PermissionError as e:
                 return self.send_json({"error": str(e)}, 403)

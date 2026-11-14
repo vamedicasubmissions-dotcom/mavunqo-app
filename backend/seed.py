@@ -38,6 +38,7 @@ def seed_database(db_path: str):
         ("cat_prof", "professional-services", "Professional Services", "Servicios Profesionales", "briefcase", 5),
         ("cat_tourism", "hospitality-tourism", "Tourism & Activities", "Turismo y Actividades", "palmtree", 6),
         ("cat_grocery", "groceries-colmados", "Supermarkets & Colmados", "Supermercados y Colmados", "shopping-cart", 7),
+        ("cat_fashion", "clothing-fashion", "Clothing & Beachwear", "Ropa y Moda Playera", "shirt", 8),
     ]
     for cid, cslug, cname_en, cname_es, cicon, corder in categories:
         cur.execute("SELECT id FROM categories WHERE id = ?", (cid,))
@@ -559,6 +560,74 @@ def seed_database(db_path: str):
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 2)""",
                     ("ci_salami_induveca", b_tambora, cat_col_pantry, "Induveca Super Especial Salami 1lb", "Salami Induveca Súper Especial 1lb",
                      "Dominican household favorite salami for breakfast or frito combo.", "El salami preferido de las familias dominicanas.", 185.0))
+
+    # -------------------------------------------------------------
+    # Clothing Store: Tropical Waves Boutique & Surfwear
+    # -------------------------------------------------------------
+    cloth_owner = "user_clothe_sofia"
+    cur.execute("SELECT id FROM users WHERE email = 'sofia@tropicalwavesboutique.com'")
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO users (id, email, password_hash, full_name, role)
+               VALUES (?, ?, ?, ?, ?)""",
+            (cloth_owner, "sofia@tropicalwavesboutique.com", hash_password("BoutiquePass2026!"), "Sofia Mendez", "owner")
+        )
+
+    b_clothe = "biz_tropical_waves_boutique"
+    cur.execute("SELECT id FROM businesses WHERE id = ?", (b_clothe,))
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO businesses (
+                id, owner_id, trading_name, legal_name, slug, category_id, primary_location_id,
+                description_en, description_es, status, has_physical_location, address,
+                serves_entire_area, website_url, whatsapp, phone, public_email,
+                hours_json, rnc_tax_id, rnc_status, approved_by, approved_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+            (
+                b_clothe, cloth_owner, "Tropical Waves Beachwear & Surf Boutique", "Mendez Moda y Playa SRL",
+                "tropical-waves-beachwear-boutique", "cat_fashion", "loc_sosua",
+                "Coastal beachwear, rashguards, tropical summer linen dresses, swimsuits, sun hats, and surf accessories on Calle Pedro Clisante in Sosua.",
+                "Boutique de ropa playera, vestidos frescos de lino caribeño, trajes de baño, sombreros y licras de surf en Calle Pedro Clisante.",
+                "approved", 1, "Calle Pedro Clisante #28, El Batey, Sosúa",
+                1, None, "+18095550833", "+18095550833", "orders@tropicalwavesboutique.com",
+                json.dumps({"monday_saturday": "9:30 AM - 8:00 PM", "sunday": "10:00 AM - 4:00 PM"}),
+                "131-44781-9", "verified", admin_id
+            )
+        )
+        cur.execute("INSERT OR IGNORE INTO business_service_areas (business_id, location_id) VALUES (?, ?)", (b_clothe, "loc_sosua"))
+        cur.execute("INSERT OR IGNORE INTO business_service_areas (business_id, location_id) VALUES (?, ?)", (b_clothe, "loc_cabarete"))
+
+        cat_swim = "ccat_swimwear"
+        cat_linen = "ccat_linen_apparel"
+        cur.execute("INSERT INTO menu_categories (id, business_id, name_en, name_es, sort_order) VALUES (?, ?, ?, ?, ?)",
+                    (cat_swim, b_clothe, "Swimwear & Boardshorts", "Trajes de Baño y Bañadores", 1))
+        cur.execute("INSERT INTO menu_categories (id, business_id, name_en, name_es, sort_order) VALUES (?, ?, ?, ?, ?)",
+                    (cat_linen, b_clothe, "Linen Dresses & Beach Shirts", "Vestidos de Lino y Camisas Playeras", 2))
+
+        # Catalog items
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 1)""",
+                    ("item_linen_shirt", b_clothe, cat_linen, "Caribbean White Linen Beach Shirt", "Camisa Playera de Lino Blanco",
+                     "Breathable 100% natural linen short-sleeve button-down shirt. Perfect for hot coastal days.",
+                     "Camisa de botones 100% lino blanco natural, fresca y elegante para el clima caribeño.", 1850.0))
+
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 2)""",
+                    ("item_floral_dress", b_clothe, cat_linen, "Tropical Maxi Sun Dress", "Vestido Maxi Tropical de Playa",
+                     "Flowy Caribbean floral-print summer dress with adjustable straps.",
+                     "Vestido largo veraniego estampado tropical con tirantes ajustables.", 1950.0))
+
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 1)""",
+                    ("item_boardshorts", b_clothe, cat_swim, "Quick-Dry Performance Boardshorts", "Bañador Boardshort de Secado Rápido",
+                     "Durable stretch surf boardshorts with secure zip pocket.",
+                     "Bañador elástico resistente para surf y playa con bolsillo de cremallera.", 1450.0))
+
+        cur.execute("""INSERT INTO menu_items (id, business_id, category_id, name_en, name_es, description_en, description_es, price, currency, is_available, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DOP', 1, 2)""",
+                    ("item_straw_hat", b_clothe, cat_swim, "Handwoven Dominican Palm Sun Hat", "Sombrero Playero Tejido en Palma",
+                     "UV protective wide-brim handwoven beach hat.",
+                     "Sombrero artesanal de ala ancha con protección solar UV.", 750.0))
 
     # -------------------------------------------------------------
     # Seed Initial Motorcycle Drivers & Delivery Capacity in Sosúa

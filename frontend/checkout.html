@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MAVUNQO — Confirmación Protegida de Pedido</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #F8FAFC;
+      color: #1E293B;
+      padding: 20px 16px;
+      margin: 0;
+    }
+    .checkout-box {
+      max-width: 480px;
+      margin: 0 auto;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .brand {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #0F5132;
+    }
+    .payment-notice {
+      padding: 12px 14px;
+      border-radius: 6px;
+      margin-bottom: 18px;
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+    .notice-cash {
+      background: #FEF3C7;
+      border-left: 4px solid #F59E0B;
+      color: #92400E;
+    }
+    .notice-digital {
+      background: #E0F2FE;
+      border-left: 4px solid #0284C7;
+      color: #0369A1;
+    }
+    .token-badge {
+      font-size: 0.75rem;
+      color: #64748B;
+      text-align: center;
+      margin-top: 16px;
+    }
+    .btn-confirm {
+      width: 100%;
+      background: #0F5132;
+      color: #FFF;
+      font-weight: 700;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    .btn-confirm:hover {
+      background: #0D442A;
+    }
+    .payment-select-group {
+      margin-bottom: 16px;
+    }
+    .payment-select-group label {
+      font-weight: 600;
+      font-size: 0.85rem;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .payment-select-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #CBD5E1;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      background: #FFFFFF;
+    }
+    .cash-denomination-box {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-bottom: 14px;
+      display: none;
+    }
+    .cash-denomination-box label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #92400E;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .cash-denomination-box select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #FCD34D;
+      border-radius: 4px;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="checkout-box">
+    <div class="brand">
+      <h1>MAVUNQO</h1>
+      <p style="color: #64748B; margin: 4px 0 0 0; font-size: 0.9rem;">Confirmación Protegida de Pedido</p>
+    </div>
+
+    <div id="checkoutContent">
+      <div id="paymentNoticeBox" class="payment-notice notice-digital">
+        🔒 <strong>Mavunqo Safe Checkout:</strong><br>
+        Pagos digitales verificados al instante. Efectivo disponible para pedidos locales hasta RD$ 2,000.
+      </div>
+
+      <div class="payment-select-group">
+        <label>Método de Pago:</label>
+        <select id="paymentMethodSelect" onchange="handlePaymentChange()">
+          <option value="card" selected>💳 Tarjeta de Crédito / Débito (Instantáneo)</option>
+          <option value="cash">💵 Efectivo al entregar o retirar (Límite RD$ 2,000)</option>
+        </select>
+      </div>
+
+      <div class="cash-denomination-box" id="cashDenomBox">
+        <label>¿Con cuánto vas a pagar? (Para que el repartidor lleve cambio exacto):</label>
+        <select id="cashDenomSelect">
+          <option value="exact">Monto exacto</option>
+          <option value="500">Pagaré con billete de RD$ 500</option>
+          <option value="1000">Pagaré con billete de RD$ 1,000</option>
+          <option value="2000">Pagaré con billete de RD$ 2,000</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 6px;">Dirección de Entrega en Sosúa:</label>
+        <input type="text" id="deliveryAddress" value="Calle Pedro Clisante #12, Sosúa" style="width: 100%; padding: 10px; border: 1px solid #CBD5E1; border-radius: 6px; box-sizing: border-box;">
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 6px;">Notas para Cocina:</label>
+        <input type="text" id="orderNotes" placeholder="Ej: Salsa aparte, tostones bien tostados" style="width: 100%; padding: 10px; border: 1px solid #CBD5E1; border-radius: 6px; box-sizing: border-box;">
+      </div>
+
+      <button class="btn-confirm" onclick="confirmOrder()">Confirmar y Enviar a Cocina</button>
+      <div class="token-badge">🔒 Enlace seguro de uso único expedido por MAVUNQO. Tu número de teléfono está protegido.</div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('t');
+
+    function handlePaymentChange() {
+      const val = document.getElementById('paymentMethodSelect').value;
+      const denomBox = document.getElementById('cashDenomBox');
+      if (val === 'cash') {
+        denomBox.style.display = 'block';
+      } else {
+        denomBox.style.display = 'none';
+      }
+    }
+
+    async function initCheckout() {
+      if (!token) return;
+      try {
+        const res = await fetch(`/api/orders/secure-checkout?token=${token}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.business && data.business.cash_only) {
+            document.getElementById('paymentNoticeBox').className = 'payment-notice notice-cash';
+            document.getElementById('paymentNoticeBox').innerHTML = '💵 <strong>Aviso del Comercio: Solo Efectivo</strong><br>Este establecimiento opera exclusivamente en efectivo (límite máximo RD$ 2,000 por orden).';
+            const select = document.getElementById('paymentMethodSelect');
+            select.innerHTML = '<option value="cash">💵 Solo Efectivo contra entrega</option>';
+            select.disabled = true;
+            document.getElementById('cashDenomBox').style.display = 'block';
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function confirmOrder() {
+      if (!token) {
+        alert("Enlace inválido o expirado.");
+        return;
+      }
+      const addr = document.getElementById('deliveryAddress').value;
+      let notes = document.getElementById('orderNotes').value;
+      const method = document.getElementById('paymentMethodSelect').value;
+
+      if (method === 'cash') {
+        const denom = document.getElementById('cashDenomSelect').value;
+        if (denom !== 'exact') {
+          notes += ` [Cambio solicitado para: RD$ ${denom}]`;
+        }
+      }
+
+      try {
+        const res = await fetch('/api/orders/secure-checkout/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: token,
+            business_id: 'biz_el_batey_bistro',
+            customer_phone: '8095551234',
+            items: [
+              { menu_item_id: 'mi_red_snapper', quantity: 1 }
+            ],
+            delivery_address: addr,
+            notes: notes,
+            payment_method: method
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('checkoutContent').innerHTML = `
+            <div style="text-align: center; padding: 20px 0;">
+              <h2 style="color: #0F5132;">¡Pedido Confirmado!</h2>
+              <p>Tu orden <strong>${data.order_number}</strong> ha sido enviada a cocina de <strong>El Batey Bistro</strong>.</p>
+              <div style="background: #F1F5F9; padding: 16px; border-radius: 8px; margin: 16px 0;">
+                <p style="margin: 0; font-size: 0.9rem;">Alias en Mostrador: <strong>${data.customer_alias}</strong></p>
+                <p style="margin: 8px 0 0 0; font-size: 1.1rem; font-weight: bold; color: #0F5132;">Total: RD$ ${data.total.toFixed(2)}</p>
+                <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #475569;">Método de Pago: ${method === 'card' ? '💳 Tarjeta de Crédito/Débito' : '💵 Efectivo contra entrega'}</p>
+              </div>
+              <p style="font-size: 0.85rem; color: #64748B;">Recibirás actualizaciones de preparación a través de WhatsApp.</p>
+            </div>
+          `;
+        } else {
+          alert(data.error || "No se pudo confirmar el pedido.");
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    window.onload = initCheckout;
+  </script>
+</body>
+</html>
