@@ -562,15 +562,15 @@ def seed_database(db_path: str):
                      "Dominican household favorite salami for breakfast or frito combo.", "El salami preferido de las familias dominicanas.", 185.0))
 
     # -------------------------------------------------------------
-    # Clothing Store: Tropical Waves Boutique & Surfwear
+    # Clothing Store: Yahaira Boutique / Tropical Waves Beachwear
     # -------------------------------------------------------------
-    cloth_owner = "user_clothe_sofia"
-    cur.execute("SELECT id FROM users WHERE email = 'sofia@tropicalwavesboutique.com'")
+    cloth_owner = "user_clothe_yahaira"
+    cur.execute("SELECT id FROM users WHERE email = 'yahaira@tropicalwavesboutique.com'")
     if not cur.fetchone():
         cur.execute(
             """INSERT INTO users (id, email, password_hash, full_name, role)
                VALUES (?, ?, ?, ?, ?)""",
-            (cloth_owner, "sofia@tropicalwavesboutique.com", hash_password("BoutiquePass2026!"), "Sofia Mendez", "owner")
+            (cloth_owner, "yahaira@tropicalwavesboutique.com", hash_password("BoutiquePass2026!"), "Yahaira", "owner")
         )
 
     b_clothe = "biz_tropical_waves_boutique"
@@ -584,8 +584,8 @@ def seed_database(db_path: str):
                 hours_json, rnc_tax_id, rnc_status, approved_by, approved_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
             (
-                b_clothe, cloth_owner, "Tropical Waves Beachwear & Surf Boutique", "Mendez Moda y Playa SRL",
-                "tropical-waves-beachwear-boutique", "cat_fashion", "loc_sosua",
+                b_clothe, cloth_owner, "Yahaira Tropical Beachwear Boutique", "Yahaira Moda y Playa SRL",
+                "yahaira-tropical-beachwear-boutique", "cat_fashion", "loc_sosua",
                 "Coastal beachwear, rashguards, tropical summer linen dresses, swimsuits, sun hats, and surf accessories on Calle Pedro Clisante in Sosua.",
                 "Boutique de ropa playera, vestidos frescos de lino caribeño, trajes de baño, sombreros y licras de surf en Calle Pedro Clisante.",
                 "approved", 1, "Calle Pedro Clisante #28, El Batey, Sosúa",
