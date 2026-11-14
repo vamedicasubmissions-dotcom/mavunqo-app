@@ -283,7 +283,7 @@
         currentBusiness = await res.json();
 
         // Check if restaurant category -> fetch structured menu & delivery capacity
-        if (currentBusiness.category_slug === 'dining-food' || currentBusiness.category_slug === 'groceries-colmados') {
+        if (currentBusiness.category_slug === 'dining-food' || currentBusiness.category_slug === 'groceries-colmados' || currentBusiness.category_slug === 'clothing-fashion') {
           try {
             const [mRes, capRes] = await Promise.all([
               fetch(`/api/restaurants/${slug}/menu`),
@@ -389,28 +389,16 @@
         const isClothing = b.category_slug === 'clothing-fashion';
         const isGrocery = b.category_slug === 'groceries-colmados';
         const btnText = isClothing ? '🛍️ Browse Collection & Order' : (isGrocery ? '🛒 Browse Aisles & Order' : '🍽️ Browse Menu & Order');
-        const isGrocery = b.category_slug === 'groceries-colmados';
+        const descText = isClothing ? 'Browse dresses, denim, rompers & sets. Order for instant pickup or local courier delivery with cash-on-delivery.' : (isGrocery ? 'Order groceries, drinking water botellones, cold beers & snacks with 20-40 min motorcycle delivery.' : 'Select items from the menu to order for delivery or pickup with cash-on-delivery tracking & driver protection.');
         ctaList.innerHTML = `
           <div style="background: rgba(17, 107, 98, 0.08); border: 1px solid rgba(17, 107, 98, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
             <div style="font-weight: 800; font-size: 0.9rem; color: var(--teal-primary); margin-bottom: 0.25rem;">⚡ Order Directly on Mavunqo</div>
             <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
-              ${isGrocery ? 'Order groceries, drinking water botellones, cold beers & snacks with 20-40 min motorcycle delivery.' : 'Select items from the menu to order for delivery or pickup with cash-on-delivery tracking & driver protection.'}
+              ${descText}
             </p>
           </div>
           <button class="btn btn-primary" style="width: 100%; font-weight: 800;" onclick="document.getElementById('servicesMenuContainer').scrollIntoView({behavior: 'smooth'});">
-            ${isGrocery ? '🛒 Browse Aisles & Order' : '🍽️ Browse Menu & Order'}
-          </button>
-        `;
-        // Restaurant: Push ordering through Mavunqo
-        ctaList.innerHTML = `
-          <div style="background: rgba(17, 107, 98, 0.08); border: 1px solid rgba(17, 107, 98, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
-            <div style="font-weight: 800; font-size: 0.9rem; color: var(--teal-primary); margin-bottom: 0.25rem;">⚡ Order Directly on Mavunqo</div>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
-              Select items from the menu to order for delivery or pickup with cash-on-delivery tracking & driver protection.
-            </p>
-          </div>
-          <button class="btn btn-primary" style="width: 100%; font-weight: 800;" onclick="document.getElementById('servicesMenuContainer').scrollIntoView({behavior: 'smooth'});">
-            🍽️ Browse Menu & Order
+            ${btnText}
           </button>
         `;
       } else if (b.category_slug === 'hospitality-tourism' || (lodgingUnits && lodgingUnits.length > 0)) {
