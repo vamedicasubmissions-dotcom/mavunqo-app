@@ -84,10 +84,11 @@ header.navbar {
 
 .brand-logo {
   font-size: 1.65rem;
-  font-weight: 900;
+  font-weight: 950;
   color: #ffffff;
   text-decoration: none;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   display: flex;
   align-items: center;
   gap: 0.5rem;
