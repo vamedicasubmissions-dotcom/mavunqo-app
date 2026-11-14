@@ -821,3 +821,156 @@ table.data-table td {
   padding: 1rem 1.2rem;
   border-bottom: 1px solid var(--border);
 }
+
+/* ==========================================================================
+   MOBILE-FIRST PHONE ERGONOMICS & OPTIMIZATION (< 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* Prevent horizontal scroll */
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  /* Compact top navbar on mobile */
+  .nav-container {
+    padding: 0.65rem 1rem;
+  }
+  .brand-logo {
+    font-size: 1.35rem;
+  }
+  .brand-pill {
+    display: none; /* Keep header clean on phones */
+  }
+  /* Hide desktop register/login buttons in top navbar on mobile (bottom nav handles it) */
+  .nav-actions a.btn {
+    display: none;
+  }
+
+  /* Hero Section */
+  .uber-hero {
+    padding: 1.5rem 1rem 1rem;
+  }
+  .uber-hero-headline {
+    font-size: 1.85rem !important;
+    line-height: 1.15;
+    margin-bottom: 0.5rem;
+  }
+  .uber-hero-subtitle {
+    font-size: 0.95rem;
+    margin-bottom: 1.25rem;
+    line-height: 1.45;
+  }
+
+  /* Search Card */
+  .uber-search-card {
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    margin-bottom: 1.25rem;
+  }
+  .uber-search-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .uber-input {
+    padding: 0.75rem 0.85rem 0.75rem 2.5rem;
+    font-size: 0.92rem;
+  }
+
+  /* Horizontal Category Chips */
+  .category-chips-scroll {
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+  }
+  .category-chip {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Directory & Store Cards */
+  .uber-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .uber-card {
+    border-radius: var(--radius-lg);
+  }
+  .uber-card-top {
+    padding: 1.1rem 1.1rem 0.5rem;
+  }
+  .uber-card-title {
+    font-size: 1.18rem;
+  }
+  .uber-card-body {
+    padding: 0 1.1rem 1rem;
+  }
+  .uber-card-desc {
+    font-size: 0.88rem;
+    line-height: 1.4;
+    margin-bottom: 0.75rem;
+  }
+  .uber-card-actions {
+    padding: 0.75rem 1.1rem;
+  }
+
+  /* Storefront Hero */
+  .uber-storefront-hero {
+    padding: 1.5rem 1rem;
+    border-radius: var(--radius-lg);
+    margin-bottom: 1.25rem;
+  }
+  .uber-storefront-title {
+    font-size: 1.85rem !important;
+  }
+  .uber-storefront-desc {
+    font-size: 0.95rem;
+  }
+
+  /* Menu Items (Food, Groceries, Services) */
+  .uber-menu-card {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+  .uber-menu-name {
+    font-size: 1.02rem;
+  }
+  .uber-menu-desc {
+    font-size: 0.85rem;
+  }
+  .uber-menu-price {
+    font-size: 1.1rem;
+  }
+
+  /* AI Concierge Pill & Drawer on Phone */
+  .ai-concierge-pill {
+    bottom: 4.8rem !important;
+    right: 1rem !important;
+    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+    box-shadow: 0 4px 14px rgba(17, 107, 98, 0.4);
+  }
+  .ai-drawer {
+    height: 75vh !important;
+    max-height: 80vh !important;
+    border-radius: 20px 20px 0 0 !important;
+  }
+
+  /* Floating Order Cart Bar for Mobile */
+  #restaurantCartBar {
+    bottom: 4.8rem !important;
+    width: 94% !important;
+    padding: 0.75rem 1.1rem !important;
+  }
+
+  /* Touch Targets (Minimum 44px for thumb tap ergonomics) */
+  .btn, button, select, input {
+    min-height: 44px;
+  }
+  .btn-sm {
+    min-height: 38px;
+  }
+}
