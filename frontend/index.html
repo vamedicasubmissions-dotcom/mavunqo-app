@@ -240,7 +240,7 @@
             <div class="uber-card-meta">
               <span class="uber-badge">${catName}</span>
               <span>📍 ${b.location_name}</span>
-              ${hasExternalSite ? `<span class="uber-badge">🌐 Web</span>` : `<span class="uber-badge" style="background: #e2e8f0;">⚡ Storefront</span>`}
+              ${hasExternalSite ? `<span class="uber-badge">🌐 Web</span>` : (b.category_slug === 'clothing-fashion' ? `<span class="uber-badge" style="background: #e0f2fe; color: #0369a1; font-weight: 750;">🛍️ Online Store</span>` : `<span class="uber-badge" style="background: #e2e8f0;">⚡ Storefront</span>`)}
             </div>
           </div>
 
@@ -251,7 +251,7 @@
 
           <div class="uber-card-actions">
             <a href="/b/${b.slug}" class="btn btn-primary btn-sm" style="flex: 1; text-align: center; font-weight: 750; padding: 0.65rem 1rem;">
-              ${b.category_slug === 'dining-food' ? '🍽️ Order Food' : (b.category_slug === 'groceries-colmados' ? '🛒 Order Groceries' : (b.category_slug === 'hospitality-tourism' ? '🏨 Reserve Stay' : '⚡ Request Service via Mavunqo'))}
+              ${b.category_slug === 'clothing-fashion' ? '🛍️ Shop Boutique' : (b.category_slug === 'dining-food' ? '🍽️ Order Food' : (b.category_slug === 'groceries-colmados' ? '🛒 Order Groceries' : (b.category_slug === 'hospitality-tourism' ? '🏨 Reserve Stay' : '⚡ Request Service via Mavunqo')))}
             </a>
           </div>
         `;

@@ -37,7 +37,7 @@
         <div class="uber-storefront-meta">
           <span id="bizCategory" class="uber-storefront-badge">Category</span>
           <span id="bizLocation" class="uber-storefront-badge">📍 Location</span>
-          <span id="bizTierPill" class="uber-storefront-badge">Verified Listing</span>
+          <span id="bizTierPill" class="uber-storefront-badge">Verified Online Store</span>
         </div>
         <h1 id="bizTradingName" class="uber-storefront-title">Business Name</h1>
         <p id="bizDescription" class="uber-storefront-desc"></p>
@@ -46,7 +46,7 @@
       <div class="uber-storefront-layout">
         <!-- Main: Services Catalog -->
         <div>
-          <h2 style="font-size: 1.6rem; font-weight: 850; margin-bottom: 1.25rem; letter-spacing: -0.02em;" data-i18n="services_heading">Offered Services & Menu</h2>
+          <h2 id="catalogHeading" style="font-size: 1.6rem; font-weight: 850; margin-bottom: 1.25rem; letter-spacing: -0.02em;">🛍️ Online Store Catalog</h2>
           <div id="servicesMenuContainer">
             <!-- Services injected here -->
           </div>
@@ -494,9 +494,20 @@
               const itName = currentLang === 'es' ? it.name_es : it.name_en;
               const itDesc = currentLang === 'es' ? it.description_es : it.description_en;
               const hasMods = it.modifiers && it.modifiers.length > 0;
-              const modsText = hasMods 
-                ? `<div style="font-size: 0.8rem; color: var(--amber-dark); margin-top: 0.25rem;">Optional: ${it.modifiers.map(m => (currentLang === 'es' ? m.name_es : m.name_en) + ' (+' + m.price_delta + ' ' + it.currency + ')').join(', ')}</div>` 
-                : '';
+              const isBoutique = b.category_slug === 'clothing-fashion';
+              let sizeSelectorHtml = '';
+              if (hasMods && isBoutique) {
+                sizeSelectorHtml = `
+                  <div style="margin-top: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+                    <label style="font-size: 0.78rem; font-weight: 750; color: var(--text-secondary);">${currentLang === 'es' ? 'Talla:' : 'Size:'}</label>
+                    <select id="sizeSelect_${it.id}" class="input-field" style="padding: 0.2rem 0.5rem; font-size: 0.8rem; width: auto; height: auto; border-radius: 6px; font-weight: 600;">
+                      ${it.modifiers.map(m => `<option value="${escapeAttr(currentLang === 'es' ? m.name_es : m.name_en)}">${currentLang === 'es' ? m.name_es : m.name_en}</option>`).join('')}
+                    </select>
+                  </div>
+                `;
+              } else if (hasMods) {
+                sizeSelectorHtml = `<div style="font-size: 0.8rem; color: var(--amber-dark); margin-top: 0.25rem;">Optional: ${it.modifiers.map(m => (currentLang === 'es' ? m.name_es : m.name_en) + ' (+' + m.price_delta + ' ' + it.currency + ')').join(', ')}</div>`;
+              }
 
               const photoThumb = it.image_url 
                 ? `<img src="${it.image_url}" alt="${itName}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">`
@@ -509,12 +520,12 @@
                     <div>
                       <div class="uber-menu-name" style="font-size: 1.05rem;">${itName}</div>
                       <div class="uber-menu-desc">${itDesc || ''}</div>
-                      ${modsText}
+                      ${sizeSelectorHtml}
                     </div>
                   </div>
                   <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; flex-shrink: 0;">
                     <span style="font-weight: 850; font-size: 1.05rem; color: var(--text-primary);">${it.price.toFixed(2)} ${it.currency}</span>
-                    <button class="btn btn-primary btn-sm" onclick="addToCart('${it.id}', '${escapeAttr(itName)}', ${it.price}, '${it.currency}');" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                    <button class="btn btn-primary btn-sm" onclick="handleAddToCart('${it.id}', '${escapeAttr(itName)}', ${it.price}, '${it.currency}');" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
                       + Add to Cart
                     </button>
                   </div>
@@ -527,14 +538,23 @@
       });
     }
 
-    function addToCart(itemId, name, price, currency) {
-      const existing = cart.find(x => x.item_id === itemId);
+    function handleAddToCart(itemId, name, price, currency) {
+      const sizeEl = document.getElementById(`sizeSelect_${itemId}`);
+      const selectedSize = sizeEl ? sizeEl.value : null;
+      const displayName = selectedSize ? `${name} (${selectedSize})` : name;
+      const cartKey = selectedSize ? `${itemId}_${selectedSize}` : itemId;
+
+      const existing = cart.find(x => x.cart_key === cartKey || (!x.cart_key && x.item_id === itemId));
       if (existing) {
         existing.qty += 1;
       } else {
-        cart.push({ item_id: itemId, name: name, price: price, currency: currency, qty: 1 });
+        cart.push({ item_id: itemId, cart_key: cartKey, name: displayName, price: price, currency: currency, qty: 1, size: selectedSize });
       }
       updateCartBar();
+    }
+
+    function addToCart(itemId, name, price, currency) {
+      handleAddToCart(itemId, name, price, currency);
     }
 
     function updateCartBar() {
