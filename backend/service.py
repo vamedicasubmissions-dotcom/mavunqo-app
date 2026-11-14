@@ -1252,6 +1252,42 @@ class MavunqoService:
                     "en": "For fresh local fish in Sosua, Playa Sosua and El Batey Bistro offer great red snapper and garlic tostones.",
                     "es": "Para el mejor pescado en Sosúa, Playa Sosúa y El Batey Bistro ofrecen excelente chillo entero fresco con tostones."
                 },
+                "wings": {
+                    "en": "For the best chicken wings in Sosúa, local favorites include:\n1. **Wings & Waffles** (Calle Dr. Rosen) — dedicated comfort food spot famous for crispy, seasoned wings.\n2. **Flip Flop Sports Bar** (Calle Duarte / The Yellow Steps) — classic expat sports bar with crispy buffalo wings and cold Presidente beer.\n3. **Fat Jesse’s** (Calle Pedro Clisante) — lively grill & bar with top-rated American-style sauced wings.\n4. **Mosha's Reggae Lounge** (Calle Dr. Rosen) — renowned for incredible spicy Jamaican jerk-seasoned chicken.\n5. On Mavunqo: **El Batey Bistro & Grill** prepares delicious grilled chicken and Dominican appetizers.",
+                    "es": "Para las mejores alitas de pollo (chicken wings) en Sosúa, los lugares más recomendados son:\n1. **Wings & Waffles** (Calle Dr. Rosen) — especialidad en alitas crujientes y waffles.\n2. **Flip Flop Sports Bar** (Calle Duarte) — bar deportivo popular para alitas buffalo y cerveza bien fría.\n3. **Fat Jesse’s** (Calle Pedro Clisante) — famoso por sus alitas a la parrilla con salsas caseras.\n4. **Mosha's Reggae Lounge** (Calle Dr. Rosen) — famoso por su pollo jerk jamaiquino especiado.\n5. En Mavunqo: **El Batey Bistro & Grill** ofrece exquisito pollo a la parrilla y aperitivos criollos."
+                },
+                "alitas": {
+                    "en": "For the best wings in Sosua, visit Wings & Waffles on Dr. Rosen, Flip Flop Sports Bar on Calle Duarte, or Fat Jesse's on Pedro Clisante. On Mavunqo, order from El Batey Bistro.",
+                    "es": "Para las mejores alitas en Sosúa, visite Wings & Waffles en Calle Dr. Rosen, Flip Flop Sports Bar en Calle Duarte o Fat Jesse's en Pedro Clisante. En Mavunqo puede ordenar de El Batey Bistro."
+                },
+                "chicken": {
+                    "en": "For chicken in Sosua, try traditional Dominican pica pollo at local spots in Los Charamicos, wings at Wings & Waffles or Flip Flop Bar, jerk chicken at Mosha's, or homestyle chicken dishes on Mavunqo at D'Sabor Criollo.",
+                    "es": "Para pollo en Sosúa, pruebe el pica pollo tradicional en Los Charamicos, alitas en Wings & Waffles o Flip Flop, pollo jerk en Mosha's, o comida criolla en D'Sabor Criollo en Mavunqo."
+                },
+                "pica pollo": {
+                    "en": "Pica Pollo is the beloved Dominican style crispy fried chicken seasoned with oregano and lime. In Sosua, the best authentic pica pollo spots are in Los Charamicos (along Calle Alejo Martínez) and near the taxi stand by Highway 5. On Mavunqo, D'Sabor Criollo serves authentic homestyle fried chicken with tostones.",
+                    "es": "El Pica Pollo es el clásico pollo frito dominicano sazonado con orégano criollo y limón. Los mejores se encuentran en Los Charamicos (Calle Alejo Martínez) y cerca de la parada de la Carretera 5. En Mavunqo, D'Sabor Criollo prepara delicioso pollo frito criollo con tostones."
+                },
+                "burger": {
+                    "en": "For great burgers in Sosua, top spots include Checkpoint Bar & Grill on Pedro Clisante, Britannia Pub, and Bologna Ristorante. On Mavunqo, El Batey Bistro also serves grilled churrasco and meat specials.",
+                    "es": "Para hamburguesas en Sosúa, visite Checkpoint Bar & Grill en Calle Pedro Clisante, Britannia Pub o Restaurante Bologna."
+                },
+                "pizza": {
+                    "en": "For the best wood-fired artisanal pizza in Sosua, order directly on Mavunqo from **Playa Alicia Woodfire Pizza** (authentic sourdough baked in an oak wood-fired stone oven overlooking Playa Alicia). In town, Bologna and Waterfront are also popular.",
+                    "es": "Para la mejor pizza artesanal a la leña en Sosúa, ordene directamente en Mavunqo en **Playa Alicia Woodfire Pizza** (masa madre horneada en horno de leña con vista a Playa Alicia). En el pueblo, Bologna también es una opción clásica."
+                },
+                "nightlife": {
+                    "en": "Sosua nightlife is centered along Calle Pedro Clisante in El Batey, featuring vibrant bars, music lounges, and open-air patios (like Kings Rumba, Jolly Roger, and Latin clubs). Cabarete Beach (15 mins away) offers beachfront cocktail lounges with tables directly on the sand.",
+                    "es": "La vida nocturna de Sosúa se concentra en la Calle Pedro Clisante en El Batey, con bares animados y terrazas abiertas (Kings Rumba, Jolly Roger). En Cabarete (a 15 min), encontrará bares sobre la arena de la playa con música y fogatas."
+                },
+                "atm": {
+                    "en": "ATMs (Cajeros automáticos) are located inside Supermercado Playero, Banco Popular on Pedro Clisante, and Banreservas. It is best to use ATMs physically attached to bank branches for security.",
+                    "es": "Hay cajeros automáticos dentro de Supermercado Playero, Banco Popular en Pedro Clisante y Banreservas. Se recomienda usar cajeros dentro de bancos por seguridad."
+                },
+                "cajero": {
+                    "en": "Secure ATMs are available at Banco Popular and inside Supermercado Playero in El Batey.",
+                    "es": "Encontrará cajeros automáticos seguros en Banco Popular de Pedro Clisante y dentro de Supermercado Playero."
+                },
                 "taxi": {
                     "en": "Local transportation options in Sosua include official tourist taxi stands (outside Supermercado Playero and Pedro Clisante), motoconchos (local motorcycle taxis for short trips), and guaguas / carritos públicos along Highway 5.",
                     "es": "En Sosúa tiene paradas oficiales de taxis turísticos (frente a Supermercado Playero), motoconchos para viajes cortos y carritos/guaguas públicas por la Carretera 5."
@@ -1278,9 +1314,9 @@ class MavunqoService:
                     ans = extra_info
                 else:
                     if lang == "es":
-                        ans = "Aunque este comercio no está todavía registrado en el portal Mavunqo, Sosúa y la Costa Norte ofrecen excelentes opciones. Puede explorar el directorio general o solicitar asistencia directa por WhatsApp."
+                        ans = "Para esa búsqueda en Sosúa y la Costa Norte, le recomendamos explorar los comercios gastronómicos y de servicios en nuestro directorio, o consultar con nuestro equipo de asistencia local en la recepción de City Lights o soporte de Mavunqo."
                     else:
-                        ans = "While this specific business is not yet on the Mavunqo platform, Sosúa and the North Coast have great local options. You can explore our verified directory or reach out via WhatsApp for a direct local recommendation."
+                        ans = "For that in Sosúa and the North Coast, check our verified dining and services catalog on Mavunqo, or ask our local concierge team at the City Lights front desk or Mavunqo support for personal tips!" 
 
             return {
                 "query": query,
