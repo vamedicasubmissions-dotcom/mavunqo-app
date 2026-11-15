@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mavunqo Dispatch & Delivery Operations</title>
-  <link rel="stylesheet" href="/frontend/style.css">
+  <link rel="stylesheet" href="/frontend/style.css?v=20261115_v5">
   <style>
     .ops-grid {
       display: grid;
@@ -36,6 +36,7 @@
       flex-wrap: wrap;
     }
   </style>
+  <script src="/frontend/notifications.js"></script>
 </head>
 <body>
   <header class="navbar">
@@ -59,6 +60,18 @@
       </div>
       <div>
         <button class="btn btn-outline btn-sm" onclick="loadQueue();">🔄 Refresh Queue</button>
+      </div>
+    </div>
+
+        <!-- Live Dispatch Sound Alert Status -->
+    <div style="background: #0f172a; color: #fff; border-radius: 12px; padding: 0.85rem 1.25rem; margin-top: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; border: 1px solid #334155;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #22c55e;"></span>
+        <span style="font-size: 0.9rem; font-weight: 700;">🛵 Driver Dispatch Live Radar Active</span>
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="btn btn-outline-white btn-sm" onclick="window.mavunqoAudio && window.mavunqoAudio.playDriverPing();" style="border-radius: 6px; font-size: 0.8rem;">🔊 Test Driver Ping</button>
+        <button id="btnSilenceDriverAlarm" class="btn btn-sm" onclick="silenceDriverAlarm();" style="display: none; background: #ef4444; color: #fff; font-weight: 850; border-radius: 6px; font-size: 0.82rem; border: none;">⏹️ Silence</button>
       </div>
     </div>
 
@@ -267,7 +280,18 @@
       }
     }
 
-    window.onload = loadQueue;
+    
+    let knownDispatchOrderIds = new Set();
+    let isInitialDispatchLoad = true;
+
+    function silenceDriverAlarm() {
+      if (window.mavunqoAudio) {
+        window.mavunqoAudio.stopAlert();
+        document.getElementById("btnSilenceDriverAlarm").style.display = "none";
+      }
+    }
+
+    window.onload = () => { loadQueue(); setInterval(loadQueue, 6000); };
   </script>
 </body>
 </html>

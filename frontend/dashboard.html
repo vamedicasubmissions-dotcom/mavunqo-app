@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Merchant Portal | Mavunqo</title>
-  <link rel="stylesheet" href="/frontend/style.css">
+  <link rel="stylesheet" href="/frontend/style.css?v=20261115_v5">
   <style>
     .uber-admin-header {
       background-color: var(--black);
@@ -84,9 +84,26 @@
       z-index: 1;
     }
 
+  
+    @keyframes pulseDot {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+    @keyframes orderAlarmFlash {
+      0% { background: #fee2e2; }
+      50% { background: #fca5a5; }
+      100% { background: #fee2e2; }
+    }
+    .incoming-order-alarm {
+      animation: orderAlarmFlash 1.5s infinite;
+      border: 2px solid #dc2626 !important;
+    }
+
   </style>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/frontend/notifications.js"></script>
 </head>
 <body>
 
@@ -107,6 +124,20 @@
   </header>
 
   <main class="container" style="padding-top: 2rem;">
+    <!-- Live Order Alert Terminal Status -->
+    <div style="background: #0f172a; color: #fff; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; border: 1px solid #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span id="alertTerminalDot" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #22c55e; animation: pulseDot 1.5s infinite;"></span>
+        <div>
+          <strong style="font-size: 0.95rem; display: block;">🔔 Live Order Alert Terminal</strong>
+          <span id="alertTerminalStatus" style="font-size: 0.8rem; color: #94a3b8;">Listening for incoming customer orders (Continuous repeating chime active)</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <button id="btnTestSound" class="btn btn-outline-white btn-sm" onclick="testSoundAlert();" style="border-radius: 6px; font-size: 0.8rem;">🔊 Test Chime & Vibration</button>
+        <button id="btnSilenceAlarm" class="btn btn-sm" onclick="silenceActiveAlarm();" style="display: none; background: #ef4444; color: #fff; font-weight: 850; border-radius: 6px; font-size: 0.82rem; border: none;">⏹️ Silence Alarm</button>
+      </div>
+    </div>
     <!-- Top Welcome Banner -->
     <div class="uber-admin-header">
       <div>
@@ -220,6 +251,11 @@
         }
         const businesses = await res.json();
         renderBusinesses(businesses);
+        if (businesses.length > 0) {
+          pollMerchantOrders(businesses[0].id);
+          if (orderPollTimer) clearInterval(orderPollTimer);
+          orderPollTimer = setInterval(() => pollMerchantOrders(businesses[0].id), 5000);
+        }
       } catch (err) {
         console.error(err);
       }
@@ -308,6 +344,17 @@
                 <input type="checkbox" id="waConsent_${b.id}" ${b.whatsapp_alerts_consent ? 'checked' : ''} onchange="updateWhatsAppConsent('${b.id}', this.checked);">
                 <label for="waConsent_${b.id}" style="font-size: 0.85rem; font-weight: 750;">Opt-in to WhatsApp Alerts</label>
               </div>
+            </div>
+          </div>
+
+                    <!-- Real-Time Incoming Orders Section with Sound Alert -->
+          <div id="liveOrdersSection_${b.id}" style="margin-bottom: 2rem;">
+            <div class="uber-panel-title">
+              <span>🔔 Incoming Live Orders & Requests</span>
+              <span id="pendingOrdersCount_${b.id}" style="background: #2563eb; color: #fff; font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; font-weight: 800;">0 New</span>
+            </div>
+            <div id="ordersList_${b.id}">
+              <p style="color: var(--text-muted); font-size: 0.95rem;">Checking for orders...</p>
             </div>
           </div>
 
@@ -830,6 +877,139 @@
         },
         { enableHighAccuracy: true, timeout: 8000 }
       );
+    }
+
+    
+    let knownOrderIds = new Set();
+    let isInitialOrderLoad = true;
+    let orderPollTimer = null;
+
+    function testSoundAlert() {
+      if (window.mavunqoAudio) {
+        window.mavunqoAudio.playCashChime();
+        const statusEl = document.getElementById("alertTerminalStatus");
+        statusEl.innerText = "✓ Sound chime & vibration tested successfully!";
+        setTimeout(() => {
+          statusEl.innerText = "Listening for incoming customer orders (Continuous repeating chime active)";
+        }, 3000);
+      }
+    }
+
+    function silenceActiveAlarm() {
+      if (window.mavunqoAudio) {
+        window.mavunqoAudio.stopAlert();
+        document.getElementById("btnSilenceAlarm").style.display = "none";
+        document.getElementById("alertTerminalStatus").innerText = "Alarm silenced. Still listening for new orders.";
+      }
+    }
+
+    async function pollMerchantOrders(bizId) {
+      if (!bizId) return;
+      try {
+        const res = await fetch(`/api/owner/businesses/${bizId}/orders`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const orders = await res.json();
+
+        const pendingOrders = orders.filter(o => o.status === 'pending');
+        const badge = document.getElementById(`pendingOrdersCount_${bizId}`);
+        if (badge) badge.innerText = `${pendingOrders.length} New`;
+
+        // Check if there are brand-new unacknowledged orders
+        let hasNewIncoming = false;
+        pendingOrders.forEach(o => {
+          if (!knownOrderIds.has(o.id)) {
+            hasNewIncoming = true;
+            knownOrderIds.add(o.id);
+          }
+        });
+
+        // Trigger continuous chime if new orders arrived after initial load
+        if (hasNewIncoming && !isInitialOrderLoad) {
+          if (window.mavunqoAudio) {
+            window.mavunqoAudio.startLoopingAlert('merchant');
+            document.getElementById("btnSilenceAlarm").style.display = "inline-block";
+            document.getElementById("alertTerminalStatus").innerText = "🚨 NEW ORDER RECEIVED! Tap Accept or Silence.";
+          }
+        }
+
+        renderLiveOrders(bizId, orders);
+        isInitialOrderLoad = false;
+      } catch (err) {
+        console.error("Order polling error:", err);
+      }
+    }
+
+    function renderLiveOrders(bizId, orders) {
+      const listEl = document.getElementById(`ordersList_${bizId}`);
+      if (!listEl) return;
+
+      if (!orders || orders.length === 0) {
+        listEl.innerHTML = `<p style="color: var(--text-muted); font-size: 0.95rem;">No orders placed yet. As soon as a customer orders from your storefront, this board will ring!</p>`;
+        return;
+      }
+
+      listEl.innerHTML = orders.slice(0, 5).map(o => {
+        const isPending = (o.status === 'pending');
+        const cardClass = isPending ? 'catalog-item-card incoming-order-alarm' : 'catalog-item-card';
+        const itemsSummary = (o.items || []).map(i => `${i.quantity}x ${i.item_name_en}`).join(', ');
+
+        return `
+          <div class="${cardClass}" style="flex-wrap: wrap; gap: 12px;">
+            <div style="flex: 1; min-width: 220px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <strong>${o.order_number}</strong>
+                <span class="uber-badge" style="background: ${isPending ? '#fef3c7' : '#dcfce7'}; color: ${isPending ? '#92400e' : '#15803d'};">
+                  ${isPending ? '⏳ Awaiting Acceptance' : o.status.toUpperCase()}
+                </span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">${o.created_at}</span>
+              </div>
+              <div style="font-size: 0.9rem; margin-top: 4px;">
+                <strong>${o.customer_name}</strong> (${o.customer_phone}) &bull; ${o.fulfillment_type === 'delivery' ? '🛵 Delivery' : '🥡 Counter Pickup'}
+              </div>
+              <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px;">
+                ${itemsSummary}
+              </div>
+              ${o.customer_notes ? `<div style="font-size: 0.8rem; color: var(--amber-dark); margin-top: 2px;">Note: "${o.customer_notes}"</div>` : ''}
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
+              <span class="item-price-tag">RD$ ${parseFloat(o.total).toFixed(2)}</span>
+              ${isPending ? `
+                <button class="btn btn-primary btn-sm" onclick="acceptMerchantOrder('${bizId}', '${o.id}');" style="background: #16a34a; font-weight: 850;">
+                  ✓ Accept Order
+                </button>
+              ` : `
+                <a href="/merchant/ops" class="btn btn-outline btn-sm">Manage on Ops Board &rarr;</a>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function acceptMerchantOrder(bizId, orderId) {
+      silenceActiveAlarm();
+      try {
+        const res = await fetch(`/api/owner/businesses/${bizId}/orders/${orderId}/status`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ status: "accepted", estimated_minutes: 20 })
+        });
+        if (res.ok) {
+          alert("✓ Order accepted! Customer notified and dispatch alerted.");
+          pollMerchantOrders(bizId);
+        } else {
+          const d = await res.json();
+          alert(d.error || "Failed to accept order.");
+        }
+      } catch (e) {
+        alert("Network error.");
+      }
     }
 
     window.onload = loadDashboard;
