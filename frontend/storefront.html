@@ -282,16 +282,25 @@
         }
         currentBusiness = await res.json();
 
-        // Check if restaurant category -> fetch structured menu & delivery capacity
+        // Fetch structured catalog/menu for all food, grocery, boutique and fashion businesses
         if (currentBusiness.category_slug === 'dining-food' || currentBusiness.category_slug === 'groceries-colmados' || currentBusiness.category_slug === 'clothing-fashion') {
           try {
-            const [mRes, capRes] = await Promise.all([
-              fetch(`/api/restaurants/${slug}/menu`),
-              fetch(`/api/delivery/capacity?location=loc_sosua`)
-            ]);
-            if (mRes.ok) restaurantMenu = await mRes.json();
-            if (capRes.ok) deliveryCapacity = await capRes.json();
-          } catch(e) { console.error("Error loading menu/capacity", e); }
+            const mRes = await fetch(`/api/restaurants/${slug}/menu`);
+            if (mRes.ok) {
+              restaurantMenu = await mRes.json();
+            }
+          } catch(e) {
+            console.error("Error fetching menu:", e);
+          }
+
+          try {
+            const capRes = await fetch(`/api/delivery/capacity?location=loc_sosua`);
+            if (capRes.ok) {
+              deliveryCapacity = await capRes.json();
+            }
+          } catch(e) {
+            console.error("Error fetching delivery capacity:", e);
+          }
         }
 
         // Check if hospitality/tourism -> fetch lodging units
