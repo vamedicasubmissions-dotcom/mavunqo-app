@@ -704,15 +704,27 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         # Phase 2: Place Guest Order
         if path == "/api/orders":
             data = self.read_json_body()
+            cust_dict = data.get("customer") or {}
+            if not isinstance(cust_dict, dict):
+                cust_dict = {}
+            if not cust_dict.get("name") and data.get("customer_name"):
+                cust_dict["name"] = data.get("customer_name")
+            if not cust_dict.get("phone") and data.get("customer_phone"):
+                cust_dict["phone"] = data.get("customer_phone")
+            if not cust_dict.get("email") and data.get("customer_email"):
+                cust_dict["email"] = data.get("customer_email")
+
+            notes_val = data.get("customer_notes") or data.get("notes") or ""
+
             try:
                 res = service.place_order(
                     business_id=data.get("business_id", ""),
-                    customer_data=data.get("customer", {}),
+                    customer_data=cust_dict,
                     items=data.get("items", []),
                     fulfillment_type=data.get("fulfillment_type", "pickup"),
                     delivery_address=data.get("delivery_address", ""),
                     order_origin=data.get("order_origin", "mavunqo"),
-                    customer_notes=data.get("notes", "")
+                    customer_notes=notes_val
                 )
                 return self.send_json(res, 201)
             except Exception as e:

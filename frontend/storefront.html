@@ -878,10 +878,13 @@
 
       const payload = {
         business_id: currentBusiness.id,
+        customer: { name: name, phone: phone },
         customer_name: name,
         customer_phone: phone,
         fulfillment_type: mode,
         delivery_address: address,
+        delivery_pin_lat: parseFloat(document.getElementById("orderPinLat").value) || null,
+        delivery_pin_lng: parseFloat(document.getElementById("orderPinLng").value) || null,
         customer_notes: notes,
         items: cart.map(i => ({ menu_item_id: i.item_id, quantity: i.qty }))
       };
