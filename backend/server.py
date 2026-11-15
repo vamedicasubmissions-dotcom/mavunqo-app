@@ -360,6 +360,9 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/order/checkout":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "checkout.html"))
 
+        if path == "/whatsapp" or path == "/whatsapp/simulator":
+            return self.send_file_response(os.path.join(FRONTEND_DIR, "whatsapp_simulator.html"))
+
         if path == "/admin":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "admin.html"))
 

@@ -494,7 +494,7 @@
               const itName = currentLang === 'es' ? it.name_es : it.name_en;
               const itDesc = currentLang === 'es' ? it.description_es : it.description_en;
               const hasMods = it.modifiers && it.modifiers.length > 0;
-              const isBoutique = b.category_slug === 'clothing-fashion';
+              const isBoutique = (currentBusiness && currentBusiness.category_slug === 'clothing-fashion');
               let sizeSelectorHtml = '';
               if (hasMods && isBoutique) {
                 sizeSelectorHtml = `
