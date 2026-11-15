@@ -80,9 +80,9 @@
       </a>
 
       <div class="nav-actions">
+        <a href="/" class="btn btn-white btn-sm" style="font-weight: 850;">🛍️ Shop Directory & Order Delivery</a>
         <a href="/merchant/ops" class="btn btn-outline-white btn-sm">Live Order Board</a>
-        <a href="/" class="btn btn-outline-white btn-sm">Public Directory</a>
-        <button onclick="logout();" class="btn btn-white btn-sm">Sign Out</button>
+        <button onclick="logout();" class="btn btn-outline-white btn-sm">Sign Out</button>
       </div>
     </div>
   </header>
@@ -212,9 +212,17 @@
 
       if (list.length === 0) {
         container.innerHTML = `
-          <div class="state-box">
-            <h3>No businesses found for your account</h3>
-            <p>Ready to get started? <a href="/register">Submit a new business listing application</a>.</p>
+          <div class="state-box" style="padding: 2.5rem 1.5rem; text-align: center;">
+            <div style="font-size: 2.8rem; margin-bottom: 0.75rem;">🛍️🛵</div>
+            <h3 style="font-size: 1.4rem; font-weight: 850; margin-bottom: 0.5rem;">Welcome to MAVUNQO Shopper!</h3>
+            <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 1.5rem auto; font-size: 0.95rem;">
+              You are signed in! You can browse all verified boutiques, beachwear, restaurants, and colmados across Sosúa and order with instant motorcycle delivery or in-store pickup.
+            </p>
+            <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+              <a href="/" class="btn btn-primary" style="padding: 0.75rem 1.5rem; font-size: 0.95rem; font-weight: 850;">🛍️ Browse All Stores & Order Delivery</a>
+              <a href="/b/yaha-style-rd" class="btn btn-outline" style="padding: 0.75rem 1.25rem; font-size: 0.95rem; font-weight: 750;">👗 Shop Yaha Style RD Boutique</a>
+              <a href="/register" class="btn btn-outline" style="padding: 0.75rem 1.25rem; font-size: 0.95rem; font-weight: 750;">+ List My Own Business</a>
+            </div>
           </div>
         `;
         return;
