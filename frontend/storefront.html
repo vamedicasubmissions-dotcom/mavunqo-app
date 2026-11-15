@@ -4,7 +4,90 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Business Profile | Mavunqo</title>
-  <link rel="stylesheet" href="/frontend/style.css">
+  <link rel="stylesheet" href="/frontend/style.css?v=20261115_v2">
+  <style>
+    .catalog-product-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      box-sizing: border-box;
+      width: 100%;
+    }
+    .catalog-product-main {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex: 1;
+      min-width: 0;
+    }
+    .catalog-product-actions {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .catalog-product-price {
+      font-weight: 850;
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+    .catalog-add-btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 800;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    /* Force responsive stacking on phones and iPads under 768px */
+    @media (max-width: 768px) {
+      .catalog-product-card {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.85rem !important;
+        padding: 1rem !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+      }
+      .catalog-product-main {
+        display: flex !important;
+        align-items: flex-start !important;
+        gap: 0.75rem !important;
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+      .catalog-product-actions {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
+        padding-top: 0.75rem !important;
+        border-top: 1px dashed var(--border) !important;
+        margin-top: 0.25rem !important;
+      }
+      .catalog-product-price {
+        font-size: 1.15rem !important;
+        font-weight: 850 !important;
+      }
+      .catalog-add-btn {
+        width: auto !important;
+        padding: 0.55rem 1.25rem !important;
+        font-size: 0.9rem !important;
+        border-radius: 8px !important;
+      }
+    }
+  </style>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
