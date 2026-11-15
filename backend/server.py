@@ -652,6 +652,17 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             if opt_resp:
                 return self.send_json({"status": "opt_handled", "response": opt_resp})
                 
+        # Simulator & Testing: Direct WhatsApp Bot Message (POST)
+        if path == "/api/whatsapp/test-message":
+            data = self.read_json_body()
+            from_phone = data.get("from", "+18095551234")
+            text_body = data.get("message", "").strip()
+            if not text_body:
+                return self.send_json({"error": "Message is required"}, 400)
+            
+            bot_result = wa_bot.handle_message(from_phone, text_body)
+            return self.send_json({"status": "processed", "bot": bot_result, "reply": bot_result.get("response", "")})
+
             # Process via Grounded WhatsApp Bot
             bot_result = wa_bot.handle_message(from_phone, text_body)
             return self.send_json({"status": "processed", "bot": bot_result})
