@@ -22,23 +22,67 @@
   </header>
 
   <main class="container">
-    <div class="form-card" style="max-width: 440px; margin-top: 3rem;">
-      <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; text-align: center;">Sign In</h2>
-      <p style="text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Access your Business Dashboard or Admin Portal</p>
+    <div class="form-card" style="max-width: 480px; margin-top: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border-radius: 14px;">
+      
+      <!-- Segmented Tab Bar: Guest Shopper vs Registered Merchant Login -->
+      <div style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 10px; margin-bottom: 1.5rem;">
+        <button id="tabShopperBtn" onclick="switchLoginTab('shopper');" type="button" style="flex: 1; padding: 0.65rem 0.5rem; border: none; border-radius: 8px; font-weight: 800; font-size: 0.88rem; cursor: pointer; background: #ffffff; color: var(--teal-primary); box-shadow: 0 2px 5px rgba(0,0,0,0.06); transition: all 0.2s;">
+          🛍️ Guest & Shopper
+        </button>
+        <button id="tabOwnerBtn" onclick="switchLoginTab('owner');" type="button" style="flex: 1; padding: 0.65rem 0.5rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; background: transparent; color: #64748b; transition: all 0.2s;">
+          🏢 Business / Admin
+        </button>
+      </div>
 
-      <div id="errorBox" style="display: none; background: #fee2e2; color: #991b1b; padding: 0.75rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.88rem;"></div>
+      <!-- SECTION A: SHOPPER / GUEST ACCESS -->
+      <div id="shopperSection">
+        <div style="text-align: center; margin-bottom: 1.25rem;">
+          <h2 style="font-size: 1.45rem; font-weight: 850; margin-bottom: 0.35rem; color: var(--text-primary);">Shop All Businesses</h2>
+          <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.4;">
+            Order Clothing, Food, Drinks & Groceries with fast motorcycle delivery or in-store pickup across Sosúa.
+          </p>
+        </div>
 
-      <form id="loginForm" onsubmit="event.preventDefault(); handleLogin();">
-        <div style="margin-bottom: 1rem;">
-          <label>Email Address</label>
-          <input type="email" id="emailInput" class="input-field" style="width: 100%;" required>
+        <!-- 1-Click Guest Pass (Zero Password Needed) -->
+        <div style="background: rgba(17, 107, 98, 0.07); border: 1.5px solid rgba(17, 107, 98, 0.25); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; text-align: center;">
+          <div style="font-weight: 850; font-size: 1rem; color: var(--teal-primary); margin-bottom: 0.3rem;">⚡ Instant Guest Shopping</div>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.85rem;">
+            No password or registration required! Browse boutiques, menus, and colmados immediately with cash-on-delivery tracking.
+          </p>
+          <a href="/" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-weight: 850; display: block; font-size: 0.95rem;">
+            🚀 Continue as Guest Shopper
+          </a>
         </div>
-        <div style="margin-bottom: 1.5rem;">
-          <label>Password</label>
-          <input type="password" id="passwordInput" class="input-field" style="width: 100%;" required>
+
+        <div style="text-align: center; margin-bottom: 1rem; position: relative;">
+          <hr style="border: none; border-top: 1px solid var(--border); margin: 0;">
+          <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #ffffff; padding: 0 10px; font-size: 0.75rem; color: #94a3b8; font-weight: 700;">OR SIGN IN WITH DEMO SHOPPER</span>
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
-      </form>
+
+        <button type="button" onclick="quickFillShopper();" class="btn btn-outline" style="width: 100%; font-weight: 800; padding: 0.65rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>👤 Use Demo Shopper (Elena Rodriguez)</span>
+        </button>
+      </div>
+
+      <!-- SECTION B: BUSINESS OWNER & ADMIN LOGIN -->
+      <div id="ownerSection" style="display: none;">
+        <h2 style="font-size: 1.4rem; font-weight: 850; margin-bottom: 0.35rem; text-align: center;">Merchant Portal</h2>
+        <p style="text-align: center; color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem;">Sign in to adjust clothing sizes, pricing, and live orders</p>
+
+        <div id="errorBox" style="display: none; background: #fee2e2; color: #991b1b; padding: 0.75rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.88rem;"></div>
+
+        <form id="loginForm" onsubmit="event.preventDefault(); handleLogin();">
+          <div style="margin-bottom: 1rem;">
+            <label style="font-size: 0.85rem; font-weight: 750;">Email Address</label>
+            <input type="email" id="emailInput" class="input-field" style="width: 100%;" placeholder="merchant@mavunqo.com" required>
+          </div>
+          <div style="margin-bottom: 1.25rem;">
+            <label style="font-size: 0.85rem; font-weight: 750;">Password</label>
+            <input type="password" id="passwordInput" class="input-field" style="width: 100%;" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; font-weight: 850;">Sign In to Dashboard</button>
+        </form>
+      </div>
 
       <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem; font-size: 0.82rem; color: var(--text-muted);">
         <strong>Demo Accounts for Review:</strong>
@@ -54,6 +98,40 @@
   </main>
 
   <script>
+    function switchLoginTab(tab) {
+      const shopperSec = document.getElementById("shopperSection");
+      const ownerSec = document.getElementById("ownerSection");
+      const shopperBtn = document.getElementById("tabShopperBtn");
+      const ownerBtn = document.getElementById("tabOwnerBtn");
+
+      if (tab === "shopper") {
+        shopperSec.style.display = "block";
+        ownerSec.style.display = "none";
+        shopperBtn.style.background = "#ffffff";
+        shopperBtn.style.color = "var(--teal-primary)";
+        shopperBtn.style.boxShadow = "0 2px 5px rgba(0,0,0,0.06)";
+        ownerBtn.style.background = "transparent";
+        ownerBtn.style.color = "#64748b";
+        ownerBtn.style.boxShadow = "none";
+      } else {
+        shopperSec.style.display = "none";
+        ownerSec.style.display = "block";
+        ownerBtn.style.background = "#ffffff";
+        ownerBtn.style.color = "var(--teal-primary)";
+        ownerBtn.style.boxShadow = "0 2px 5px rgba(0,0,0,0.06)";
+        shopperBtn.style.background = "transparent";
+        shopperBtn.style.color = "#64748b";
+        shopperBtn.style.boxShadow = "none";
+      }
+    }
+
+    function quickFillShopper() {
+      switchLoginTab("owner");
+      document.getElementById("emailInput").value = "shopper@mavunqo.com";
+      document.getElementById("passwordInput").value = "Shopper2026!";
+      handleLogin();
+    }
+
     async function handleLogin() {
       const email = document.getElementById("emailInput").value;
       const password = document.getElementById("passwordInput").value;
