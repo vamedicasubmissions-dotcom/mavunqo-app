@@ -64,8 +64,19 @@
         </div>
 
         <div id="deliveryAddressBox" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
-          <strong style="display: block;">Delivery Address:</strong>
-          <span id="deliveryAddress" style="color: var(--text-secondary);"></span>
+          <strong style="display: block; color: var(--teal-primary);">🛵 Delivery Destination:</strong>
+          <span id="deliveryAddress" style="color: var(--text-secondary); font-weight: 600;"></span>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Our dispatch driver will bring the package directly to your pin/villa entrance.</div>
+        </div>
+
+        <div id="pickupLocationBox" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); background: #f8fafc; border-radius: 8px; padding: 0.85rem;">
+          <div style="font-weight: 850; font-size: 0.95rem; color: var(--teal-primary); margin-bottom: 0.25rem;">🛍️ Pickup Location (Ready for Counter Collection)</div>
+          <div id="pickupStoreName" style="font-weight: 750; font-size: 0.95rem; margin-bottom: 0.2rem;"></div>
+          <div id="pickupStoreAddress" style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 0.5rem;"></div>
+          <div id="pickupStoreNote" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.6rem;"></div>
+          <a id="pickupMapsBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 800; font-size: 0.82rem;">
+            🗺️ Open Google Maps Directions ↗
+          </a>
         </div>
       </div>
 
@@ -205,6 +216,25 @@
       if (o.fulfillment_type === 'delivery' && o.delivery_address) {
         document.getElementById('deliveryAddressBox').style.display = 'block';
         document.getElementById('deliveryAddress').textContent = o.delivery_address;
+        document.getElementById('pickupLocationBox').style.display = 'none';
+      } else if (o.fulfillment_type === 'pickup') {
+        document.getElementById('deliveryAddressBox').style.display = 'none';
+        const pBox = document.getElementById('pickupLocationBox');
+        pBox.style.display = 'block';
+        document.getElementById('pickupStoreName').textContent = o.business_name || 'Store Counter';
+        document.getElementById('pickupStoreAddress').textContent = o.business_address || 'Sosúa, Dominican Republic';
+        if (o.pickup_pin_note) {
+          document.getElementById('pickupStoreNote').textContent = '📍 Counter Landmark: ' + o.pickup_pin_note;
+        } else {
+          document.getElementById('pickupStoreNote').textContent = '';
+        }
+        if (o.pickup_lat && o.pickup_lng) {
+          document.getElementById('pickupMapsBtn').href = `https://www.google.com/maps/dir/?api=1&destination=${o.pickup_lat},${o.pickup_lng}`;
+          document.getElementById('pickupMapsBtn').style.display = 'inline-flex';
+        } else {
+          document.getElementById('pickupMapsBtn').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.business_name + ' ' + (o.business_address || 'Sosua'))}`;
+          document.getElementById('pickupMapsBtn').style.display = 'inline-flex';
+        }
       }
 
       const itemsList = document.getElementById('itemsList');

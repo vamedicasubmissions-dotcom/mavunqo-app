@@ -865,7 +865,9 @@ class MavunqoService:
     def get_order_by_token(self, status_token: str):
         with self.get_connection() as conn:
             order = conn.execute(
-                """SELECT o.*, b.trading_name AS business_name, b.phone AS business_phone, b.whatsapp AS business_whatsapp
+                """SELECT o.*, b.trading_name AS business_name, b.phone AS business_phone, b.whatsapp AS business_whatsapp,
+                          b.address AS business_address, b.storefront_pin_lat AS pickup_lat, b.storefront_pin_lng AS pickup_lng,
+                          b.pickup_pin_note
                    FROM orders o
                    JOIN businesses b ON o.business_id = b.id
                    WHERE o.status_token = ?""",

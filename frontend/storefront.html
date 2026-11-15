@@ -491,9 +491,10 @@
       // Address & areas
       document.getElementById("bizAddress").textContent = b.address || "Sosúa, Dominican Republic";
 
-      // Render Storefront Pin Map
+      // Render Storefront Pin Map only if in-person service appointments; hide for catalog/delivery ordering to prevent diversion
       const mapWrap = document.getElementById("storefrontMapContainer");
-      if (b.storefront_pin_lat && b.storefront_pin_lng) {
+      const isOnlineShoppingOrDining = (b.category_slug === 'clothing-fashion' || b.category_slug === 'dining-food' || b.category_slug === 'groceries-colmados');
+      if (b.storefront_pin_lat && b.storefront_pin_lng && !isOnlineShoppingOrDining) {
         mapWrap.style.display = "block";
         const bLat = parseFloat(b.storefront_pin_lat);
         const bLng = parseFloat(b.storefront_pin_lng);
@@ -719,18 +720,18 @@
                 : '';
 
               return `
-                <div class="uber-menu-card" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
-                  <div style="display: flex; gap: 1rem; align-items: center; flex: 1;">
+                <div class="uber-menu-card catalog-product-card">
+                  <div class="catalog-product-main">
                     ${photoThumb}
-                    <div>
-                      <div class="uber-menu-name" style="font-size: 1.05rem;">${itName}</div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div class="uber-menu-name">${itName}</div>
                       <div class="uber-menu-desc">${itDesc || ''}</div>
                       ${sizeSelectorHtml}
                     </div>
                   </div>
-                  <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; flex-shrink: 0;">
-                    <span style="font-weight: 850; font-size: 1.05rem; color: var(--text-primary);">${it.price.toFixed(2)} ${it.currency}</span>
-                    <button class="btn btn-primary btn-sm" onclick="handleAddToCart('${it.id}', '${escapeAttr(itName)}', ${it.price}, '${it.currency}');" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                  <div class="catalog-product-actions">
+                    <span class="catalog-product-price">${it.price.toFixed(2)} ${it.currency}</span>
+                    <button class="btn btn-primary btn-sm catalog-add-btn" onclick="handleAddToCart('${it.id}', '${escapeAttr(itName)}', ${it.price}, '${it.currency}');">
                       + Add to Cart
                     </button>
                   </div>
