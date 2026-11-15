@@ -123,8 +123,10 @@
       align-items: center;
       justify-content: center;
       cursor: zoom-in;
-      max-height: 72vh;
-      max-width: 90vw;
+      width: 90vw;
+      max-width: 520px;
+      height: 70vh;
+      touch-action: none;
     }
     .lightbox-img-frame.is-zoomed {
       cursor: grab;
@@ -134,13 +136,14 @@
     }
     .lightbox-img {
       max-width: 100%;
-      max-height: 70vh;
+      max-height: 100%;
       object-fit: contain;
       display: block;
-      transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1);
-      transform-origin: center center;
       user-select: none;
       -webkit-user-drag: none;
+      transform-origin: 50% 50%;
+      will-change: transform;
+      pointer-events: none;
     }
     .lightbox-controls {
       display: flex;
@@ -1636,11 +1639,16 @@ A confirmation has been registered for front desk check-in.`);
     }
 
 
-    // --- PHOTO INSPECTION & ZOOM LIGHTBOX ENGINE ---
+    // --- ROCK-SOLID STABLE PHOTO ZOOM & INSPECTION ENGINE ---
     let currentZoomScale = 1.0;
-    let isPanning = false;
-    let startX = 0, startY = 0;
-    let translateX = 0, translateY = 0;
+    let translateX = 0;
+    let translateY = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let initialTranslateX = 0;
+    let initialTranslateY = 0;
+    let hasMoved = false;
 
     function openImageLightbox(imgUrl, itemTitle) {
       if (!imgUrl) return;
@@ -1651,21 +1659,23 @@ A confirmation has been registered for front desk check-in.`);
 
       img.src = imgUrl;
       title.textContent = itemTitle || "Item Details";
-      resetZoom();
+      resetZoom(false);
 
       modal.style.display = "flex";
-      document.body.style.overflow = "hidden"; // Prevent background scrolling
+      document.body.style.overflow = "hidden";
 
-      // Attach pan/drag listeners
-      frame.onmousedown = startPan;
-      frame.ontouchstart = startTouchPan;
+      // Bind Pointer Events (Unified Mouse + Touch + Stylus)
+      frame.onpointerdown = handlePointerDown;
+      frame.onpointermove = handlePointerMove;
+      frame.onpointerup = handlePointerUp;
+      frame.onpointercancel = handlePointerUp;
     }
 
     function closeImageLightbox() {
       const modal = document.getElementById("imageLightboxModal");
       modal.style.display = "none";
       document.body.style.overflow = "";
-      resetZoom();
+      resetZoom(false);
     }
 
     function onLightboxBgClick(e) {
@@ -1674,109 +1684,117 @@ A confirmation has been registered for front desk check-in.`);
       }
     }
 
-    function updateZoomTransform() {
+    function updateZoomTransform(animate = true) {
       const img = document.getElementById("lightboxImg");
       const frame = document.getElementById("lightboxFrame");
       const hint = document.getElementById("lightboxHint");
 
+      // Constrain pan within frame boundaries
+      clampTranslation();
+
+      if (animate) {
+        img.style.transition = "transform 0.22s cubic-bezier(0.2, 0.9, 0.4, 1)";
+      } else {
+        img.style.transition = "none";
+      }
+
       if (currentZoomScale > 1.05) {
         frame.classList.add("is-zoomed");
-        img.style.transform = `scale(${currentZoomScale}) translate(${translateX}px, ${translateY}px)`;
-        if (hint) hint.textContent = `🔍 Drag or swipe to inspect details (${Math.round(currentZoomScale * 100)}%)`;
+        img.style.transform = `translate3d(${translateX}px, ${translateY}px, 0px) scale(${currentZoomScale})`;
+        if (hint) hint.textContent = `🔍 Swipe or drag to inspect fabric & seams (${Math.round(currentZoomScale * 100)}%)`;
       } else {
         frame.classList.remove("is-zoomed");
         translateX = 0;
         translateY = 0;
-        img.style.transform = `scale(1) translate(0px, 0px)`;
-        if (hint) hint.textContent = `🔍 Tap or click photo to zoom 2.5x & inspect fabric/details`;
+        img.style.transform = "translate3d(0px, 0px, 0px) scale(1)";
+        if (hint) hint.textContent = `🔍 Tap anywhere on photo to zoom 2.5x & inspect details`;
       }
     }
 
+    function clampTranslation() {
+      const frame = document.getElementById("lightboxFrame");
+      if (!frame || currentZoomScale <= 1.05) {
+        translateX = 0;
+        translateY = 0;
+        return;
+      }
+      // Allow panning proportional to zoom factor
+      const maxPanX = (frame.clientWidth * (currentZoomScale - 1)) / 1.7;
+      const maxPanY = (frame.clientHeight * (currentZoomScale - 1)) / 1.7;
+
+      translateX = Math.max(-maxPanX, Math.min(maxPanX, translateX));
+      translateY = Math.max(-maxPanY, Math.min(maxPanY, translateY));
+    }
+
     function toggleZoomClick(e) {
-      // If user was dragging, don't trigger click toggle
-      if (isDragging) return;
+      // If user was dragging / panning, do not toggle zoom
+      if (hasMoved) return;
 
       if (currentZoomScale > 1.05) {
-        resetZoom();
+        resetZoom(true);
       } else {
-        currentZoomScale = 2.4;
-        updateZoomTransform();
+        currentZoomScale = 2.5;
+        // Center zoom relative to frame
+        translateX = 0;
+        translateY = 0;
+        updateZoomTransform(true);
       }
+    }
+
+    function handlePointerDown(e) {
+      if (currentZoomScale <= 1.05) {
+        hasMoved = false;
+        return;
+      }
+      isDragging = true;
+      hasMoved = false;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      initialTranslateX = translateX;
+      initialTranslateY = translateY;
+      
+      const frame = document.getElementById("lightboxFrame");
+      if (frame.setPointerCapture) {
+        try { frame.setPointerCapture(e.pointerId); } catch(err) {}
+      }
+    }
+
+    function handlePointerMove(e) {
+      if (!isDragging || currentZoomScale <= 1.05) return;
+      const deltaX = e.clientX - dragStartX;
+      const deltaY = e.clientY - dragStartY;
+
+      if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+        hasMoved = true;
+      }
+
+      translateX = initialTranslateX + deltaX;
+      translateY = initialTranslateY + deltaY;
+      updateZoomTransform(false); // No animation during live drag = rock-solid 60fps tracking
+    }
+
+    function handlePointerUp(e) {
+      if (!isDragging) return;
+      isDragging = false;
+      updateZoomTransform(true); // Smooth snap to clamped boundaries
+      setTimeout(() => { hasMoved = false; }, 80);
     }
 
     function zoomInStep() {
       currentZoomScale = Math.min(currentZoomScale + 0.6, 4.0);
-      updateZoomTransform();
+      updateZoomTransform(true);
     }
 
     function zoomOutStep() {
       currentZoomScale = Math.max(currentZoomScale - 0.6, 1.0);
-      updateZoomTransform();
+      updateZoomTransform(true);
     }
 
-    function resetZoom() {
+    function resetZoom(animate = true) {
       currentZoomScale = 1.0;
       translateX = 0;
       translateY = 0;
-      updateZoomTransform();
-    }
-
-    let isDragging = false;
-    let dragDistance = 0;
-
-    function startPan(e) {
-      if (currentZoomScale <= 1.05) return;
-      e.preventDefault();
-      isDragging = false;
-      dragDistance = 0;
-      startX = e.clientX - translateX;
-      startY = e.clientY - translateY;
-
-      window.onmousemove = doPan;
-      window.onmouseup = stopPan;
-    }
-
-    function doPan(e) {
-      dragDistance += Math.abs(e.movementX || 0) + Math.abs(e.movementY || 0);
-      if (dragDistance > 6) isDragging = true;
-      translateX = e.clientX - startX;
-      translateY = e.clientY - startY;
-      updateZoomTransform();
-    }
-
-    function stopPan() {
-      window.onmousemove = null;
-      window.onmouseup = null;
-      setTimeout(() => { isDragging = false; }, 50);
-    }
-
-    function startTouchPan(e) {
-      if (currentZoomScale <= 1.05) return;
-      if (e.touches.length === 1) {
-        isDragging = false;
-        dragDistance = 0;
-        startX = e.touches[0].clientX - translateX;
-        startY = e.touches[0].clientY - translateY;
-
-        window.ontouchmove = doTouchPan;
-        window.ontouchend = stopTouchPan;
-      }
-    }
-
-    function doTouchPan(e) {
-      if (e.touches.length === 1) {
-        dragDistance += 2;
-        if (dragDistance > 6) isDragging = true;
-        translateX = e.touches[0].clientX - startX;
-        translateY = e.touches[0].clientY - startY;
-        updateZoomTransform();
-      }
-    }
-
-    function stopTouchPan() {
-      window.ontouchmove = null;
-      window.ontouchend = null;
-      setTimeout(() => { isDragging = false; }, 50);
+      updateZoomTransform(animate);
     }
 
     // Keyboard navigation (ESC to close, + / - to zoom)
