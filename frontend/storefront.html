@@ -871,7 +871,7 @@ A confirmation has been registered for front desk check-in.`);
     }
 
     function escapeAttr(str) {
-      return (str || '').replace(/'/g, "\'").replace(/"/g, '&quot;');
+      return String(str || "").replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     window.addEventListener("languageChanged", renderBusiness);

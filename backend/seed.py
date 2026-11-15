@@ -577,7 +577,7 @@ def seed_database(db_path: str):
             (shopper_id, "shopper@mavunqo.com", hash_password("Shopper2026!"), "Elena Rodriguez", "owner")
         )
 
-        cloth_owner = "user_clothe_yahaira"
+    cloth_owner = "user_clothe_yahaira"
     cur.execute("SELECT id FROM users WHERE email = 'yahastylerd@gmail.com' OR email = 'yahaira@tropicalwavesboutique.com'")
     if not cur.fetchone():
         cur.execute(
