@@ -546,6 +546,35 @@ class MavunqoService:
 
         return {"success": True, "item_id": item_id, "updated_fields": list(updates.keys())}
 
+
+    def get_item_sizes(self, user_id: str, business_id: str, item_id: str):
+        if not self.verify_business_ownership(user_id, business_id):
+            raise PermissionError("Access denied.")
+        with self.get_connection() as conn:
+            rows = conn.execute(
+                "SELECT * FROM menu_modifiers WHERE menu_item_id = ? ORDER BY sort_order ASC",
+                (item_id,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def set_item_sizes(self, user_id: str, business_id: str, item_id: str, sizes_list: list):
+        if not self.verify_business_ownership(user_id, business_id):
+            raise PermissionError("Access denied.")
+        with self.get_connection() as conn:
+            conn.execute("DELETE FROM menu_modifiers WHERE menu_item_id = ?", (item_id,))
+            for idx, s in enumerate(sizes_list):
+                s_name = str(s).strip()
+                if not s_name:
+                    continue
+                mod_id = f"mod_{item_id}_{idx}"
+                conn.execute(
+                    """INSERT INTO menu_modifiers (id, menu_item_id, group_name_en, group_name_es, name_en, name_es, price_delta, currency, is_required, sort_order)
+                       VALUES (?, ?, 'Select Size', 'Seleccionar Talla', ?, ?, 0.0, 'DOP', 1, ?)""",
+                    (mod_id, item_id, s_name, s_name, idx)
+                )
+            conn.commit()
+        return {"success": True, "item_id": item_id, "count": len(sizes_list)}
+
     def delete_merchant_catalog_item(self, user_id: str, business_id: str, item_id: str):
         if not self.verify_business_ownership(user_id, business_id):
             raise PermissionError("Access denied.")

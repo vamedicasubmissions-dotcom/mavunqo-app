@@ -157,6 +157,12 @@
           </div>
         </div>
 
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 4px;">Available Clothing Sizes (comma separated)</label>
+          <input type="text" id="itemSizesInput" class="input-field" placeholder="e.g. S, M, L, XL or 1, 3, 5, 7, 9">
+          <small style="color: #64748b; font-size: 0.75rem;">Clients will pick from these sizes when buying from your store or WhatsApp</small>
+        </div>
+
         <div style="margin-bottom: 16px;">
           <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 4px;">Description</label>
           <textarea id="itemDescEn" class="input-field" style="height: 60px;" placeholder="100% natural breathable linen fabric, perfect for beachwear."></textarea>
@@ -458,6 +464,7 @@
       document.getElementById("itemPrice").value = "";
       document.getElementById("itemPhotoUrl").value = "";
       document.getElementById("itemDescEn").value = "";
+      document.getElementById("itemSizesInput").value = "S, M, L, XL";
       document.getElementById("uploadStatusText").innerText = "";
       document.getElementById("uploadPrompt").style.display = "block";
       document.getElementById("productPhotoPreviewContainer").style.display = "none";
@@ -467,7 +474,7 @@
       document.getElementById("productModal").style.display = "flex";
     }
 
-    function editProduct(bizId, itemId, name, price, photoUrl, desc) {
+    async function editProduct(bizId, itemId, name, price, photoUrl, desc) {
       document.getElementById("itemBizId").value = bizId;
       document.getElementById("itemId").value = itemId;
       document.getElementById("itemNameEn").value = unescape(name);
@@ -475,6 +482,7 @@
       const url = unescape(photoUrl);
       document.getElementById("itemPhotoUrl").value = url;
       document.getElementById("itemDescEn").value = unescape(desc);
+      document.getElementById("itemSizesInput").value = "";
       document.getElementById("uploadStatusText").innerText = "";
       if (url) {
         document.getElementById("productPhotoPreview").src = url;
@@ -486,8 +494,21 @@
       }
       document.getElementById("manualUrlContainer").style.display = "none";
       document.getElementById("manualUrlInput").value = url;
-      document.getElementById("modalProductTitle").innerText = "Edit Item, Price & Photo";
+      document.getElementById("modalProductTitle").innerText = "Edit Item, Price, Photo & Sizes";
       document.getElementById("productModal").style.display = "flex";
+
+      // Fetch existing sizes for this item
+      try {
+        const sRes = await fetch(`/api/owner/businesses/${bizId}/catalog/${itemId}/sizes`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (sRes.ok) {
+          const sData = await sRes.json();
+          if (sData && sData.length > 0) {
+            document.getElementById("itemSizesInput").value = sData.map(s => s.name_en).join(", ");
+          }
+        }
+      } catch(e) { console.error("Error loading sizes", e); }
     }
 
     function closeProductModal() {
