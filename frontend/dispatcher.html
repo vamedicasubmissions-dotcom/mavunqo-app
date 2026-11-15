@@ -128,6 +128,31 @@
         </div>
       </div>
     </div>
+
+    <!-- Centralized Clearinghouse Model: Merchant Cash Settlement Envelopes -->
+    <div class="ops-card" style="margin-top: 2rem; border-top: 4px solid var(--primary, #0284c7);">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 900; margin: 0 0 0.25rem 0;">🏦 Centralized Clearinghouse: Merchant Cash Settlement Envelopes</h2>
+          <p style="color: var(--text-secondary); margin: 0; font-size: 0.92rem;">
+            Drivers deliver collected cash to Mavunqo. Mavunqo automatically deducts commission and delivers cash envelope payouts to merchants.
+          </p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="loadMerchantSettlements();">🔄 Refresh Settlements</button>
+      </div>
+
+      <div id="settlementsContainer">
+        <p style="color: var(--text-secondary);">Loading merchant clearinghouse balances...</p>
+      </div>
+
+      <!-- Recent Settled Envelopes History -->
+      <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.25rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 0.75rem;">📜 Recently Settled Cash Envelopes</h3>
+        <div id="recentSettlementsContainer" style="font-size: 0.88rem; color: var(--text-secondary);">
+          No settlements logged yet today.
+        </div>
+      </div>
+    </div>
   </main>
 
   <script>
@@ -281,6 +306,152 @@
     }
 
     
+    async function loadMerchantSettlements() {
+      const container = document.getElementById("settlementsContainer");
+      const recentCont = document.getElementById("recentSettlementsContainer");
+      try {
+        const res = await fetch("/api/dispatcher/merchant-settlements", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          container.innerHTML = `<p style="color: #dc2626;">Failed to load merchant settlements.</p>`;
+          return;
+        }
+        const data = await res.json();
+        const merchants = data.merchants || [];
+        const recents = data.recent_payouts || [];
+
+        if (merchants.length === 0) {
+          container.innerHTML = `
+            <div style="background: #f8fafc; border: 1px dashed var(--border); border-radius: 8px; padding: 1.5rem; text-align: center; color: var(--text-secondary);">
+              ✓ All merchant accounts settled! No pending cash envelopes due.
+            </div>
+          `;
+        } else {
+          container.innerHTML = merchants.map(m => {
+            const orderIds = m.pending_orders.map(o => o.order_id);
+            const orderIdsJson = encodeURIComponent(JSON.stringify(orderIds));
+            return `
+              <div style="background: #fff; border: 1px solid var(--border); border-left: 4px solid #16a34a; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: var(--shadow-sm);">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+                  <div>
+                    <h3 style="margin: 0; font-size: 1.15rem; font-weight: 850;">${m.trading_name}</h3>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.15rem;">
+                      📍 ${m.address || 'Sosúa'} • 📞 ${m.phone || 'N/A'} • <strong>${m.pending_orders.length} order(s)</strong> awaiting payout
+                    </div>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-size: 0.82rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 750;">Net Cash Payout Due</div>
+                    <div style="font-size: 1.5rem; font-weight: 900; color: #16a34a;">RD$ ${m.net_payout_due.toFixed(2)}</div>
+                  </div>
+                </div>
+
+                <div style="background: #f8fafc; border-radius: 6px; padding: 0.75rem 1rem; font-size: 0.86rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+                  <div>Gross Cash Collected: <strong>RD$ ${m.gross_sales.toFixed(2)}</strong></div>
+                  <div>Mavunqo Commission Retained: <strong style="color: #ea580c;">- RD$ ${m.commission_retained.toFixed(2)}</strong></div>
+                  <div>Delivery Method: <strong>Physical Cash Envelope</strong></div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                  <button class="btn btn-outline btn-sm" onclick="shareSettlementWhatsApp('${m.trading_name.replace(/'/g, "\\'")}', '${m.phone}', ${m.gross_sales}, ${m.commission_retained}, ${m.net_payout_due}, ${m.pending_orders.length})">
+                    💬 WhatsApp Breakdown
+                  </button>
+                  <button class="btn btn-primary btn-sm" style="background: #16a34a; border-color: #16a34a; font-weight: 800;" onclick="settleMerchantPayout('${m.business_id}', '${orderIdsJson}', ${m.net_payout_due})">
+                    💵 Record Cash Envelope Delivered (RD$ ${m.net_payout_due.toFixed(2)})
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join("");
+        }
+
+        // Render Recent Settled History
+        if (recents.length === 0) {
+          recentCont.innerHTML = `No recent payouts recorded yet.`;
+        } else {
+          recentCont.innerHTML = `
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem;">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--border); text-align: left; color: var(--text-secondary);">
+                  <th style="padding: 0.5rem 0.25rem;">Merchant</th>
+                  <th style="padding: 0.5rem 0.25rem;">Batch Ref</th>
+                  <th style="padding: 0.5rem 0.25rem;">Gross Cash</th>
+                  <th style="padding: 0.5rem 0.25rem;">Fee Retained</th>
+                  <th style="padding: 0.5rem 0.25rem;">Net Paid</th>
+                  <th style="padding: 0.5rem 0.25rem;">Settled By</th>
+                  <th style="padding: 0.5rem 0.25rem;">Date / Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${recents.map(r => `
+                  <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 0.6rem 0.25rem; font-weight: 750;">${r.trading_name}</td>
+                    <td style="padding: 0.6rem 0.25rem; font-family: monospace; font-size: 0.8rem;">${r.payout_batch_id}</td>
+                    <td style="padding: 0.6rem 0.25rem;">RD$ ${parseFloat(r.gross_subtotal).toFixed(2)}</td>
+                    <td style="padding: 0.6rem 0.25rem; color: #ea580c;">RD$ ${parseFloat(r.commission_retained).toFixed(2)}</td>
+                    <td style="padding: 0.6rem 0.25rem; font-weight: 800; color: #16a34a;">RD$ ${parseFloat(r.net_payout_amount).toFixed(2)}</td>
+                    <td style="padding: 0.6rem 0.25rem;">${r.settled_by_name || 'Dispatcher'}</td>
+                    <td style="padding: 0.6rem 0.25rem; color: var(--text-secondary);">${new Date(r.settled_at || r.created_at).toLocaleString()}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
+        }
+
+      } catch (err) {
+        container.innerHTML = `<p style="color: #dc2626;">Error loading merchant settlements.</p>`;
+      }
+    }
+
+    function shareSettlementWhatsApp(bizName, phone, gross, comm, net, count) {
+      const text = `*MAVUNQO CENTRAL CLEARINGHOUSE SETTLEMENT*\n` +
+        `Merchant: ${bizName}\n` +
+        `Orders Count: ${count}\n` +
+        `Gross Sales Collected: RD$ ${gross.toFixed(2)}\n` +
+        `Mavunqo Platform Commission: -RD$ ${comm.toFixed(2)}\n` +
+        `-----------------------------------------\n` +
+        `*Net Cash Envelope Due: RD$ ${net.toFixed(2)}*\n\n` +
+        `Mavunqo Operations will deliver your sealed cash envelope today. Thank you for your partnership!`;
+      const cleanPhone = (phone || '').replace(/[^0-9]/g, '');
+      const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
+    async function settleMerchantPayout(bizId, orderIdsEncoded, netAmount) {
+      const orderIds = JSON.parse(decodeURIComponent(orderIdsEncoded));
+      const confirmed = confirm(`Confirm delivery of cash settlement envelope of RD$ ${netAmount.toFixed(2)} for ${orderIds.length} order(s)?`);
+      if (!confirmed) return;
+
+      const notes = prompt("Enter settlement envelope notes (or recipient person name):", "Sealed cash envelope delivered to owner/manager");
+      if (notes === null) return;
+
+      try {
+        const res = await fetch("/api/dispatcher/merchant-settlements/payout", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            business_id: bizId,
+            order_ids: orderIds,
+            payout_method: "cash_envelope",
+            notes: notes
+          })
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          alert(`✓ Cash envelope payout recorded successfully!\nBatch ID: ${d.payout_batch_id}\nNet Paid: RD$ ${d.net_payout_amount.toFixed(2)}`);
+          loadMerchantSettlements();
+        } else {
+          alert(d.error || "Failed to record merchant payout.");
+        }
+      } catch (err) {
+        alert("Network error recording payout.");
+      }
+    }
+
     let knownDispatchOrderIds = new Set();
     let isInitialDispatchLoad = true;
 
@@ -291,7 +462,12 @@
       }
     }
 
-    window.onload = () => { loadQueue(); setInterval(loadQueue, 6000); };
+    window.onload = () => { 
+      loadQueue(); 
+      loadMerchantSettlements();
+      setInterval(loadQueue, 6000); 
+      setInterval(loadMerchantSettlements, 15000);
+    };
   </script>
 </body>
 </html>

@@ -315,5 +315,56 @@ class TestPhase2MerchantRequests(unittest.TestCase):
         self.assertEqual(res_hnd["difference"], -50.0)
         self.assertTrue(res_hnd["is_discrepancy"])
 
+        # 8. Centralized Clearinghouse Model & Merchant Cash Envelope Settlement:
+        # Reconcile full cash handoff
+        handoff_clean = {
+            "driver_id": driver_id,
+            "order_ids": [order_id],
+            "total_driver_reported": 700.0,
+            "total_receiver_counted": 700.0,
+            "notes": "Reconciled after driver handed over remaining 50 DOP."
+        }
+        invoke("POST", "/api/dispatcher/cash-handoff", headers=headers, body=handoff_clean)
+
+        # Check Merchant Settlements queue
+        st_set, res_set = invoke("GET", "/api/dispatcher/merchant-settlements", headers=headers)
+        self.assertEqual(st_set, 200)
+        self.assertIn("merchants", res_set)
+        
+        # Find merchant (biz["id"] from step 3: Taqueria del Sol Sosua)
+        target_merchant = next((m for m in res_set["merchants"] if m["business_id"] == biz["id"]), None)
+        self.assertIsNotNone(target_merchant)
+        self.assertGreaterEqual(target_merchant["gross_sales"], 600.0)
+        # Verify Mavunqo platform commission retained (e.g. 10% = 60 DOP)
+        self.assertGreater(target_merchant["commission_retained"], 0)
+        # Net cash payout envelope amount = Gross - Commission
+        self.assertAlmostEqual(
+            target_merchant["net_payout_due"],
+            target_merchant["gross_sales"] - target_merchant["commission_retained"],
+            places=2
+        )
+
+        # Dispatcher hands envelope to merchant and records payout
+        payout_payload = {
+            "business_id": biz["id"],
+            "order_ids": [order_id],
+            "payout_method": "cash_envelope",
+            "notes": "Handed cash envelope at shop in El Batey, signed by manager."
+        }
+        st_pay, res_pay = invoke("POST", "/api/dispatcher/merchant-settlements/payout", headers=headers, body=payout_payload)
+        self.assertEqual(st_pay, 200)
+        self.assertTrue(res_pay["success"])
+        self.assertEqual(res_pay["business_id"], biz["id"])
+        self.assertGreater(res_pay["net_payout_amount"], 0)
+
+        # Verify that after payout, the order is settled and no longer pending in settlements queue
+        _, res_set_after = invoke("GET", "/api/dispatcher/merchant-settlements", headers=headers)
+        pending_ids_after = [
+            o["order_id"]
+            for m in res_set_after["merchants"]
+            for o in m["pending_orders"]
+        ]
+        self.assertNotIn(order_id, pending_ids_after)
+
 if __name__ == "__main__":
     unittest.main()

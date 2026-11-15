@@ -2303,3 +2303,171 @@ class MavunqoService:
             "is_discrepancy": status == "unresolved_discrepancy"
         }
 
+    def get_merchant_clearinghouse_settlements(self):
+        """
+        Calculates accumulated cash settlements owed to merchants for orders
+        where cash has been collected/completed, subtracting Mavunqo platform commission.
+        Grouped by business.
+        """
+        with self.get_connection() as conn:
+            # Query completed orders with fee records that haven't been settled yet
+            query = """
+                SELECT 
+                    b.id as business_id,
+                    b.trading_name,
+                    b.slug,
+                    b.phone,
+                    b.address,
+                    o.id as order_id,
+                    o.order_number,
+                    o.subtotal,
+                    o.total,
+                    o.currency,
+                    o.created_at,
+                    f.commission_rate,
+                    f.fee_amount as commission_amount,
+                    f.status as fee_status
+                FROM orders o
+                JOIN businesses b ON o.business_id = b.id
+                LEFT JOIN fee_records f ON o.id = f.order_id
+                WHERE o.status = 'completed'
+                  AND o.id NOT IN (
+                      SELECT json_each.value 
+                      FROM merchant_payouts mp, json_each(mp.order_ids_json)
+                      WHERE mp.status = 'settled'
+                  )
+                ORDER BY b.trading_name ASC, o.created_at ASC
+            """
+            rows = conn.execute(query).fetchall()
+
+            # Group by merchant
+            merchants = {}
+            for r in rows:
+                biz_id = r["business_id"]
+                if biz_id not in merchants:
+                    merchants[biz_id] = {
+                        "business_id": biz_id,
+                        "trading_name": r["trading_name"],
+                        "slug": r["slug"],
+                        "phone": r["phone"],
+                        "address": r["address"],
+                        "pending_orders": [],
+                        "gross_sales": 0.0,
+                        "commission_retained": 0.0,
+                        "net_payout_due": 0.0,
+                        "currency": r["currency"] or "DOP"
+                    }
+                
+                subtotal = float(r["subtotal"] or 0.0)
+                comm = float(r["commission_amount"] or 0.0)
+                # If fee record wasn't generated or fee is 0, compute fallback based on 10%
+                if comm <= 0.0 and subtotal > 0.0:
+                    comm = round(subtotal * 0.10, 2)
+                
+                net = max(0.0, subtotal - comm)
+
+                merchants[biz_id]["gross_sales"] += subtotal
+                merchants[biz_id]["commission_retained"] += comm
+                merchants[biz_id]["net_payout_due"] += net
+                merchants[biz_id]["pending_orders"].append({
+                    "order_id": r["order_id"],
+                    "order_number": r["order_number"],
+                    "subtotal": subtotal,
+                    "commission": comm,
+                    "net": net,
+                    "created_at": r["created_at"]
+                })
+
+            # Round amounts
+            merchant_list = list(merchants.values())
+            for m in merchant_list:
+                m["gross_sales"] = round(m["gross_sales"], 2)
+                m["commission_retained"] = round(m["commission_retained"], 2)
+                m["net_payout_due"] = round(m["net_payout_due"], 2)
+
+            # Fetch recent settled payouts
+            settled_rows = conn.execute("""
+                SELECT mp.*, b.trading_name, u.full_name as settled_by_name
+                FROM merchant_payouts mp
+                JOIN businesses b ON mp.business_id = b.id
+                LEFT JOIN users u ON mp.settled_by = u.id
+                ORDER BY mp.created_at DESC
+                LIMIT 20
+            """).fetchall()
+
+            return {
+                "merchants": merchant_list,
+                "recent_payouts": [dict(sr) for sr in settled_rows]
+            }
+
+    def record_merchant_cash_settlement(self, business_id: str, dispatcher_id: str, order_ids: list, payout_method: str = "cash_envelope", notes: str = None):
+        """
+        Records the physical cash envelope handoff from Mavunqo Central Dispatch to merchant owner.
+        """
+        now_utc = datetime.now(timezone.utc).isoformat()
+        batch_id = f"pay_{uuid.uuid4().hex[:12]}"
+
+        with self.get_connection() as conn:
+            # Check dispatcher authorization
+            disp_user = conn.execute("SELECT role FROM users WHERE id = ?", (dispatcher_id,)).fetchone()
+            if not disp_user or disp_user["role"] not in ("admin", "manager", "staff"):
+                raise PermissionError("Access denied: Mavunqo dispatcher role required.")
+
+            biz = conn.execute("SELECT * FROM businesses WHERE id = ?", (business_id,)).fetchone()
+            if not biz:
+                raise ValueError("Merchant business not found.")
+
+            if not order_ids:
+                raise ValueError("No order IDs provided for settlement.")
+
+            # Calculate gross and commission for these orders
+            placeholders = ",".join(["?"] * len(order_ids))
+            orders_data = conn.execute(f"""
+                SELECT o.id, o.subtotal, COALESCE(f.fee_amount, o.subtotal * 0.10) as fee
+                FROM orders o
+                LEFT JOIN fee_records f ON o.id = f.order_id
+                WHERE o.id IN ({placeholders}) AND o.business_id = ?
+            """, (*order_ids, business_id)).fetchall()
+
+            if not orders_data:
+                raise ValueError("No matching eligible orders found for this merchant.")
+
+            gross_subtotal = sum(float(od["subtotal"]) for od in orders_data)
+            commission_retained = sum(float(od["fee"]) for od in orders_data)
+            net_payout = max(0.0, gross_subtotal - commission_retained)
+
+            payout_id = str(uuid.uuid4())
+            conn.execute("""
+                INSERT INTO merchant_payouts (
+                    id, payout_batch_id, business_id, order_ids_json,
+                    gross_subtotal, commission_retained, net_payout_amount, currency,
+                    status, settled_by, settled_at, payout_method, notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'DOP', 'settled', ?, ?, ?, ?)
+            """, (
+                payout_id, batch_id, business_id, json.dumps(order_ids),
+                gross_subtotal, commission_retained, net_payout,
+                dispatcher_id, now_utc, payout_method, notes
+            ))
+
+            # Mark fee_records as reconciled
+            conn.execute(f"""
+                UPDATE fee_records
+                SET status = 'reconciled', updated_at = ?
+                WHERE order_id IN ({placeholders})
+            """, (now_utc, *order_ids))
+
+            conn.commit()
+
+        return {
+            "success": True,
+            "payout_batch_id": batch_id,
+            "business_id": business_id,
+            "business_name": biz["trading_name"],
+            "orders_count": len(order_ids),
+            "gross_subtotal": round(gross_subtotal, 2),
+            "commission_retained": round(commission_retained, 2),
+            "net_payout_amount": round(net_payout, 2),
+            "settled_at": now_utc
+        }
+
+

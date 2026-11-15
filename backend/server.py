@@ -383,6 +383,12 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return self.send_json({"error": "Forbidden: Dispatcher role required"}, 403)
             return self.send_json(service.get_dispatcher_queue())
 
+        if path == "/api/dispatcher/merchant-settlements":
+            user = self.get_auth_user()
+            if not user or user.get("role") not in ("admin", "manager", "staff"):
+                return self.send_json({"error": "Forbidden: Dispatcher role required"}, 403)
+            return self.send_json(service.get_merchant_clearinghouse_settlements())
+
         if path == "/api/driver/jobs":
             driver_id = query.get("driver_id", [""])[0]
             if not driver_id:
@@ -631,6 +637,23 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     order_ids=data.get("order_ids", []),
                     total_driver_reported=float(data.get("total_driver_reported", 0)),
                     total_receiver_counted=float(data.get("total_receiver_counted", 0)),
+                    notes=data.get("notes")
+                )
+                return self.send_json(res)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/dispatcher/merchant-settlements/payout":
+            user = self.get_auth_user()
+            if not user or user.get("role") not in ("admin", "manager", "staff"):
+                return self.send_json({"error": "Forbidden: Dispatcher role required"}, 403)
+            data = self.read_json_body()
+            try:
+                res = service.record_merchant_cash_settlement(
+                    business_id=data.get("business_id", ""),
+                    dispatcher_id=user["uid"],
+                    order_ids=data.get("order_ids", []),
+                    payout_method=data.get("payout_method", "cash_envelope"),
                     notes=data.get("notes")
                 )
                 return self.send_json(res)

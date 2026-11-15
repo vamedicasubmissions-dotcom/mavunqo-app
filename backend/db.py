@@ -520,6 +520,26 @@ CREATE TABLE IF NOT EXISTS cash_handoffs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS merchant_payouts (
+    id TEXT PRIMARY KEY,
+    payout_batch_id TEXT UNIQUE NOT NULL,
+    business_id TEXT NOT NULL REFERENCES businesses(id),
+    order_ids_json TEXT NOT NULL,
+    gross_subtotal REAL NOT NULL,
+    commission_retained REAL NOT NULL,
+    net_payout_amount REAL NOT NULL,
+    currency TEXT DEFAULT 'DOP',
+    status TEXT NOT NULL CHECK(status IN ('pending', 'settled', 'cancelled')) DEFAULT 'pending',
+    settled_by TEXT REFERENCES users(id),
+    settled_at TIMESTAMP,
+    payout_method TEXT DEFAULT 'cash_envelope',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_merchant_payouts_biz ON merchant_payouts(business_id, status);
+
 CREATE INDEX IF NOT EXISTS idx_merchant_requests_biz ON merchant_requests(business_id, status);
 CREATE INDEX IF NOT EXISTS idx_merchant_requests_token ON merchant_requests(status_token);
 CREATE INDEX IF NOT EXISTS idx_merchant_requests_mtoken ON merchant_requests(merchant_token);
