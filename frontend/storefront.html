@@ -48,6 +48,149 @@
       cursor: pointer;
     }
 
+    /* Product Image Thumbnail Hover & Zoom Indicator */
+    .catalog-thumb-wrap {
+      position: relative;
+      width: 84px;
+      height: 84px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+      cursor: zoom-in;
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .catalog-thumb-wrap:hover {
+      transform: scale(1.04);
+      box-shadow: 0 4px 12px rgba(17, 107, 98, 0.2);
+    }
+    .catalog-thumb-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .catalog-thumb-badge {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      background: rgba(15, 23, 42, 0.75);
+      color: #ffffff;
+      border-radius: 4px;
+      padding: 1px 4px;
+      font-size: 0.65rem;
+      font-weight: 750;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      pointer-events: none;
+    }
+
+    /* Modal Image Lightbox & Interactive Zoom */
+    .lightbox-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 1000;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      box-sizing: border-box;
+      touch-action: none;
+    }
+    .lightbox-content {
+      position: relative;
+      max-width: 92vw;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .lightbox-img-frame {
+      position: relative;
+      overflow: hidden;
+      border-radius: 12px;
+      background: #0b0f19;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-in;
+      max-height: 72vh;
+      max-width: 90vw;
+    }
+    .lightbox-img-frame.is-zoomed {
+      cursor: grab;
+    }
+    .lightbox-img-frame.is-zoomed:active {
+      cursor: grabbing;
+    }
+    .lightbox-img {
+      max-width: 100%;
+      max-height: 70vh;
+      object-fit: contain;
+      display: block;
+      transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+      transform-origin: center center;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .lightbox-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 500px;
+      margin-top: 0.85rem;
+      color: #ffffff;
+      gap: 0.75rem;
+    }
+    .lightbox-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      padding: 0.5rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 750;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: background 0.2s;
+    }
+    .lightbox-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .lightbox-close-btn {
+      position: absolute;
+      top: -45px;
+      right: 0;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #ffffff;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 1.25rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .lightbox-close-btn:hover {
+      background: #ef4444;
+    }
+
     /* Force responsive stacking on phones and iPads under 768px */
     @media (max-width: 768px) {
       .catalog-product-card {
@@ -799,7 +942,10 @@
               }
 
               const photoThumb = it.image_url 
-                ? `<img src="${it.image_url}" alt="${itName}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">`
+                ? `<div class="catalog-thumb-wrap" onclick="openImageLightbox('${escapeAttr(it.image_url)}', '${escapeAttr(itName)}');" title="Click to view close-up and zoom in">
+                    <img src="${it.image_url}" alt="${itName}" loading="lazy">
+                    <span class="catalog-thumb-badge">🔍 Zoom</span>
+                   </div>`
                 : '';
 
               return `
@@ -1489,9 +1635,185 @@ A confirmation has been registered for front desk check-in.`);
       return String(str || "").replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
+
+    // --- PHOTO INSPECTION & ZOOM LIGHTBOX ENGINE ---
+    let currentZoomScale = 1.0;
+    let isPanning = false;
+    let startX = 0, startY = 0;
+    let translateX = 0, translateY = 0;
+
+    function openImageLightbox(imgUrl, itemTitle) {
+      if (!imgUrl) return;
+      const modal = document.getElementById("imageLightboxModal");
+      const img = document.getElementById("lightboxImg");
+      const title = document.getElementById("lightboxTitle");
+      const frame = document.getElementById("lightboxFrame");
+
+      img.src = imgUrl;
+      title.textContent = itemTitle || "Item Details";
+      resetZoom();
+
+      modal.style.display = "flex";
+      document.body.style.overflow = "hidden"; // Prevent background scrolling
+
+      // Attach pan/drag listeners
+      frame.onmousedown = startPan;
+      frame.ontouchstart = startTouchPan;
+    }
+
+    function closeImageLightbox() {
+      const modal = document.getElementById("imageLightboxModal");
+      modal.style.display = "none";
+      document.body.style.overflow = "";
+      resetZoom();
+    }
+
+    function onLightboxBgClick(e) {
+      if (e.target.id === "imageLightboxModal") {
+        closeImageLightbox();
+      }
+    }
+
+    function updateZoomTransform() {
+      const img = document.getElementById("lightboxImg");
+      const frame = document.getElementById("lightboxFrame");
+      const hint = document.getElementById("lightboxHint");
+
+      if (currentZoomScale > 1.05) {
+        frame.classList.add("is-zoomed");
+        img.style.transform = `scale(${currentZoomScale}) translate(${translateX}px, ${translateY}px)`;
+        if (hint) hint.textContent = `🔍 Drag or swipe to inspect details (${Math.round(currentZoomScale * 100)}%)`;
+      } else {
+        frame.classList.remove("is-zoomed");
+        translateX = 0;
+        translateY = 0;
+        img.style.transform = `scale(1) translate(0px, 0px)`;
+        if (hint) hint.textContent = `🔍 Tap or click photo to zoom 2.5x & inspect fabric/details`;
+      }
+    }
+
+    function toggleZoomClick(e) {
+      // If user was dragging, don't trigger click toggle
+      if (isDragging) return;
+
+      if (currentZoomScale > 1.05) {
+        resetZoom();
+      } else {
+        currentZoomScale = 2.4;
+        updateZoomTransform();
+      }
+    }
+
+    function zoomInStep() {
+      currentZoomScale = Math.min(currentZoomScale + 0.6, 4.0);
+      updateZoomTransform();
+    }
+
+    function zoomOutStep() {
+      currentZoomScale = Math.max(currentZoomScale - 0.6, 1.0);
+      updateZoomTransform();
+    }
+
+    function resetZoom() {
+      currentZoomScale = 1.0;
+      translateX = 0;
+      translateY = 0;
+      updateZoomTransform();
+    }
+
+    let isDragging = false;
+    let dragDistance = 0;
+
+    function startPan(e) {
+      if (currentZoomScale <= 1.05) return;
+      e.preventDefault();
+      isDragging = false;
+      dragDistance = 0;
+      startX = e.clientX - translateX;
+      startY = e.clientY - translateY;
+
+      window.onmousemove = doPan;
+      window.onmouseup = stopPan;
+    }
+
+    function doPan(e) {
+      dragDistance += Math.abs(e.movementX || 0) + Math.abs(e.movementY || 0);
+      if (dragDistance > 6) isDragging = true;
+      translateX = e.clientX - startX;
+      translateY = e.clientY - startY;
+      updateZoomTransform();
+    }
+
+    function stopPan() {
+      window.onmousemove = null;
+      window.onmouseup = null;
+      setTimeout(() => { isDragging = false; }, 50);
+    }
+
+    function startTouchPan(e) {
+      if (currentZoomScale <= 1.05) return;
+      if (e.touches.length === 1) {
+        isDragging = false;
+        dragDistance = 0;
+        startX = e.touches[0].clientX - translateX;
+        startY = e.touches[0].clientY - translateY;
+
+        window.ontouchmove = doTouchPan;
+        window.ontouchend = stopTouchPan;
+      }
+    }
+
+    function doTouchPan(e) {
+      if (e.touches.length === 1) {
+        dragDistance += 2;
+        if (dragDistance > 6) isDragging = true;
+        translateX = e.touches[0].clientX - startX;
+        translateY = e.touches[0].clientY - startY;
+        updateZoomTransform();
+      }
+    }
+
+    function stopTouchPan() {
+      window.ontouchmove = null;
+      window.ontouchend = null;
+      setTimeout(() => { isDragging = false; }, 50);
+    }
+
+    // Keyboard navigation (ESC to close, + / - to zoom)
+    window.addEventListener("keydown", (e) => {
+      const modal = document.getElementById("imageLightboxModal");
+      if (modal && modal.style.display === "flex") {
+        if (e.key === "Escape") closeImageLightbox();
+        if (e.key === "+" || e.key === "=") zoomInStep();
+        if (e.key === "-") zoomOutStep();
+      }
+    });
+
     window.addEventListener("languageChanged", renderBusiness);
     document.addEventListener("DOMContentLoaded", loadBusiness);
   </script>
+
+
+  <!-- Fullscreen Item Photo Zoom & Inspection Lightbox -->
+  <div id="imageLightboxModal" class="lightbox-modal" onclick="onLightboxBgClick(event);">
+    <div class="lightbox-content" onclick="event.stopPropagation();">
+      <button class="lightbox-close-btn" onclick="closeImageLightbox();" aria-label="Close Zoom">&times;</button>
+      <div id="lightboxFrame" class="lightbox-img-frame" onclick="toggleZoomClick(event);">
+        <img id="lightboxImg" class="lightbox-img" src="" alt="Item Closeup">
+      </div>
+      <div class="lightbox-controls">
+        <div style="flex: 1; min-width: 0;">
+          <div id="lightboxTitle" style="font-size: 0.95rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+          <div id="lightboxHint" style="font-size: 0.75rem; color: #94a3b8;">🔍 Tap or click photo to zoom 2.5x & inspect fabric/details</div>
+        </div>
+        <div style="display: flex; gap: 0.4rem; flex-shrink: 0;">
+          <button class="lightbox-btn" onclick="zoomInStep();">🔍 +</button>
+          <button class="lightbox-btn" onclick="zoomOutStep();">🔍 −</button>
+          <button class="lightbox-btn" onclick="resetZoom();">Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Bottom Mobile Navigation Bar -->
   <nav class="bottom-nav">
