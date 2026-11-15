@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Merchant Request Action | Mavunqo</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+  <style>
+    .merchant-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      margin-top: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        MAVUNQO<span class="dot">.</span>
+        <span class="brand-pill">Staff Action</span>
+      </a>
+      <div class="nav-actions">
+        <a href="/login" class="btn btn-outline-white btn-sm">Merchant Portal</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 680px; padding-bottom: 4rem;">
+    <div id="loadingBox" class="state-box" style="margin-top: 2rem;">
+      <h3>Loading customer request...</h3>
+    </div>
+
+    <div id="reqCard" style="display: none;" class="merchant-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+          <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 700;">INCOMING REQUEST</span>
+          <h2 id="reqNumber" style="font-size: 1.6rem; font-weight: 900; margin: 0.1rem 0;"></h2>
+        </div>
+        <div id="statusBadge"></div>
+      </div>
+
+      <div style="background: #f8fafc; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+          <span style="color: var(--text-secondary); font-size: 0.9rem;">Customer:</span>
+          <strong id="custName" style="font-size: 1.05rem;"></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+          <span style="color: var(--text-secondary); font-size: 0.9rem;">Protected Phone:</span>
+          <span id="custPhoneMasked" style="font-family: monospace; font-weight: 700;"></span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-secondary); font-size: 0.9rem;">Fulfillment Style:</span>
+          <strong id="serviceMode"></strong>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1.5rem;">
+        <label style="font-weight: 800; font-size: 0.9rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">CUSTOMER NOTE / ORDER TEXT:</label>
+        <div id="reqText" style="background: #ffffff; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; font-size: 1rem; line-height: 1.5;"></div>
+      </div>
+
+      <!-- Confirmed Pins Display -->
+      <div id="pinsDisplay" style="margin-bottom: 1.5rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 1rem;">
+        <div style="font-weight: 800; color: #166534; font-size: 0.9rem; margin-bottom: 0.4rem;">📍 Confirmed Directions:</div>
+        <div id="pinNoteText" style="font-size: 0.9rem; color: #1e293b; margin-bottom: 0.5rem;"></div>
+        <a id="directionsBtn" href="#" target="_blank" class="btn btn-outline btn-sm" style="background: #ffffff; color: var(--teal-primary);">Open Directions in Google Maps ↗</a>
+      </div>
+
+      <!-- Action Buttons -->
+      <div id="actionArea">
+        <h4 style="font-size: 1.1rem; font-weight: 850; margin-bottom: 0.75rem;">Staff Response Options:</h4>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <button class="btn btn-primary" style="flex: 1; padding: 0.85rem;" onclick="showAcceptPrompt();">✓ Accept Terms Directly</button>
+          <button class="btn btn-outline" style="flex: 1; padding: 0.85rem; font-weight: 800;" onclick="showSuggestModal();">⚡ Propose Price / Time</button>
+          <button class="btn btn-outline" style="flex: 1; padding: 0.85rem; color: #b91c1c; font-weight: 800;" onclick="declineRequest();">✕ Decline</button>
+        </div>
+      </div>
+
+      <!-- Suggest Terms Form Box -->
+      <div id="suggestBox" style="display: none; background: #fefce8; border: 1px solid #fde047; border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem;">
+        <h4 style="margin: 0 0 1rem 0; font-size: 1.15rem; font-weight: 850;">Propose Terms to Customer</h4>
+        <div style="margin-bottom: 1rem;">
+          <label style="font-weight: 750; font-size: 0.88rem; display: block; margin-bottom: 0.3rem;">Price (RD$) *</label>
+          <input type="number" id="propPrice" class="input-field" placeholder="e.g. 2500.00" min="1" step="1">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="font-weight: 750; font-size: 0.88rem; display: block; margin-bottom: 0.3rem;">Offered Time / Slot</label>
+          <input type="datetime-local" id="propTime" class="input-field">
+        </div>
+        <div style="margin-bottom: 1.25rem;">
+          <label style="font-weight: 750; font-size: 0.88rem; display: block; margin-bottom: 0.3rem;">Note / Message to Customer</label>
+          <textarea id="propNote" class="input-field" rows="2" placeholder="e.g. We have therapist Ana ready at 3:00 PM."></textarea>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+          <button class="btn btn-primary" style="flex: 2;" onclick="submitProposal();">Send Offer to Customer</button>
+          <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('suggestBox').style.display = 'none';">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+    let currentReq = null;
+
+    async function loadReq() {
+      if (!token) {
+        document.getElementById("loadingBox").innerHTML = "<p>No merchant token provided.</p>";
+        return;
+      }
+      try {
+        const res = await fetch(`/api/requests/merchant?token=${token}`);
+        if (!res.ok) {
+          document.getElementById("loadingBox").innerHTML = "<p>Request link expired or invalid.</p>";
+          return;
+        }
+        currentReq = await res.json();
+        renderReq(currentReq);
+      } catch (e) {
+        document.getElementById("loadingBox").innerHTML = "<p>Network error.</p>";
+      }
+    }
+
+    function renderReq(r) {
+      document.getElementById("loadingBox").style.display = "none";
+      document.getElementById("reqCard").style.display = "block";
+
+      document.getElementById("reqNumber").textContent = r.request_number;
+      document.getElementById("custName").textContent = r.customer_name;
+      document.getElementById("custPhoneMasked").textContent = r.customer_phone_masked || "(Protected)";
+      document.getElementById("reqText").textContent = r.request_text;
+
+      let modeLabel = "In-Shop";
+      if (r.service_mode === "mobile_visit") modeLabel = "Mobile Home/Villa Visit";
+      if (r.service_mode === "pickup") modeLabel = "Pickup";
+      if (r.service_mode === "delivery") modeLabel = "Delivery";
+      if (r.service_mode === "meeting_point") modeLabel = "Meeting Point";
+      document.getElementById("serviceMode").textContent = modeLabel;
+
+      if (r.destination_directions_url) {
+        document.getElementById("pinNoteText").textContent = r.destination_entrance_note || "Confirmed Customer Destination Pin";
+        document.getElementById("directionsBtn").href = r.destination_directions_url;
+      } else if (r.pickup_directions_url) {
+        document.getElementById("pinNoteText").textContent = r.pickup_entrance_note || "Storefront / Pickup Pin";
+        document.getElementById("directionsBtn").href = r.pickup_directions_url;
+      }
+
+      if (r.status !== "awaiting_confirmation" && r.status !== "offer_pending") {
+        document.getElementById("actionArea").innerHTML = `<div style="padding: 1rem; background: #f1f5f9; border-radius: 8px; font-weight: 800;">Status: ${r.status.toUpperCase()}</div>`;
+      }
+    }
+
+    async function showAcceptPrompt() {
+      let p = currentReq.agreed_price;
+      if (!p) {
+        p = prompt("Enter final confirmed price in DOP (e.g. 2200):");
+        if (!p) return;
+      }
+      try {
+        const res = await fetch("/api/requests/respond", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: token,
+            action: "accept",
+            price: parseFloat(p)
+          })
+        });
+        const d = await res.json();
+        if (res.ok) {
+          alert(`Order Confirmed! Order Number: ${d.order_number}`);
+          loadReq();
+        } else {
+          alert(d.error || "Failed to confirm request.");
+        }
+      } catch (err) {
+        alert("Network error.");
+      }
+    }
+
+    function showSuggestModal() {
+      document.getElementById("suggestBox").style.display = "block";
+      document.getElementById("propPrice").focus();
+    }
+
+    async function submitProposal() {
+      const p = parseFloat(document.getElementById("propPrice").value);
+      const t = document.getElementById("propTime").value;
+      const n = document.getElementById("propNote").value;
+      if (!p || p <= 0) {
+        alert("Please enter a valid price in DOP.");
+        return;
+      }
+      try {
+        const res = await fetch("/api/requests/respond", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: token,
+            action: "suggest_change",
+            price: p,
+            offered_time: t || null,
+            notes: n
+          })
+        });
+        const d = await res.json();
+        if (res.ok) {
+          alert("Proposal sent to customer!");
+          loadReq();
+        } else {
+          alert(d.error || "Failed to submit proposal.");
+        }
+      } catch (e) {
+        alert("Network error.");
+      }
+    }
+
+    async function declineRequest() {
+      const reason = prompt("Enter reason for declining (optional):");
+      try {
+        const res = await fetch("/api/requests/respond", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: token,
+            action: "decline",
+            notes: reason
+          })
+        });
+        if (res.ok) {
+          alert("Request declined.");
+          loadReq();
+        } else {
+          const d = await res.json();
+          alert(d.error || "Error declining request.");
+        }
+      } catch (e) {
+        alert("Network error.");
+      }
+    }
+
+    window.onload = loadReq;
+  </script>
+</body>
+</html>

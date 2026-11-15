@@ -336,12 +336,74 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/" or path == "/index.html":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "index.html"))
 
+
+        # --- Phase 2: Merchant Request Automation & Dispatch Endpoints (GET) ---
+        if path == "/api/requests/status":
+            token = query.get("token", [""])[0]
+            req = service.get_merchant_request_by_token(token, is_merchant=False)
+            if not req:
+                return self.send_json({"error": "Request not found or invalid token"}, 404)
+            return self.send_json(req)
+
+        if path == "/api/requests/merchant":
+            token = query.get("token", [""])[0]
+            req = service.get_merchant_request_by_token(token, is_merchant=True)
+            if not req:
+                return self.send_json({"error": "Request not found or invalid merchant token"}, 404)
+            return self.send_json(req)
+
+        if path.startswith("/api/owner/businesses/") and path.endswith("/requests"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            biz_id = parts[4]
+            with service.get_connection() as conn:
+                if not service.verify_business_ownership(user["uid"], biz_id):
+                    return self.send_json({"error": "Access denied"}, 403)
+                rows = conn.execute("""
+                    SELECT r.*, COUNT(o.id) as offers_count
+                    FROM merchant_requests r
+                    LEFT JOIN request_offers o ON r.id = o.request_id
+                    WHERE r.business_id = ?
+                    GROUP BY r.id
+                    ORDER BY r.created_at DESC
+                """, (biz_id,)).fetchall()
+                return self.send_json([dict(r) for r in rows])
+
+        if path == "/api/customer/pins":
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            return self.send_json(service.get_customer_saved_pins(user["uid"]))
+
+        if path == "/api/dispatcher/queue":
+            user = self.get_auth_user()
+            if not user or user.get("role") not in ("admin", "manager", "staff"):
+                return self.send_json({"error": "Forbidden: Dispatcher role required"}, 403)
+            return self.send_json(service.get_dispatcher_queue())
+
+        if path == "/api/driver/jobs":
+            driver_id = query.get("driver_id", [""])[0]
+            if not driver_id:
+                return self.send_json({"error": "Driver ID required"}, 400)
+            return self.send_json(service.get_driver_active_jobs(driver_id))
+
         if path.startswith("/b/"):
             # Hosted storefront / profile route
             return self.send_file_response(os.path.join(FRONTEND_DIR, "storefront.html"))
 
         if path == "/order/status":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "order_status.html"))
+
+        if path == "/request/status":
+            return self.serve_file(os.path.join(FRONTEND_DIR, "request_status.html"), "text/html")
+
+        if path == "/request/merchant":
+            return self.serve_file(os.path.join(FRONTEND_DIR, "request_merchant.html"), "text/html")
+
+        if path == "/dispatcher":
+            return self.serve_file(os.path.join(FRONTEND_DIR, "dispatcher.html"), "text/html")
 
         if path == "/orders":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "orders.html"))
@@ -436,6 +498,145 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return self.send_json({"error": f"Failed to process image: {str(e)}"}, 400)
 
         # 1. Login
+
+        # --- Phase 2: Merchant Request Automation & Dispatch Endpoints (POST) ---
+        if path == "/api/interest":
+            data = self.read_json_body()
+            try:
+                res = service.register_business_interest(
+                    business_id=data.get("business_id", ""),
+                    customer_contact=data.get("customer_contact", ""),
+                    customer_name=data.get("customer_name", ""),
+                    interest_note=data.get("interest_note", ""),
+                    source_url=data.get("source_url", "")
+                )
+                return self.send_json(res, 201)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/requests":
+            data = self.read_json_body()
+            try:
+                res = service.create_merchant_request(data)
+                return self.send_json(res, 201)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/requests/respond":
+            data = self.read_json_body()
+            token = data.get("token", "")
+            action = data.get("action", "") # accept, suggest_change, decline
+            try:
+                res = service.merchant_respond_to_request(
+                    token=token,
+                    action=action,
+                    price=data.get("price"),
+                    currency=data.get("currency", "DOP"),
+                    offered_time=data.get("offered_time"),
+                    notes=data.get("notes")
+                )
+                return self.send_json(res)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/requests/offer/respond":
+            data = self.read_json_body()
+            status_token = data.get("status_token", "")
+            offer_id = data.get("offer_id", "")
+            action = data.get("action", "") # accept, reject
+            try:
+                res = service.customer_respond_to_offer(
+                    status_token=status_token,
+                    offer_id=offer_id,
+                    action=action
+                )
+                return self.send_json(res)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/owner/businesses/request-settings":
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            data = self.read_json_body()
+            try:
+                res = service.update_merchant_request_settings(
+                    user_id=user["uid"],
+                    business_id=data.get("business_id", ""),
+                    requests_enabled=bool(data.get("requests_enabled")),
+                    whatsapp_consent=data.get("whatsapp_alerts_consent"),
+                    whatsapp_phone=data.get("whatsapp_alerts_phone"),
+                    action_label_en=data.get("action_label_en"),
+                    action_label_es=data.get("action_label_es")
+                )
+                return self.send_json(res)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/customer/pins":
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            data = self.read_json_body()
+            try:
+                res = service.save_customer_pin(
+                    user_id=user["uid"],
+                    label=data.get("label", "My Location"),
+                    lat=float(data.get("lat")),
+                    lng=float(data.get("lng")),
+                    entrance_note=data.get("entrance_note", ""),
+                    set_default=bool(data.get("set_default", True))
+                )
+                return self.send_json(res, 201)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/dispatcher/assign":
+            user = self.get_auth_user()
+            if not user or user.get("role") not in ("admin", "manager", "staff"):
+                return self.send_json({"error": "Forbidden: Dispatcher role required"}, 403)
+            data = self.read_json_body()
+            try:
+                res = service.assign_delivery_driver(
+                    order_id=data.get("order_id", ""),
+                    driver_id=data.get("driver_id", ""),
+                    dispatcher_id=user["uid"]
+                )
+                return self.send_json(res)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/driver/collect-cash":
+            data = self.read_json_body()
+            try:
+                res = service.record_driver_cash_collection(
+                    order_id=data.get("order_id", ""),
+                    driver_id=data.get("driver_id", ""),
+                    amount_collected=float(data.get("amount_collected", 0)),
+                    notes=data.get("notes")
+                )
+                return self.send_json(res)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/dispatcher/cash-handoff":
+            user = self.get_auth_user()
+            if not user or user.get("role") not in ("admin", "manager", "staff"):
+                return self.send_json({"error": "Forbidden: Receiver role required"}, 403)
+            data = self.read_json_body()
+            try:
+                res = service.record_cash_handoff_and_reconciliation(
+                    driver_id=data.get("driver_id", ""),
+                    receiver_id=user["uid"],
+                    order_ids=data.get("order_ids", []),
+                    total_driver_reported=float(data.get("total_driver_reported", 0)),
+                    total_receiver_counted=float(data.get("total_receiver_counted", 0)),
+                    notes=data.get("notes")
+                )
+                return self.send_json(res)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
         if path == "/api/auth/login":
             data = self.read_json_body()
             email = data.get("email", "").strip().lower()

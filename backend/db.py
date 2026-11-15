@@ -417,13 +417,177 @@ CREATE INDEX IF NOT EXISTS idx_webhook_events_msg ON whatsapp_webhook_events(mes
 CREATE INDEX IF NOT EXISTS idx_tokens_order ON secure_order_tokens(order_id, purpose);
 CREATE INDEX IF NOT EXISTS idx_attributions_biz ON order_attributions(business_id, source);
 
+-- -------------------------------------------------------------
+-- Phase 2 Merchant Request Automation, Pins & Delivery Schema
+-- -------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS merchant_requests (
+    id TEXT PRIMARY KEY,
+    request_number TEXT UNIQUE NOT NULL,
+    business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    category_id TEXT,
+    action_type TEXT NOT NULL DEFAULT 'request_appointment', -- request_appointment, request_order, request_estimate, request_room, request_ride, request_quote
+    customer_name TEXT NOT NULL,
+    customer_phone TEXT NOT NULL,
+    customer_phone_hash TEXT,
+    customer_email TEXT,
+    request_text TEXT NOT NULL,
+    category_details_json TEXT, -- JSON attributes: service_options, pickup_time, appointment_date, etc.
+    service_mode TEXT DEFAULT 'in_shop', -- in_shop, mobile_visit, pickup, delivery, meeting_point
+    pickup_lat REAL,
+    pickup_lng REAL,
+    pickup_entrance_note TEXT,
+    destination_lat REAL,
+    destination_lng REAL,
+    destination_entrance_note TEXT,
+    status TEXT NOT NULL CHECK(status IN ('awaiting_confirmation', 'offer_pending', 'confirmed', 'declined', 'expired', 'cancelled')) DEFAULT 'awaiting_confirmation',
+    status_token TEXT UNIQUE NOT NULL,
+    status_token_expires_at TIMESTAMP NOT NULL,
+    merchant_token TEXT UNIQUE NOT NULL,
+    merchant_token_expires_at TIMESTAMP NOT NULL,
+    requested_time TIMESTAMP,
+    deadline_utc TIMESTAMP NOT NULL,
+    agreed_price REAL,
+    agreed_currency TEXT DEFAULT 'DOP',
+    language TEXT NOT NULL DEFAULT 'en',
+    origin TEXT NOT NULL CHECK(origin IN ('marketplace', 'merchant_link')) DEFAULT 'marketplace',
+    confirmed_order_id TEXT REFERENCES orders(id),
+    decline_reason TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS request_offers (
+    id TEXT PRIMARY KEY,
+    request_id TEXT NOT NULL REFERENCES merchant_requests(id) ON DELETE CASCADE,
+    offered_price REAL NOT NULL,
+    offered_currency TEXT DEFAULT 'DOP',
+    offered_time TIMESTAMP NOT NULL,
+    deadline_utc TIMESTAMP NOT NULL,
+    notes TEXT,
+    status TEXT NOT NULL CHECK(status IN ('pending', 'accepted', 'rejected', 'expired')) DEFAULT 'pending',
+    created_by TEXT REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS merchant_interest (
+    id TEXT PRIMARY KEY,
+    business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    customer_name TEXT,
+    customer_contact TEXT NOT NULL,
+    interest_note TEXT,
+    source_url TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS customer_saved_pins (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    label TEXT NOT NULL, -- Home, Condo, Villa, etc.
+    lat REAL NOT NULL,
+    lng REAL NOT NULL,
+    entrance_note TEXT,
+    is_default BOOLEAN DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS cash_collections (
+    id TEXT PRIMARY KEY,
+    order_id TEXT UNIQUE NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    driver_id TEXT NOT NULL REFERENCES drivers(id),
+    amount_expected REAL NOT NULL,
+    amount_collected REAL NOT NULL,
+    currency TEXT DEFAULT 'DOP',
+    collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS cash_handoffs (
+    id TEXT PRIMARY KEY,
+    handoff_batch_id TEXT NOT NULL,
+    driver_id TEXT NOT NULL REFERENCES drivers(id),
+    receiver_id TEXT NOT NULL REFERENCES users(id),
+    order_ids_json TEXT NOT NULL,
+    total_driver_reported REAL NOT NULL,
+    total_receiver_counted REAL NOT NULL,
+    difference REAL NOT NULL, -- reported - counted (shortage if negative / counted < reported)
+    status TEXT NOT NULL CHECK(status IN ('reconciled', 'unresolved_discrepancy')) DEFAULT 'reconciled',
+    resolution_notes TEXT,
+    resolved_by TEXT REFERENCES users(id),
+    resolved_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_merchant_requests_biz ON merchant_requests(business_id, status);
+CREATE INDEX IF NOT EXISTS idx_merchant_requests_token ON merchant_requests(status_token);
+CREATE INDEX IF NOT EXISTS idx_merchant_requests_mtoken ON merchant_requests(merchant_token);
+CREATE INDEX IF NOT EXISTS idx_merchant_interest_biz ON merchant_interest(business_id);
+CREATE INDEX IF NOT EXISTS idx_customer_saved_pins_usr ON customer_saved_pins(user_id);
+
+
 """
+
+
+def run_migrations(conn):
+    cur = conn.cursor()
+    # Check businesses columns
+    cur.execute("PRAGMA table_info(businesses)")
+    existing_cols = {row[1] for row in cur.fetchall()}
+
+    new_business_cols = [
+        ("requests_enabled", "BOOLEAN DEFAULT 0"),
+        ("request_action_label_en", "TEXT DEFAULT 'Request an appointment'"),
+        ("request_action_label_es", "TEXT DEFAULT 'Solicitar una cita'"),
+        ("whatsapp_alerts_consent", "BOOLEAN DEFAULT 0"),
+        ("whatsapp_alerts_phone", "TEXT"),
+        ('service_modes_supported', "TEXT DEFAULT '[\"in_shop\"]'"),
+        ("storefront_pin_lat", "REAL"),
+        ("storefront_pin_lng", "REAL"),
+        ("pickup_pin_lat", "REAL"),
+        ("pickup_pin_lng", "REAL"),
+        ("pickup_pin_note", "TEXT"),
+        ("pilot_delivery_enabled", "BOOLEAN DEFAULT 0")
+    ]
+    for col_name, col_def in new_business_cols:
+        if col_name not in existing_cols:
+            try:
+                cur.execute(f"ALTER TABLE businesses ADD COLUMN {col_name} {col_def}")
+            except Exception as e:
+                pass
+
+    # Check locations columns
+    cur.execute("PRAGMA table_info(locations)")
+    loc_cols = {row[1] for row in cur.fetchall()}
+    if "search_aliases" not in loc_cols:
+        try:
+            cur.execute("ALTER TABLE locations ADD COLUMN search_aliases TEXT")
+        except Exception:
+            pass
+
+    # Check categories columns
+    cur.execute("PRAGMA table_info(categories)")
+    cat_cols = {row[1] for row in cur.fetchall()}
+    if "parent_category_id" not in cat_cols:
+        try:
+            cur.execute("ALTER TABLE categories ADD COLUMN parent_category_id TEXT REFERENCES categories(id)")
+        except Exception:
+            pass
+    if "search_aliases" not in cat_cols:
+        try:
+            cur.execute("ALTER TABLE categories ADD COLUMN search_aliases TEXT")
+        except Exception:
+            pass
+
+    conn.commit()
 
 def init_db(db_path: str):
     os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.executescript(SCHEMA_SQL)
+    run_migrations(conn)
     conn.commit()
     return conn
 

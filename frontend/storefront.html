@@ -230,6 +230,111 @@
 
   </main>
 
+  
+  <!-- Phase 2: Register Interest Modal (Unactivated Listings) -->
+  <div id="interestModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 250; align-items: center; justify-content: center;">
+    <div style="background: #ffffff; border-radius: var(--radius-lg); padding: 2rem; max-width: 480px; width: 90%; box-shadow: var(--shadow-hover);">
+      <h3 style="font-size: 1.35rem; font-weight: 850; margin-bottom: 0.5rem;">Register Interest</h3>
+      <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+        This business is not yet accepting direct online requests through Mavunqo. Register your interest and we will prioritize onboarding their automated request queue!
+      </p>
+      <form onsubmit="event.preventDefault(); submitInterestForm();">
+        <div style="margin-bottom: 0.85rem;">
+          <label style="font-size: 0.85rem; font-weight: 700;">Your Name</label>
+          <input type="text" id="interestCustName" class="input-field" placeholder="Full name">
+        </div>
+        <div style="margin-bottom: 0.85rem;">
+          <label style="font-size: 0.85rem; font-weight: 700;">Your Phone / WhatsApp *</label>
+          <input type="text" id="interestCustContact" class="input-field" placeholder="+1-809-..." required>
+        </div>
+        <div style="margin-bottom: 1.25rem;">
+          <label style="font-size: 0.85rem; font-weight: 700;">What are you looking to request?</label>
+          <textarea id="interestNotes" class="input-field" rows="2" placeholder="e.g. Need cement or materials quote"></textarea>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+          <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeInterestModal();">Cancel</button>
+          <button type="submit" id="btnSubmitInterest" class="btn btn-primary" style="flex: 2; font-weight: 800;">Register Interest</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Phase 2: Universal Category Request Modal (Activated Listings) -->
+  <div id="universalRequestModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 250; align-items: center; justify-content: center;">
+    <div style="background: #ffffff; border-radius: var(--radius-lg); max-width: 520px; width: 92%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-hover);">
+      <div style="padding: 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 id="universalModalTitle" style="margin: 0; font-size: 1.25rem; font-weight: 850;">Submit Request</h3>
+          <small id="universalModalSubtitle" style="color: var(--text-secondary);"></small>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="closeUniversalRequestModal();" style="padding: 0.2rem 0.6rem;">✕</button>
+      </div>
+
+      <form onsubmit="submitUniversalRequest(event);" style="padding: 1.25rem; overflow-y: auto; flex: 1;">
+        <input type="hidden" id="reqAgreedPrice" value="">
+        <input type="hidden" id="reqAgreedCurrency" value="DOP">
+
+        <!-- Service Mode Switch (In-shop vs Mobile vs Pickup) -->
+        <div id="serviceModeSelectorGroup" style="margin-bottom: 1rem;">
+          <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">Fulfillment Option *</label>
+          <div id="serviceModesContainer" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"></div>
+        </div>
+
+        <!-- Request description / details -->
+        <div style="margin-bottom: 0.85rem;">
+          <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">Request Description *</label>
+          <textarea id="reqDescInput" class="input-field" rows="3" placeholder="Describe the service, appointment, or items needed..." required></textarea>
+        </div>
+
+        <!-- Appointment / Pickup Date & Time -->
+        <div style="margin-bottom: 0.85rem;">
+          <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">Preferred Date & Time</label>
+          <input type="datetime-local" id="reqDateTimeInput" class="input-field">
+        </div>
+
+        <!-- Customer Identity -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.85rem;">
+          <div style="flex: 1;">
+            <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">Your Name *</label>
+            <input type="text" id="reqCustomerName" class="input-field" placeholder="Full name" required>
+          </div>
+          <div style="flex: 1;">
+            <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">WhatsApp / Phone *</label>
+            <input type="tel" id="reqCustomerPhone" class="input-field" placeholder="+1-809-..." required>
+          </div>
+        </div>
+
+        <!-- Confirmed Map Pin Section (Mandatory for Delivery & Mobile Visit) -->
+        <div id="mapPinSection" style="display: none; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+          <label style="font-size: 0.88rem; font-weight: 800; color: var(--teal-primary); display: block; margin-bottom: 0.25rem;">📍 Confirmed Destination Pin (Required)</label>
+          <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.5rem 0;">Confirm the exact entrance or drop-off point for staff/driver arrival.</p>
+          
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="setPinAuto();" style="flex: 1;">📍 Use My Location</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="setPinCenter();" style="flex: 1;">🎯 Place Pin Manually</button>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <input type="text" id="pinLat" class="input-field" placeholder="Lat: 19.755" style="font-size: 0.8rem;" required>
+            <input type="text" id="pinLng" class="input-field" placeholder="Lng: -70.515" style="font-size: 0.8rem;" required>
+          </div>
+          <div>
+            <input type="text" id="pinNote" class="input-field" placeholder="Landmark or entrance note (e.g. Villa 14, green gate)" style="font-size: 0.85rem;">
+          </div>
+        </div>
+
+        <div style="background: rgba(17, 107, 98, 0.08); padding: 0.75rem; border-radius: 8px; margin-bottom: 1.25rem;">
+          <span style="font-size: 0.82rem; color: var(--teal-primary); font-weight: 750;">⏱️ Response Target: Under 15 min for food orders; 2 business hours for appointments.</span>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem;">
+          <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeUniversalRequestModal();">Cancel</button>
+          <button type="submit" id="btnSubmitUniversal" class="btn btn-primary" style="flex: 2; font-weight: 850;">Submit Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Contact Form Modal -->
   <div id="contactModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center;">
     <div style="background: #ffffff; border-radius: var(--radius-lg); padding: 2.25rem; max-width: 480px; width: 90%; box-shadow: var(--shadow-hover);">
@@ -395,7 +500,34 @@
       const contactPanel = ctaList.closest('.uber-sidebar-panel');
       ctaList.innerHTML = "";
 
-      if (b.category_slug === 'dining-food' || b.category_slug === 'groceries-colmados' || b.category_slug === 'clothing-fashion') {
+      // Phase 2: Check if requests are disabled -> Show Register Interest
+      if (!b.requests_enabled && b.category_slug !== 'dining-food' && b.category_slug !== 'groceries-colmados' && b.category_slug !== 'clothing-fashion' && (!lodgingUnits || lodgingUnits.length === 0)) {
+        ctaList.innerHTML = `
+          <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
+            <div style="font-weight: 800; font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.25rem;">ℹ️ Online Requests Inactive</div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
+              This business is not yet accepting automated requests through Mavunqo. Register your interest to speed up their online activation!
+            </p>
+          </div>
+          <button class="btn btn-outline" style="width: 100%; font-weight: 800;" onclick="openInterestModal();">
+            📋 Register Interest
+          </button>
+        `;
+      } else if (b.requests_enabled && (!restaurantMenu || !restaurantMenu.categories || restaurantMenu.categories.length === 0) && (!lodgingUnits || lodgingUnits.length === 0)) {
+        // Universal Activated Request Action
+        const actionLabel = currentLang === 'es' ? (b.request_action_label_es || 'Solicitar') : (b.request_action_label_en || 'Submit Request');
+        ctaList.innerHTML = `
+          <div style="background: rgba(17, 107, 98, 0.08); border: 1px solid rgba(17, 107, 98, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
+            <div style="font-weight: 800; font-size: 0.9rem; color: var(--teal-primary); margin-bottom: 0.25rem;">⚡ Direct Online Request</div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
+              Submit your request directly to the merchant. Fast confirmation, confirmed pins, and cash on arrival.
+            </p>
+          </div>
+          <button class="btn btn-primary" style="width: 100%; font-weight: 800;" onclick="openUniversalRequestModal('${escapeAttr(actionLabel)}');">
+            ⚡ ${actionLabel}
+          </button>
+        `;
+      } else if (b.category_slug === 'dining-food' || b.category_slug === 'groceries-colmados' || b.category_slug === 'clothing-fashion') {
         const isClothing = b.category_slug === 'clothing-fashion';
         const isGrocery = b.category_slug === 'groceries-colmados';
         const btnText = isClothing ? 'Browse Collection & Order' : (isGrocery ? 'Browse Aisles & Order' : 'Browse Menu & Order');
@@ -829,9 +961,202 @@ A confirmation has been registered for front desk check-in.`);
       }
     }
 
+    
+    // --- Phase 2: Universal Request & Map Pin Controls ---
+    let selectedServiceMode = 'in_shop';
+
+    function openInterestModal() {
+      document.getElementById("interestModal").style.display = "flex";
+    }
+    function closeInterestModal() {
+      document.getElementById("interestModal").style.display = "none";
+    }
+    async function submitInterestForm() {
+      const contact = document.getElementById("interestCustContact").value.trim();
+      const name = document.getElementById("interestCustName").value.trim();
+      const note = document.getElementById("interestNotes").value.trim();
+      try {
+        const res = await fetch("/api/interest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            business_id: currentBusiness.id,
+            customer_contact: contact,
+            customer_name: name,
+            interest_note: note,
+            source_url: window.location.pathname
+          })
+        });
+        const d = await res.json();
+        if (res.ok) {
+          alert("✓ Interest registered! Thank you for letting us know you want online requests for this business.");
+          closeInterestModal();
+        } else {
+          alert(d.error || "Error registering interest.");
+        }
+      } catch (e) {
+        alert("Network error.");
+      }
+    }
+
+    function openUniversalRequestModal(actionLabel, prefilledText, prefilledPrice) {
+      if (!currentBusiness) return;
+      document.getElementById("universalModalTitle").textContent = actionLabel || (currentBusiness.request_action_label_en || "Submit Request");
+      document.getElementById("universalModalSubtitle").textContent = currentBusiness.trading_name;
+      
+      const reqTextEl = document.getElementById("reqDescInput");
+      if (prefilledText) {
+        reqTextEl.value = prefilledText;
+      }
+      if (prefilledPrice) {
+        document.getElementById("reqAgreedPrice").value = prefilledPrice;
+      } else {
+        document.getElementById("reqAgreedPrice").value = "";
+      }
+
+      // Configure Service Modes
+      let modes = ["in_shop"];
+      if (currentBusiness.service_modes_supported) {
+        try {
+          modes = JSON.parse(currentBusiness.service_modes_supported);
+        } catch (e) {}
+      }
+      selectedServiceMode = modes[0];
+
+      const mContainer = document.getElementById("serviceModesContainer");
+      mContainer.innerHTML = modes.map(m => {
+        let label = "🏢 In-Shop Visit";
+        if (m === "mobile_visit") label = "🛵 Mobile / Home Visit";
+        if (m === "pickup") label = "🛍️ Pickup";
+        if (m === "delivery") label = "🛵 Delivery";
+        if (m === "meeting_point") label = "📍 Tour Meeting Point";
+        return `
+          <label style="border: 1px solid var(--border); padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.82rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.35rem;">
+            <input type="radio" name="serviceModeRadio" value="${m}" ${m === selectedServiceMode ? 'checked' : ''} onchange="toggleServiceMode(this.value);">
+            ${label}
+          </label>
+        `;
+      }).join("");
+
+      toggleServiceMode(selectedServiceMode);
+      document.getElementById("universalRequestModal").style.display = "flex";
+    }
+
+    function closeUniversalRequestModal() {
+      document.getElementById("universalRequestModal").style.display = "none";
+    }
+
+    function toggleServiceMode(mode) {
+      selectedServiceMode = mode;
+      const pinSec = document.getElementById("mapPinSection");
+      const latIn = document.getElementById("pinLat");
+      const lngIn = document.getElementById("pinLng");
+
+      if (mode === "mobile_visit" || mode === "delivery") {
+        pinSec.style.display = "block";
+        latIn.required = true;
+        lngIn.required = true;
+        if (!latIn.value) {
+          // Default start pin (Sosua center)
+          latIn.value = "19.7550";
+          lngIn.value = "-70.5150";
+        }
+      } else {
+        pinSec.style.display = "none";
+        latIn.required = false;
+        lngIn.required = false;
+      }
+    }
+
+    function setPinAuto() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          document.getElementById("pinLat").value = pos.coords.latitude.toFixed(5);
+          document.getElementById("pinLng").value = pos.coords.longitude.toFixed(5);
+        }, () => {
+          alert("Location permission unavailable. You can enter your villa coordinates manually.");
+          setPinCenter();
+        });
+      } else {
+        setPinCenter();
+      }
+    }
+
+    function setPinCenter() {
+      document.getElementById("pinLat").value = "19.7550";
+      document.getElementById("pinLng").value = "-70.5150";
+      document.getElementById("pinNote").focus();
+    }
+
+    async function submitUniversalRequest(e) {
+      e.preventDefault();
+      const b = currentBusiness;
+      const desc = document.getElementById("reqDescInput").value.trim();
+      const name = document.getElementById("reqCustomerName").value.trim();
+      const phone = document.getElementById("reqCustomerPhone").value.trim();
+      const dt = document.getElementById("reqDateTimeInput").value;
+      const agreedPrice = document.getElementById("reqAgreedPrice").value;
+
+      let lat = null, lng = null, note = null;
+      if (selectedServiceMode === "mobile_visit" || selectedServiceMode === "delivery") {
+        lat = parseFloat(document.getElementById("pinLat").value);
+        lng = parseFloat(document.getElementById("pinLng").value);
+        note = document.getElementById("pinNote").value.trim();
+      }
+
+      const payload = {
+        business_id: b.id,
+        customer: { name, phone },
+        request_text: desc,
+        action_type: b.category_slug === 'dining-food' ? 'request_order' : 'request_appointment',
+        service_mode: selectedServiceMode,
+        requested_time: dt || null,
+        destination_lat: lat,
+        destination_lng: lng,
+        destination_entrance_note: note,
+        agreed_price: agreedPrice ? parseFloat(agreedPrice) : null,
+        language: currentLang
+      };
+
+      const btn = document.getElementById("btnSubmitUniversal");
+      btn.disabled = true;
+      btn.textContent = "Submitting...";
+
+      try {
+        const res = await fetch("/api/requests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          closeUniversalRequestModal();
+          // Redirect directly to the private request status tracker
+          window.location.href = data.status_url;
+        } else {
+          alert("Error: " + (data.error || "Unable to submit request."));
+          btn.disabled = false;
+          btn.textContent = "Submit Request";
+        }
+      } catch (err) {
+        alert("Network error.");
+        btn.disabled = false;
+        btn.textContent = "Submit Request";
+      }
+    }
+
     function requestSpecificService(serviceName, price) {
-      document.getElementById("contactMessage").value = `I would like to book "${serviceName}" (${price}) for my vehicle/home. Please confirm technician availability.`;
-      openContactModal();
+      if (currentBusiness && currentBusiness.requests_enabled) {
+        const numPrice = parseFloat((price || '').replace(/[^0-9.]/g, '')) || null;
+        openUniversalRequestModal(
+          currentLang === 'es' ? (currentBusiness.request_action_label_es || 'Solicitar') : (currentBusiness.request_action_label_en || 'Submit Request'),
+          `I would like to book "${serviceName}" (${price}).`,
+          numPrice
+        );
+      } else {
+        document.getElementById("contactMessage").value = `I would like to book "${serviceName}" (${price}) for my vehicle/home. Please confirm technician availability.`;
+        openContactModal();
+      }
     }
 
     function openContactModal() {

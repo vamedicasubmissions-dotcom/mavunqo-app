@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Request Status | Mavunqo</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+  <style>
+    .status-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      margin-top: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .status-pill {
+      display: inline-block;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .pill-awaiting { background: #fef3c7; color: #92400e; }
+    .pill-offer { background: #e0f2fe; color: #0369a1; }
+    .pill-confirmed { background: #dcfce7; color: #15803d; }
+    .pill-expired { background: #f1f5f9; color: #64748b; }
+    .pill-declined { background: #fee2e2; color: #b91c1c; }
+
+    .offer-box {
+      background: #f0fdf4;
+      border: 2px solid #86efac;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        MAVUNQO<span class="dot">.</span>
+        <span class="brand-pill">Request Tracking</span>
+      </a>
+      <div class="nav-actions">
+        <a href="/" class="btn btn-outline-white btn-sm">Directory</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 680px; padding-bottom: 4rem;">
+    <div id="loadingBox" class="state-box" style="margin-top: 2rem;">
+      <h3>Loading request details...</h3>
+    </div>
+
+    <div id="requestContent" style="display: none;" class="status-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 700;">REQUEST ID:</span>
+          <h2 id="reqNumber" style="font-size: 1.6rem; font-weight: 900; margin: 0.1rem 0;"></h2>
+        </div>
+        <div id="statusBadgeContainer"></div>
+      </div>
+
+      <div style="background: #F8FAFC; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+        <div style="font-weight: 850; font-size: 1.1rem; color: var(--teal-primary);" id="bizName"></div>
+        <div style="font-size: 0.88rem; color: var(--text-secondary);" id="bizAddress"></div>
+      </div>
+
+      <div class="detail-row">
+        <span style="color: var(--text-secondary);">Service / Request</span>
+        <strong id="reqText" style="max-width: 60%; text-align: right;"></strong>
+      </div>
+      <div class="detail-row">
+        <span style="color: var(--text-secondary);">Fulfillment Mode</span>
+        <strong id="serviceMode"></strong>
+      </div>
+      <div class="detail-row">
+        <span style="color: var(--text-secondary);">Response Deadline</span>
+        <strong id="deadlineText"></strong>
+      </div>
+
+      <div id="destinationPinRow" class="detail-row" style="display: none;">
+        <span style="color: var(--text-secondary);">Confirmed Destination</span>
+        <div style="text-align: right;">
+          <div id="destNotes" style="font-weight: 700;"></div>
+          <a id="destDirectionsLink" href="#" target="_blank" style="color: var(--teal-primary); font-size: 0.85rem; font-weight: 700;">📍 Open in Google Maps ↗</a>
+        </div>
+      </div>
+
+      <!-- Active Offer Section -->
+      <div id="activeOfferContainer" style="display: none;" class="offer-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <h3 style="margin: 0; font-size: 1.2rem; font-weight: 850; color: #166534;">🎉 Merchant Proposal Received</h3>
+          <span id="offerExpiryBadge" style="font-size: 0.8rem; font-weight: 750; color: #15803d;"></span>
+        </div>
+        <p id="offerNotes" style="margin: 0 0 1rem 0; font-size: 0.95rem; color: #1e293b;"></p>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.25rem; border-top: 1px dashed #86efac; padding-top: 0.75rem;">
+          <span style="font-weight: 700; color: #166534;">Total Proposed:</span>
+          <span id="offerPrice" style="font-size: 1.5rem; font-weight: 900; color: #15803d;"></span>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+          <button id="btnAcceptOffer" class="btn btn-primary" style="flex: 2; padding: 0.75rem; font-weight: 850;" onclick="respondToOffer('accept');">✓ Accept & Confirm Order</button>
+          <button id="btnRejectOffer" class="btn btn-outline" style="flex: 1; padding: 0.75rem; font-weight: 700; color: #b91c1c;" onclick="respondToOffer('reject');">✕ Decline</button>
+        </div>
+      </div>
+
+      <!-- Confirmed Order Banner -->
+      <div id="confirmedOrderContainer" style="display: none; background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem; text-align: center;">
+        <span style="font-size: 2.5rem;">🎉🛵</span>
+        <h3 style="margin: 0.5rem 0 0.25rem 0; font-size: 1.3rem; font-weight: 900; color: #065f46;">Order Confirmed!</h3>
+        <p style="color: #047857; margin: 0 0 1rem 0; font-size: 0.95rem;">Your booking is locked in. Payment is cash on arrival/handoff.</p>
+        <div id="confirmedOrderNumber" style="font-weight: 850; font-size: 1.1rem; color: #065f46; margin-bottom: 1rem;"></div>
+        <a id="btnWhatsAppStore" href="#" target="_blank" class="btn btn-primary" style="display: inline-block; padding: 0.6rem 1.25rem; font-weight: 800;">💬 Contact Store on WhatsApp</a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+    let currentRequest = null;
+
+    async function loadRequest() {
+      if (!token) {
+        document.getElementById("loadingBox").innerHTML = "<p>No request token provided.</p>";
+        return;
+      }
+      try {
+        const res = await fetch(`/api/requests/status?token=${token}`);
+        if (!res.ok) {
+          document.getElementById("loadingBox").innerHTML = "<p>Request not found or link expired.</p>";
+          return;
+        }
+        currentRequest = await res.json();
+        renderRequest(currentRequest);
+      } catch (err) {
+        document.getElementById("loadingBox").innerHTML = "<p>Network error loading request.</p>";
+      }
+    }
+
+    function renderRequest(r) {
+      document.getElementById("loadingBox").style.display = "none";
+      document.getElementById("requestContent").style.display = "block";
+
+      document.getElementById("reqNumber").textContent = r.request_number;
+      document.getElementById("bizName").textContent = r.business_name;
+      document.getElementById("bizAddress").textContent = r.business_address || "Sosúa, Dominican Republic";
+      document.getElementById("reqText").textContent = r.request_text;
+
+      let modeLabel = "In-Shop / Clinic Visit";
+      if (r.service_mode === "mobile_visit") modeLabel = "🛵 Mobile / Home Villa Visit";
+      if (r.service_mode === "pickup") modeLabel = "🛍️ In-Store Pickup";
+      if (r.service_mode === "delivery") modeLabel = "🛵 Motorcycle Delivery";
+      if (r.service_mode === "meeting_point") modeLabel = "📍 Tour Meeting Point";
+      document.getElementById("serviceMode").textContent = modeLabel;
+
+      // Status pill
+      const bContainer = document.getElementById("statusBadgeContainer");
+      if (r.status === "awaiting_confirmation") {
+        bContainer.innerHTML = '<span class="status-pill pill-awaiting">⏳ Awaiting Confirmation</span>';
+      } else if (r.status === "offer_pending") {
+        bContainer.innerHTML = '<span class="status-pill pill-offer">⚡ Offer Pending</span>';
+      } else if (r.status === "confirmed") {
+        bContainer.innerHTML = '<span class="status-pill pill-confirmed">✓ Confirmed</span>';
+      } else if (r.status === "expired") {
+        bContainer.innerHTML = '<span class="status-pill pill-expired">⏱️ Expired</span>';
+      } else {
+        bContainer.innerHTML = '<span class="status-pill pill-declined">✕ Declined</span>';
+      }
+
+      // Deadline countdown
+      const dl = new Date(r.deadline_utc);
+      document.getElementById("deadlineText").textContent = dl.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " (" + dl.toLocaleDateString() + ")";
+
+      // Destination Map Pin
+      if (r.destination_directions_url) {
+        document.getElementById("destinationPinRow").style.display = "flex";
+        document.getElementById("destNotes").textContent = r.destination_entrance_note || "Destination Pin";
+        document.getElementById("destDirectionsLink").href = r.destination_directions_url;
+      }
+
+      // Check active offer
+      const activeOffer = (r.offers && r.offers.length > 0) ? r.offers[0] : null;
+      if (r.status === "offer_pending" && activeOffer && activeOffer.status === "pending") {
+        document.getElementById("activeOfferContainer").style.display = "block";
+        document.getElementById("offerPrice").textContent = `${activeOffer.offered_price.toFixed(2)} ${activeOffer.offered_currency}`;
+        document.getElementById("offerNotes").textContent = activeOffer.notes || "Merchant reviewed your request and proposed the terms above.";
+        window.activeOfferId = activeOffer.id;
+      } else {
+        document.getElementById("activeOfferContainer").style.display = "none";
+      }
+
+      // Confirmed state
+      if (r.status === "confirmed") {
+        document.getElementById("confirmedOrderContainer").style.display = "block";
+        if (r.agreed_price) {
+          document.getElementById("confirmedOrderNumber").textContent = `Amount Due: ${r.agreed_price.toFixed(2)} ${r.agreed_currency} (Cash on handoff)`;
+        }
+        if (r.business_whatsapp) {
+          const waNum = r.business_whatsapp.replace(/[^0-9]/g, '');
+          document.getElementById("btnWhatsAppStore").href = `https://wa.me/${waNum}?text=Hello!%20I%20have%20confirmed%20request%20${r.request_number}`;
+        }
+      }
+    }
+
+    async function respondToOffer(action) {
+      if (!window.activeOfferId) return;
+      try {
+        const res = await fetch("/api/requests/offer/respond", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status_token: token,
+            offer_id: window.activeOfferId,
+            action: action
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          loadRequest();
+        } else {
+          alert(data.error || "Failed to update offer response.");
+        }
+      } catch (e) {
+        alert("Network error.");
+      }
+    }
+
+    window.onload = loadRequest;
+  </script>
+</body>
+</html>

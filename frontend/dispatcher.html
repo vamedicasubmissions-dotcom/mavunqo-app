@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mavunqo Dispatch & Delivery Operations</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+  <style>
+    .ops-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    @media (max-width: 850px) {
+      .ops-grid { grid-template-columns: 1fr; }
+    }
+    .ops-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .order-dispatch-row {
+      background: #F8FAFC;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        MAVUNQO<span class="dot">.</span>
+        <span class="brand-pill">Operator Dispatch</span>
+      </a>
+      <div class="nav-actions">
+        <a href="/dashboard" class="btn btn-outline-white btn-sm">Merchant Portal</a>
+        <a href="/" class="btn btn-outline-white btn-sm">Directory</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 1.5rem; padding-bottom: 4rem;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <h1 style="font-size: 1.8rem; font-weight: 900; margin-bottom: 0.25rem;">🛵 Motorcycle Delivery Dispatch & Settlement</h1>
+        <p style="color: var(--text-secondary); margin: 0; font-size: 0.95rem;">Mavunqo-managed driver assignment, live job tracking, and driver cash settlement.</p>
+      </div>
+      <div>
+        <button class="btn btn-outline btn-sm" onclick="loadQueue();">🔄 Refresh Queue</button>
+      </div>
+    </div>
+
+    <div class="ops-grid">
+      <!-- Active Delivery Orders to Dispatch -->
+      <div>
+        <div class="ops-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.25rem; font-weight: 850; margin: 0;">Orders Awaiting Moto Dispatch</h3>
+            <span id="queueBadge" style="background: #e2e8f0; font-weight: 800; padding: 2px 8px; border-radius: 12px; font-size: 0.85rem;">0</span>
+          </div>
+          <div id="ordersContainer">
+            <p style="color: var(--text-secondary);">Loading queued deliveries...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Drivers & Cash Reconciliation -->
+      <div>
+        <!-- Driver Pool -->
+        <div class="ops-card">
+          <h3 style="font-size: 1.15rem; font-weight: 850; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-top: 0;">Motorcycle Drivers Pool</h3>
+          <div id="driversContainer" style="margin-top: 1rem;">
+            <!-- Drivers injected here -->
+          </div>
+        </div>
+
+        <!-- Cash Reconciliation Module -->
+        <div class="ops-card" style="background: #fafafa; border: 1px solid #cbd5e1;">
+          <h3 style="font-size: 1.15rem; font-weight: 850; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-top: 0;">💵 Cash Handoff Reconciliation</h3>
+          <div style="margin-top: 0.75rem; font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1rem;">
+            Record driver cash returns and compare expected cash with counted bills.
+          </div>
+          <form onsubmit="event.preventDefault(); submitCashHandoff();">
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.82rem; font-weight: 750; display: block; margin-bottom: 0.2rem;">Select Driver *</label>
+              <select id="cashDriverSelect" class="input-field" required></select>
+            </div>
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.82rem; font-weight: 750; display: block; margin-bottom: 0.2rem;">Driver Reported Amount (RD$) *</label>
+              <input type="number" id="cashReported" class="input-field" step="0.01" min="0" placeholder="e.g. 700.00" required>
+            </div>
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.82rem; font-weight: 750; display: block; margin-bottom: 0.2rem;">Receiver Counted Amount (RD$) *</label>
+              <input type="number" id="cashCounted" class="input-field" step="0.01" min="0" placeholder="e.g. 650.00" required>
+            </div>
+            <div style="margin-bottom: 1rem;">
+              <label style="font-size: 0.82rem; font-weight: 750; display: block; margin-bottom: 0.2rem;">Discrepancy Notes (if difference)</label>
+              <input type="text" id="cashNotes" class="input-field" placeholder="Notes on short bills, tips, or change">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; font-weight: 800;">Reconcile & Settle Cash</button>
+          </form>
+          <div id="reconcileResult" style="margin-top: 1rem; font-size: 0.9rem; font-weight: 750;"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem("mavunqo_token");
+    let queueData = null;
+
+    async function loadQueue() {
+      try {
+        const res = await fetch("/api/dispatcher/queue", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            document.getElementById("ordersContainer").innerHTML = `<div style="padding: 1rem; background: #fee2e2; border-radius: 8px; color: #991b1b;">Access restricted: Please <a href="/login">sign in</a> as an administrator or dispatcher.</div>`;
+            return;
+          }
+        }
+        queueData = await res.json();
+        renderQueue(queueData);
+      } catch (e) {
+        document.getElementById("ordersContainer").innerHTML = "<p>Network error loading queue.</p>";
+      }
+    }
+
+    function renderQueue(data) {
+      const oCont = document.getElementById("ordersContainer");
+      const dCont = document.getElementById("driversContainer");
+      const dSelect = document.getElementById("cashDriverSelect");
+
+      document.getElementById("queueBadge").textContent = (data.orders || []).length;
+      dSelect.innerHTML = "";
+
+      // Render Drivers
+      if (!data.drivers || data.drivers.length === 0) {
+        dCont.innerHTML = "<p>No active drivers registered.</p>";
+      } else {
+        dCont.innerHTML = data.drivers.map(d => `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+            <div>
+              <strong>${d.full_name}</strong>
+              <div style="font-size: 0.78rem; color: var(--text-secondary);">${d.phone} • ${d.vehicle_type}</div>
+            </div>
+            <span class="uber-badge" style="background: #dcfce7; color: #15803d; font-size: 0.75rem;">${d.status.toUpperCase()}</span>
+          </div>
+        `).join("");
+
+        data.drivers.forEach(d => {
+          const opt = document.createElement("option");
+          opt.value = d.id;
+          opt.textContent = `${d.full_name} (${d.phone})`;
+          dSelect.appendChild(opt);
+        });
+      }
+
+      // Render Orders
+      if (!data.orders || data.orders.length === 0) {
+        oCont.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No orders awaiting motorcycle delivery at this moment.</div>`;
+        return;
+      }
+
+      oCont.innerHTML = data.orders.map(o => `
+        <div class="order-dispatch-row">
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <strong style="font-size: 1.05rem;">${o.order_number}</strong>
+              <span class="uber-badge" style="font-size: 0.75rem;">${(o.dispatch_status || 'UNASSIGNED').toUpperCase()}</span>
+            </div>
+            <div style="font-size: 0.9rem; margin-top: 0.25rem;">
+              Store: <strong>${o.business_name}</strong>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">
+              To: ${o.customer_name} • ${o.delivery_address || 'Confirmed Pin'}
+            </div>
+            <div style="font-size: 0.9rem; font-weight: 800; color: #15803d; margin-top: 0.25rem;">
+              Cash Due: ${parseFloat(o.total).toFixed(2)} ${o.currency}
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <select id="driverFor_${o.id}" class="input-field" style="padding: 0.35rem; font-size: 0.85rem; width: auto;">
+              ${(data.drivers || []).map(d => `<option value="${d.id}" ${o.driver_id === d.id ? 'selected' : ''}>${d.full_name}</option>`).join("")}
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="assignDriver('${o.id}');" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;">
+              ${o.driver_id ? 'Reassign Driver' : 'Assign Moto Driver'}
+            </button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function assignDriver(orderId) {
+      const sel = document.getElementById(`driverFor_${orderId}`);
+      const driverId = sel.value;
+      try {
+        const res = await fetch("/api/dispatcher/assign", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ order_id: orderId, driver_id: driverId })
+        });
+        const d = await res.json();
+        if (res.ok) {
+          alert("Driver successfully assigned!");
+          loadQueue();
+        } else {
+          alert(d.error || "Failed to assign driver.");
+        }
+      } catch (err) {
+        alert("Network error.");
+      }
+    }
+
+    async function submitCashHandoff() {
+      const driverId = document.getElementById("cashDriverSelect").value;
+      const reported = parseFloat(document.getElementById("cashReported").value);
+      const counted = parseFloat(document.getElementById("cashCounted").value);
+      const notes = document.getElementById("cashNotes").value;
+
+      try {
+        const res = await fetch("/api/dispatcher/cash-handoff", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            driver_id: driverId,
+            total_driver_reported: reported,
+            total_receiver_counted: counted,
+            order_ids: [],
+            notes: notes
+          })
+        });
+        const d = await res.json();
+        const rDiv = document.getElementById("reconcileResult");
+        if (res.ok) {
+          if (d.is_discrepancy) {
+            rDiv.style.color = "#dc2626";
+            rDiv.textContent = `⚠️ Flagged Discrepancy: Difference of ${d.difference.toFixed(2)} DOP. Record saved for audit review.`;
+          } else {
+            rDiv.style.color = "#15803d";
+            rDiv.textContent = `✓ Cash Reconciled! Perfect match (${d.total_receiver_counted.toFixed(2)} DOP).`;
+          }
+        } else {
+          alert(d.error || "Error recording handoff.");
+        }
+      } catch (e) {
+        alert("Network error.");
+      }
+    }
+
+    window.onload = loadQueue;
+  </script>
+</body>
+</html>

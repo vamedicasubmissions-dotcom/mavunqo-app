@@ -14,7 +14,9 @@ import sqlite3
 import json
 import uuid
 import re
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+import secrets
+import hashlib
 
 class MavunqoService:
     def __init__(self, db_path: str):
@@ -68,8 +70,24 @@ class MavunqoService:
             params.extend([category_id, category_id])
 
         if location_id:
-            sql += " AND (b.primary_location_id = ? OR bsa.location_id = ? OR l.name LIKE ?)"
-            params.extend([location_id, location_id, f"%{location_id}%"])
+            # Map search aliases like 'Montellano' -> loc_montellano
+            loc_match = location_id
+            if "montellano" in location_id.lower():
+                loc_match = "loc_montellano"
+            elif "sosua" in location_id.lower():
+                loc_match = "loc_sosua"
+            elif "cabarete" in location_id.lower():
+                loc_match = "loc_cabarete"
+            elif "puerto" in location_id.lower() or "plata" in location_id.lower():
+                loc_match = "loc_puerto_plata"
+
+            sql += """ AND (
+                b.primary_location_id = ? OR 
+                bsa.location_id = ? OR 
+                l.name LIKE ? OR 
+                LOWER(l.search_aliases) LIKE ?
+            )"""
+            params.extend([loc_match, loc_match, f"%{location_id}%", f"%{location_id.lower()}%"])
 
         if q:
             sql += """ AND (
@@ -81,10 +99,13 @@ class MavunqoService:
                 LOWER(s.description_en) LIKE ? OR
                 LOWER(s.description_es) LIKE ? OR
                 LOWER(c.name_en) LIKE ? OR
-                LOWER(c.name_es) LIKE ?
+                LOWER(c.name_es) LIKE ? OR
+                LOWER(c.search_aliases) LIKE ? OR
+                LOWER(l.name) LIKE ? OR
+                LOWER(l.search_aliases) LIKE ?
             )"""
             pattern = f"%{q}%"
-            params.extend([pattern] * 9)
+            params.extend([pattern] * 12)
 
         sql += " ORDER BY b.trading_name ASC"
 
@@ -112,11 +133,22 @@ class MavunqoService:
 
         with self.get_connection() as conn:
             # Record search event in privacy-conscious aggregate log
+            valid_loc = None
+            if location_id:
+                loc_check = conn.execute("SELECT id FROM locations WHERE id = ? OR name LIKE ? OR search_aliases LIKE ?", (location_id, f"%{location_id}%", f"%{location_id}%")).fetchone()
+                if loc_check:
+                    valid_loc = loc_check["id"]
+
+            valid_cat = None
+            if category_id:
+                cat_check = conn.execute("SELECT id FROM categories WHERE id = ? OR slug = ?", (category_id, category_id)).fetchone()
+                if cat_check:
+                    valid_cat = cat_check["id"]
+
             conn.execute(
                 """INSERT INTO search_events (id, query_text, category_id, location_id, results_count)
                    VALUES (?, ?, ?, ?, ?)""",
-                (str(uuid.uuid4()), q if q else None, category_id if category_id else None,
-                 location_id if location_id else None, len(results))
+                (str(uuid.uuid4()), q if q else None, valid_cat, valid_loc, len(results))
             )
             conn.commit()
 
@@ -1658,3 +1690,614 @@ class MavunqoService:
                 "sender_name": sender_name,
                 "message": clean_msg
             }
+
+
+    # -------------------------------------------------------------
+    # Phase 2: Merchant Request Automation, Pins & Delivery Management
+    # -------------------------------------------------------------
+
+    def register_business_interest(self, business_id: str, customer_contact: str, customer_name: str = "", interest_note: str = "", source_url: str = ""):
+        customer_contact = (customer_contact or "").strip()
+        if not customer_contact:
+            raise ValueError("Contact information is required.")
+
+        with self.get_connection() as conn:
+            biz = conn.execute("SELECT id, trading_name FROM businesses WHERE id = ?", (business_id,)).fetchone()
+            if not biz:
+                raise ValueError("Business not found.")
+
+            interest_id = f"int_{uuid.uuid4().hex[:12]}"
+            conn.execute(
+                """INSERT INTO merchant_interest (id, business_id, customer_name, customer_contact, interest_note, source_url)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (interest_id, business_id, customer_name.strip() or None, customer_contact, interest_note.strip() or None, source_url)
+            )
+            conn.commit()
+
+        return {"success": True, "interest_id": interest_id, "message": "Interest registered successfully."}
+
+    def get_business_interest_count(self, business_id: str):
+        with self.get_connection() as conn:
+            count = conn.execute("SELECT COUNT(*) FROM merchant_interest WHERE business_id = ?", (business_id,)).fetchone()[0]
+            return count
+
+    def update_merchant_request_settings(self, user_id: str, business_id: str, requests_enabled: bool, whatsapp_consent: bool = None, whatsapp_phone: str = None, action_label_en: str = None, action_label_es: str = None):
+        if not self.verify_business_ownership(user_id, business_id):
+            raise PermissionError("Access denied.")
+
+        with self.get_connection() as conn:
+            biz = conn.execute("SELECT * FROM businesses WHERE id = ?", (business_id,)).fetchone()
+            if not biz:
+                raise ValueError("Business not found.")
+
+            # Validate destination when enabling WhatsApp alerts
+            if whatsapp_consent:
+                dest_phone = (whatsapp_phone or biz["whatsapp"] or "").strip()
+                if not dest_phone:
+                    raise ValueError("A valid phone destination is required for WhatsApp alerts.")
+            else:
+                dest_phone = whatsapp_phone if whatsapp_phone is not None else biz["whatsapp_alerts_phone"]
+
+            updates = {
+                "requests_enabled": 1 if requests_enabled else 0,
+                "updated_at": datetime.now().isoformat()
+            }
+            if whatsapp_consent is not None:
+                updates["whatsapp_alerts_consent"] = 1 if whatsapp_consent else 0
+            if dest_phone is not None:
+                updates["whatsapp_alerts_phone"] = dest_phone
+            if action_label_en:
+                updates["request_action_label_en"] = action_label_en
+            if action_label_es:
+                updates["request_action_label_es"] = action_label_es
+
+            set_clauses = [f"{k} = ?" for k in updates.keys()]
+            vals = list(updates.values())
+            vals.append(business_id)
+
+            conn.execute(f"UPDATE businesses SET {', '.join(set_clauses)} WHERE id = ?", vals)
+            conn.commit()
+
+        return {"success": True, "requests_enabled": bool(requests_enabled)}
+
+    def calculate_request_deadline(self, business: dict, action_type: str, requested_time: datetime = None) -> datetime:
+        now_utc = datetime.now(timezone.utc)
+        # Immediate food/dining requests: 15 minutes from submission
+        if action_type in ("request_order", "immediate_order") or business.get("category_slug") == "dining-food":
+            return now_utc + timedelta(minutes=15)
+        # Scheduled appointments, quotes, retail pickup: 2 business hours bounded by requested fulfillment time
+        deadline = now_utc + timedelta(hours=2)
+        if requested_time:
+            # If requested time is sooner than 2 hours, bound deadline by requested time
+            req_utc = requested_time if requested_time.tzinfo else requested_time.replace(tzinfo=timezone.utc)
+            if req_utc < deadline and req_utc > now_utc:
+                deadline = req_utc
+        return deadline
+
+    def create_merchant_request(self, payload: dict):
+        biz_id = payload.get("business_id")
+        customer = payload.get("customer", {})
+        cust_name = customer.get("name", "").strip()
+        cust_phone = customer.get("phone", "").strip()
+        cust_email = customer.get("email", "").strip() or None
+        request_text = (payload.get("request_text") or "").strip()
+        action_type = payload.get("action_type", "request_appointment")
+        service_mode = payload.get("service_mode", "in_shop") # in_shop, mobile_visit, pickup, delivery, meeting_point
+        details = payload.get("category_details", {})
+        lang = payload.get("language", "en")
+        origin = payload.get("origin", "marketplace")
+        if origin not in ('marketplace', 'merchant_link'):
+            origin = 'marketplace'
+
+        if not biz_id or not cust_name or not cust_phone or not request_text:
+            raise ValueError("Business ID, customer name, customer phone, and request description are required.")
+
+        with self.get_connection() as conn:
+            biz = conn.execute("""
+                SELECT b.*, c.slug as category_slug, l.name as loc_name 
+                FROM businesses b 
+                JOIN categories c ON b.category_id = c.id
+                JOIN locations l ON b.primary_location_id = l.id
+                WHERE b.id = ? AND b.status = 'approved'
+            """, (biz_id,)).fetchone()
+            if not biz:
+                raise ValueError("Business not found or inactive.")
+
+            if not biz["requests_enabled"]:
+                raise ValueError("This business is not currently accepting requests through Mavunqo.")
+
+            # Validate Confirmed Map Pins
+            # Rule: If customer travels to merchant (pickup / in_shop), use merchant's confirmed pin
+            pickup_lat = biz["pickup_pin_lat"] or biz["storefront_pin_lat"]
+            pickup_lng = biz["pickup_pin_lng"] or biz["storefront_pin_lng"]
+            pickup_note = biz["pickup_pin_note"] or "Main Entrance"
+
+            dest_lat = payload.get("destination_lat")
+            dest_lng = payload.get("destination_lng")
+            dest_note = payload.get("destination_entrance_note", "")
+
+            # Rule: If staff/driver travels to customer (delivery, mobile_visit), customer MUST confirm a destination pin
+            if service_mode in ("delivery", "mobile_visit"):
+                if dest_lat is None or dest_lng is None:
+                    raise ValueError("A confirmed destination map pin is required for delivery and mobile/home visits.")
+
+                # Validate destination pin falls inside service areas or launch region
+                # Allowed coordinates rough boundary around Sosua/Montellano/Cabarete (19.60 to 19.90 Lat, -70.75 to -70.35 Lng)
+                if not (19.60 <= float(dest_lat) <= 19.95 and -70.80 <= float(dest_lng) <= -70.30):
+                    raise ValueError("The confirmed destination is outside the current pilot service area (Sosúa, Montellano, Cabarete).")
+
+            req_id = f"mreq_{uuid.uuid4().hex[:12]}"
+            req_num = f"REQ-{datetime.now().strftime('%m%d')}-{uuid.uuid4().hex[:4].upper()}"
+            status_tok = f"stok_{secrets.token_urlsafe(24)}"
+            merchant_tok = f"mtok_{secrets.token_urlsafe(24)}"
+            
+            # Requested time if provided
+            req_time_str = payload.get("requested_time")
+            req_time_dt = None
+            if req_time_str:
+                try:
+                    req_time_dt = datetime.fromisoformat(req_time_str.replace("Z", "+00:00"))
+                except Exception:
+                    pass
+
+            deadline_utc = self.calculate_request_deadline(dict(biz), action_type, req_time_dt)
+
+            # Check if pricing is already agreed (e.g. from service item catalog selection)
+            agreed_price = payload.get("agreed_price")
+            agreed_currency = payload.get("agreed_currency", "DOP")
+
+            phone_hash = hashlib.sha256(cust_phone.encode('utf-8')).hexdigest()[:16]
+
+            conn.execute(
+                """INSERT INTO merchant_requests (
+                    id, request_number, business_id, category_id, action_type,
+                    customer_name, customer_phone, customer_phone_hash, customer_email,
+                    request_text, category_details_json, service_mode,
+                    pickup_lat, pickup_lng, pickup_entrance_note,
+                    destination_lat, destination_lng, destination_entrance_note,
+                    status, status_token, status_token_expires_at,
+                    merchant_token, merchant_token_expires_at,
+                    requested_time, deadline_utc, agreed_price, agreed_currency,
+                    language, origin
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    req_id, req_num, biz_id, biz["category_id"], action_type,
+                    cust_name, cust_phone, phone_hash, cust_email,
+                    request_text, json.dumps(details), service_mode,
+                    pickup_lat, pickup_lng, pickup_note,
+                    dest_lat, dest_lng, dest_note,
+                    "awaiting_confirmation", status_tok, (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+                    merchant_tok, (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+                    req_time_dt.isoformat() if req_time_dt else None, deadline_utc.isoformat(),
+                    agreed_price, agreed_currency, lang, origin
+                )
+            )
+
+            # Send test notification if merchant has opted into WhatsApp alerts
+            notification_sent = False
+            if biz["whatsapp_alerts_consent"] and biz["whatsapp_alerts_phone"]:
+                # In staging / test notification transport: log clean notification without customer phone number
+                notification_sent = True
+
+            conn.commit()
+
+        return {
+            "success": True,
+            "request_id": req_id,
+            "request_number": req_num,
+            "status": "awaiting_confirmation",
+            "status_token": status_tok,
+            "status_url": f"/request/status?token={status_tok}",
+            "merchant_url": f"/request/merchant?token={merchant_tok}",
+            "deadline_utc": deadline_utc.isoformat(),
+            "notification_sent": notification_sent
+        }
+
+    def get_merchant_request_by_token(self, token: str, is_merchant: bool = False):
+        now_utc = datetime.now(timezone.utc)
+        with self.get_connection() as conn:
+            col = "merchant_token" if is_merchant else "status_token"
+            row = conn.execute(f"""
+                SELECT r.*, b.trading_name as business_name, b.slug as business_slug, b.whatsapp as business_whatsapp,
+                       b.phone as business_phone, b.address as business_address, b.payment_modes, b.cash_only
+                FROM merchant_requests r
+                JOIN businesses b ON r.business_id = b.id
+                WHERE r.{col} = ?
+            """, (token,)).fetchone()
+            if not row:
+                return None
+            req = dict(row)
+
+            # Check deadline expiry if awaiting confirmation or offer pending
+            if req["status"] in ("awaiting_confirmation", "offer_pending"):
+                dl_dt = datetime.fromisoformat(req["deadline_utc"].replace("Z", "+00:00"))
+                if now_utc > dl_dt:
+                    conn.execute("UPDATE merchant_requests SET status = 'expired', updated_at = ? WHERE id = ?", (now_utc.isoformat(), req["id"]))
+                    conn.commit()
+                    req["status"] = "expired"
+
+            # Parse details json
+            if req.get("category_details_json"):
+                try:
+                    req["category_details"] = json.loads(req["category_details_json"])
+                except Exception:
+                    req["category_details"] = {}
+
+            # Privacy Masking: Keep customer phone out of routine merchant views and merchant alerts
+            if is_merchant and req["status"] != "confirmed":
+                req["customer_phone_masked"] = req["customer_phone"][:3] + "****" + req["customer_phone"][-4:]
+                del req["customer_phone"]
+
+            # Fetch active offers
+            offers = conn.execute("SELECT * FROM request_offers WHERE request_id = ? ORDER BY created_at DESC", (req["id"],)).fetchall()
+            req["offers"] = [dict(o) for o in offers]
+
+            # Google Directions URLs
+            if req.get("pickup_lat") and req.get("pickup_lng"):
+                req["pickup_directions_url"] = f"https://www.google.com/maps/dir/?api=1&destination={req['pickup_lat']},{req['pickup_lng']}"
+            if req.get("destination_lat") and req.get("destination_lng"):
+                req["destination_directions_url"] = f"https://www.google.com/maps/dir/?api=1&destination={req['destination_lat']},{req['destination_lng']}"
+
+            return req
+
+    def merchant_respond_to_request(self, token: str, action: str, price: float = None, currency: str = "DOP", offered_time: str = None, notes: str = None):
+        action = action.lower() # accept, suggest_change, decline
+        now_utc = datetime.now(timezone.utc)
+
+        with self.get_connection() as conn:
+            row = conn.execute("""
+                SELECT r.*, b.trading_name, b.category_id, b.slug as business_slug, b.primary_location_id, b.cash_only
+                FROM merchant_requests r
+                JOIN businesses b ON r.business_id = b.id
+                WHERE r.merchant_token = ?
+            """, (token,)).fetchone()
+            if not row:
+                raise ValueError("Invalid merchant authorization token.")
+            req = dict(row)
+
+            # Check expiration
+            dl_dt = datetime.fromisoformat(req["deadline_utc"].replace("Z", "+00:00"))
+            if now_utc > dl_dt and req["status"] != "confirmed":
+                conn.execute("UPDATE merchant_requests SET status = 'expired', updated_at = ? WHERE id = ?", (now_utc.isoformat(), req["id"]))
+                conn.commit()
+                raise ValueError("This request has expired and cannot be modified without a fresh customer offer.")
+
+            if req["status"] not in ("awaiting_confirmation", "offer_pending"):
+                raise ValueError(f"Request is already {req['status']}.")
+
+            if action == "accept":
+                # If price is already known, accept confirms customer terms directly
+                final_price = price if price is not None else req["agreed_price"]
+                if final_price is None or final_price <= 0:
+                    raise ValueError("Cannot directly accept without a confirmed price. Please suggest terms/price.")
+
+                order_num = f"ORD-{datetime.now().strftime('%m%d')}-{uuid.uuid4().hex[:4].upper()}"
+                order_id = f"ord_{uuid.uuid4().hex[:12]}"
+                status_token = f"tok_{uuid.uuid4().hex}"
+                token_expiry = (now_utc + timedelta(days=7)).isoformat()
+
+                # Create permanent confirmed order record
+                origin_val = "merchant" if req.get("origin") == "merchant" else "mavunqo"
+                conn.execute(
+                    """INSERT INTO orders (
+                        id, order_number, business_id, customer_name, customer_phone, customer_email,
+                        order_origin, fulfillment_type, delivery_address, customer_notes,
+                        status, subtotal, delivery_fee, total, currency, payment_method,
+                        cash_due, status_token, status_token_expires_at, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'accepted', ?, 0.0, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        order_id, order_num, req["business_id"], req["customer_name"], req["customer_phone"], req["customer_email"],
+                        origin_val, "delivery" if req["service_mode"] == "delivery" else "pickup",
+                        req["destination_entrance_note"] or req["pickup_entrance_note"], req["request_text"],
+                        final_price, final_price, currency, "cash",
+                        final_price, status_token, token_expiry, now_utc.isoformat(), now_utc.isoformat()
+                    )
+                )
+
+                conn.execute(
+                    """UPDATE merchant_requests 
+                       SET status = 'confirmed', agreed_price = ?, agreed_currency = ?, confirmed_order_id = ?, updated_at = ?
+                       WHERE id = ?""",
+                    (final_price, currency, order_id, now_utc.isoformat(), req["id"])
+                )
+                conn.commit()
+                return {"success": True, "status": "confirmed", "order_id": order_id, "order_number": order_num}
+
+            elif action == "suggest_change":
+                if price is None or price <= 0:
+                    raise ValueError("Price is required when suggesting terms.")
+
+                offer_time_dt = None
+                if offered_time:
+                    try:
+                        offer_time_dt = datetime.fromisoformat(offered_time.replace("Z", "+00:00"))
+                    except Exception:
+                        pass
+                if not offer_time_dt:
+                    offer_time_dt = now_utc + timedelta(hours=1)
+
+                offer_id = f"off_{uuid.uuid4().hex[:12]}"
+                offer_deadline = now_utc + timedelta(hours=2)
+
+                conn.execute(
+                    """INSERT INTO request_offers (id, request_id, offered_price, offered_currency, offered_time, deadline_utc, notes, status)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')""",
+                    (offer_id, req["id"], price, currency, offer_time_dt.isoformat(), offer_deadline.isoformat(), notes)
+                )
+                conn.execute(
+                    """UPDATE merchant_requests 
+                       SET status = 'offer_pending', agreed_price = ?, agreed_currency = ?, deadline_utc = ?, updated_at = ?
+                       WHERE id = ?""",
+                    (price, currency, offer_deadline.isoformat(), now_utc.isoformat(), req["id"])
+                )
+                conn.commit()
+                return {"success": True, "status": "offer_pending", "offer_id": offer_id, "offered_price": price}
+
+            elif action == "decline":
+                conn.execute(
+                    """UPDATE merchant_requests 
+                       SET status = 'declined', decline_reason = ?, updated_at = ?
+                       WHERE id = ?""",
+                    (notes or "Declined by merchant", now_utc.isoformat(), req["id"])
+                )
+                conn.commit()
+                return {"success": True, "status": "declined"}
+
+            else:
+                raise ValueError("Invalid action. Must be accept, suggest_change, or decline.")
+
+    def customer_respond_to_offer(self, status_token: str, offer_id: str, action: str):
+        action = action.lower() # accept, reject
+        now_utc = datetime.now(timezone.utc)
+
+        with self.get_connection() as conn:
+            row = conn.execute("""
+                SELECT r.*, b.trading_name, b.cash_only
+                FROM merchant_requests r
+                JOIN businesses b ON r.business_id = b.id
+                WHERE r.status_token = ?
+            """, (status_token,)).fetchone()
+            if not row:
+                raise ValueError("Invalid status token.")
+            req = dict(row)
+
+            offer = conn.execute("SELECT * FROM request_offers WHERE id = ? AND request_id = ?", (offer_id, req["id"])).fetchone()
+            if not offer:
+                raise ValueError("Offer not found.")
+            off = dict(offer)
+
+            if off["status"] != "pending":
+                raise ValueError(f"Offer is already {off['status']}.")
+
+            # Check offer deadline
+            off_dl = datetime.fromisoformat(off["deadline_utc"].replace("Z", "+00:00"))
+            if now_utc > off_dl:
+                conn.execute("UPDATE request_offers SET status = 'expired' WHERE id = ?", (offer_id,))
+                conn.commit()
+                raise ValueError("This offer has expired.")
+
+            if action == "accept":
+                order_num = f"ORD-{datetime.now().strftime('%m%d')}-{uuid.uuid4().hex[:4].upper()}"
+                order_id = f"ord_{uuid.uuid4().hex[:12]}"
+                st_tok = f"tok_{uuid.uuid4().hex}"
+                st_exp = (now_utc + timedelta(days=7)).isoformat()
+
+                origin_val = "merchant" if req.get("origin") == "merchant" else "mavunqo"
+                conn.execute(
+                    """INSERT INTO orders (
+                        id, order_number, business_id, customer_name, customer_phone, customer_email,
+                        order_origin, fulfillment_type, delivery_address, customer_notes,
+                        status, subtotal, delivery_fee, total, currency, payment_method,
+                        cash_due, status_token, status_token_expires_at, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'accepted', ?, 0.0, ?, ?, 'cash', ?, ?, ?, ?, ?)""",
+                    (
+                        order_id, order_num, req["business_id"], req["customer_name"], req["customer_phone"], req["customer_email"],
+                        origin_val, "delivery" if req["service_mode"] == "delivery" else "pickup",
+                        req["destination_entrance_note"] or req["pickup_entrance_note"], req["request_text"],
+                        off["offered_price"], off["offered_price"], off["offered_currency"],
+                        off["offered_price"], st_tok, st_exp, now_utc.isoformat(), now_utc.isoformat()
+                    )
+                )
+
+                conn.execute("UPDATE request_offers SET status = 'accepted' WHERE id = ?", (offer_id,))
+                conn.execute(
+                    """UPDATE merchant_requests 
+                       SET status = 'confirmed', agreed_price = ?, agreed_currency = ?, confirmed_order_id = ?, updated_at = ?
+                       WHERE id = ?""",
+                    (off["offered_price"], off["offered_currency"], order_id, now_utc.isoformat(), req["id"])
+                )
+                conn.commit()
+                return {"success": True, "status": "confirmed", "order_id": order_id, "order_number": order_num}
+
+            elif action == "reject":
+                conn.execute("UPDATE request_offers SET status = 'rejected' WHERE id = ?", (offer_id,))
+                conn.execute("UPDATE merchant_requests SET status = 'declined', updated_at = ? WHERE id = ?", (now_utc.isoformat(), req["id"]))
+                conn.commit()
+                return {"success": True, "status": "declined"}
+
+            else:
+                raise ValueError("Invalid action. Must be accept or reject.")
+
+    # -------------------------------------------------------------
+    # Customer Saved Pins (Default vs Per-Request)
+    # -------------------------------------------------------------
+    def save_customer_pin(self, user_id: str, label: str, lat: float, lng: float, entrance_note: str = "", set_default: bool = True):
+        with self.get_connection() as conn:
+            pin_id = f"pin_{uuid.uuid4().hex[:12]}"
+            if set_default:
+                conn.execute("UPDATE customer_saved_pins SET is_default = 0 WHERE user_id = ?", (user_id,))
+            conn.execute(
+                """INSERT INTO customer_saved_pins (id, user_id, label, lat, lng, entrance_note, is_default)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (pin_id, user_id, label.strip(), lat, lng, entrance_note.strip(), 1 if set_default else 0)
+            )
+            conn.commit()
+        return {"success": True, "pin_id": pin_id}
+
+    def get_customer_saved_pins(self, user_id: str):
+        with self.get_connection() as conn:
+            rows = conn.execute("SELECT * FROM customer_saved_pins WHERE user_id = ? ORDER BY is_default DESC, created_at DESC", (user_id,)).fetchall()
+            return [dict(r) for r in rows]
+
+    # -------------------------------------------------------------
+    # Mavunqo-Managed Motorcycle Delivery & Cash Reconciliation
+    # -------------------------------------------------------------
+    def get_dispatcher_queue(self):
+        with self.get_connection() as conn:
+            orders = conn.execute("""
+                SELECT o.*, b.trading_name as business_name, b.pickup_pin_lat, b.pickup_pin_lng, b.pickup_pin_note,
+                       b.address as business_address, d.driver_id, d.status as dispatch_status, drv.full_name as driver_name
+                FROM orders o
+                JOIN businesses b ON o.business_id = b.id
+                LEFT JOIN delivery_dispatches d ON o.id = d.order_id
+                LEFT JOIN drivers drv ON d.driver_id = drv.id
+                WHERE o.fulfillment_type = 'delivery' AND o.status IN ('accepted', 'in_kitchen', 'ready')
+                ORDER BY o.created_at ASC
+            """).fetchall()
+            drivers = conn.execute("SELECT * FROM drivers ORDER BY full_name ASC").fetchall()
+            return {"orders": [dict(o) for o in orders], "drivers": [dict(d) for d in drivers]}
+
+    def assign_delivery_driver(self, order_id: str, driver_id: str, dispatcher_id: str):
+        now_utc = datetime.now(timezone.utc).isoformat()
+        with self.get_connection() as conn:
+            # Check dispatcher authorization
+            disp_user = conn.execute("SELECT role FROM users WHERE id = ?", (dispatcher_id,)).fetchone()
+            if not disp_user or disp_user["role"] not in ("admin", "manager", "staff"):
+                raise PermissionError("Access denied: Mavunqo dispatcher role required.")
+
+            driver = conn.execute("SELECT * FROM drivers WHERE id = ?", (driver_id,)).fetchone()
+            if not driver:
+                raise ValueError("Driver not found.")
+
+            order = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
+            if not order:
+                raise ValueError("Order not found.")
+
+            disp = conn.execute("SELECT id FROM delivery_dispatches WHERE order_id = ?", (order_id,)).fetchone()
+            if disp:
+                conn.execute(
+                    """UPDATE delivery_dispatches 
+                       SET driver_id = ?, status = 'dispatched', dispatched_at = ?, updated_at = ?
+                       WHERE order_id = ?""",
+                    (driver_id, now_utc, now_utc, order_id)
+                )
+            else:
+                disp_id = f"disp_{uuid.uuid4().hex[:12]}"
+                conn.execute(
+                    """INSERT INTO delivery_dispatches (id, order_id, driver_id, status, dispatched_at)
+                       VALUES (?, ?, ?, 'dispatched', ?)""",
+                    (disp_id, order_id, driver_id, now_utc)
+                )
+
+            conn.commit()
+
+        return {"success": True, "order_id": order_id, "driver_id": driver_id, "status": "dispatched"}
+
+    def get_driver_active_jobs(self, driver_id: str):
+        with self.get_connection() as conn:
+            rows = conn.execute("""
+                SELECT o.id as order_id, o.order_number, o.customer_name, o.customer_phone, o.total, o.currency,
+                       o.cash_due, o.status as order_status, d.status as dispatch_status,
+                       b.trading_name as business_name, b.pickup_pin_lat, b.pickup_pin_lng, b.pickup_pin_note, b.address as business_address,
+                       o.delivery_address, r.destination_lat, r.destination_lng, r.destination_entrance_note
+                FROM delivery_dispatches d
+                JOIN orders o ON d.order_id = o.id
+                JOIN businesses b ON o.business_id = b.id
+                LEFT JOIN merchant_requests r ON o.id = r.confirmed_order_id
+                WHERE d.driver_id = ? AND d.status IN ('dispatched', 'picked_up')
+                ORDER BY d.dispatched_at ASC
+            """, (driver_id,)).fetchall()
+
+            jobs = []
+            for r in rows:
+                j = dict(r)
+                # Build travel-ordered stops
+                p_lat = j.get("pickup_pin_lat") or 19.755
+                p_lng = j.get("pickup_pin_lng") or -70.515
+                d_lat = j.get("destination_lat") or 19.758
+                d_lng = j.get("destination_lng") or -70.510
+
+                j["stops"] = [
+                    {
+                        "stop_type": "pickup",
+                        "title": f"1. Collect from {j['business_name']}",
+                        "lat": p_lat,
+                        "lng": p_lng,
+                        "entrance_note": j.get("pickup_pin_note") or "Storefront entrance",
+                        "directions_url": f"https://www.google.com/maps/dir/?api=1&destination={p_lat},{p_lng}"
+                    },
+                    {
+                        "stop_type": "dropoff",
+                        "title": f"2. Deliver to {j['customer_name']}",
+                        "lat": d_lat,
+                        "lng": d_lng,
+                        "entrance_note": j.get("destination_entrance_note") or j.get("delivery_address") or "Customer door",
+                        "amount_due": f"{j['cash_due'] or j['total']} {j['currency']}",
+                        "directions_url": f"https://www.google.com/maps/dir/?api=1&destination={d_lat},{d_lng}"
+                    }
+                ]
+                jobs.append(j)
+            return jobs
+
+    def record_driver_cash_collection(self, order_id: str, driver_id: str, amount_collected: float, notes: str = None):
+        with self.get_connection() as conn:
+            order = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
+            if not order:
+                raise ValueError("Order not found.")
+
+            col_id = f"col_{uuid.uuid4().hex[:12]}"
+            conn.execute(
+                """INSERT OR REPLACE INTO cash_collections (id, order_id, driver_id, amount_expected, amount_collected, currency, notes)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (col_id, order_id, driver_id, order["total"], amount_collected, order["currency"], notes)
+            )
+            # Update order cash received and completed status
+            conn.execute(
+                """UPDATE orders 
+                   SET cash_received = ?, status = 'completed', updated_at = ?
+                   WHERE id = ?""",
+                (amount_collected, datetime.now(timezone.utc).isoformat(), order_id)
+            )
+            conn.execute(
+                """UPDATE delivery_dispatches 
+                   SET status = 'delivered', delivered_at = ?
+                   WHERE order_id = ?""",
+                (datetime.now(timezone.utc).isoformat(), order_id)
+            )
+            conn.commit()
+
+        return {"success": True, "order_id": order_id, "amount_collected": amount_collected}
+
+    def record_cash_handoff_and_reconciliation(self, driver_id: str, receiver_id: str, order_ids: list, total_driver_reported: float, total_receiver_counted: float, notes: str = None):
+        diff = total_receiver_counted - total_driver_reported
+        status = "reconciled" if abs(diff) < 0.01 else "unresolved_discrepancy"
+        batch_id = f"hnd_{uuid.uuid4().hex[:12]}"
+        now_utc = datetime.now(timezone.utc).isoformat()
+
+        with self.get_connection() as conn:
+            conn.execute(
+                """INSERT INTO cash_handoffs (
+                    id, handoff_batch_id, driver_id, receiver_id, order_ids_json,
+                    total_driver_reported, total_receiver_counted, difference, status, resolution_notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    str(uuid.uuid4()), batch_id, driver_id, receiver_id, json.dumps(order_ids),
+                    total_driver_reported, total_receiver_counted, diff, status, notes
+                )
+            )
+            # Mark orders reconciled if reconciled
+            if status == "reconciled":
+                for oid in order_ids:
+                    conn.execute("UPDATE orders SET cash_reconciled = 1, updated_at = ? WHERE id = ?", (now_utc, oid))
+            conn.commit()
+
+        return {
+            "success": True,
+            "handoff_batch_id": batch_id,
+            "total_driver_reported": total_driver_reported,
+            "total_receiver_counted": total_receiver_counted,
+            "difference": diff,
+            "status": status,
+            "is_discrepancy": status == "unresolved_discrepancy"
+        }
+

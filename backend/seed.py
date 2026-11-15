@@ -31,38 +31,53 @@ def seed_database(db_path: str):
 
     # 2. Categories
     categories = [
-        ("cat_home", "home-services", "Home & Villa Services", "Servicios para el Hogar y Villas", "wrench", 1),
-        ("cat_dining", "dining-food", "Dining & Restaurants", "Restaurantes y Comida", "utensils", 2),
-        ("cat_health", "health-wellness", "Health & Wellness", "Salud y Bienestar", "heart-pulse", 3),
-        ("cat_auto", "auto-transport", "Automotive & Transport", "Automotriz y Transporte", "car", 4),
-        ("cat_prof", "professional-services", "Professional Services", "Servicios Profesionales", "briefcase", 5),
-        ("cat_tourism", "hospitality-tourism", "Tourism & Activities", "Turismo y Actividades", "palmtree", 6),
-        ("cat_grocery", "groceries-colmados", "Supermarkets & Colmados", "Supermercados y Colmados", "shopping-cart", 7),
-        ("cat_fashion", "clothing-fashion", "Clothing & Beachwear", "Ropa y Moda Playera", "shirt", 8),
+        ("cat_health", "health-wellness", "Health & Wellness", "Salud y Bienestar", "heart-pulse", 1, None, "health, clinic, medical, farmacia"),
+        ("cat_wellness_massage", "massage-wellness", "Massage & Wellness", "Masajes y Bienestar", "spa", 2, "cat_health", "massage, masajes, spa, mobile massage, masajista"),
+        ("cat_beauty", "beauty-personal-care", "Beauty & Personal Care", "Belleza y Cuidado Personal", "scissors", 2, None, "barber, salon, nails, peluqueria, unas"),
+        ("cat_fashion", "clothing-fashion", "Clothing & Accessories", "Ropa y Accesorios", "shirt", 3, None, "boutique, clothes, shoes, vestidos, trajes de bano"),
+        ("cat_grocery", "groceries-colmados", "Groceries & Colmados", "Supermercados y Colmados", "shopping-cart", 4, None, "supermarket, colmado, drinks, beer, snacks, viveres"),
+        ("cat_tourism", "hospitality-tourism", "Hotels & Lodging", "Hoteles y Alojamientos", "palmtree", 5, None, "hotel, villa, lodging, room, stays, hospedaje"),
+        ("cat_tours", "tours-activities", "Tours & Activities", "Tours y Actividades", "compass", 6, None, "tours, atv, excursions, excursion, surfing"),
+        ("cat_transport", "transportation-rentals", "Transportation & Rentals", "Transporte y Alquileres", "bike", 7, None, "car rental, scooter, moto rental, taxi, airport transfer"),
+        ("cat_auto", "auto-transport", "Auto Repair & Services", "Talleres y Servicios Automotrices", "car", 8, None, "mechanic, auto repair, taller, frenos, aire acondicionado"),
+        ("cat_home", "home-services", "Home & Property Services", "Servicios para el Hogar y Propiedades", "wrench", 9, None, "cleaning, laundry, repairs, villa maintenance, plomero"),
+        ("cat_events", "events-catering", "Events & Catering", "Eventos y Catering", "music", 10, None, "dj, venue, catering, sound, eventos, bodas"),
+        ("cat_dining", "dining-food", "Dining & Restaurants", "Restaurantes y Comida", "utensils", 11, None, "restaurant, food, pizza, grill, comida, delivery"),
+        ("cat_prof", "professional-services", "Professional Services", "Servicios Profesionales", "briefcase", 13, None, "legal, accounting, translator"),
     ]
-    for cid, cslug, cname_en, cname_es, cicon, corder in categories:
+    for item in categories:
+        cid, cslug, cname_en, cname_es, cicon, corder = item[0], item[1], item[2], item[3], item[4], item[5]
+        parent_id = item[6] if len(item) > 6 else None
+        aliases = item[7] if len(item) > 7 else ""
         cur.execute("SELECT id FROM categories WHERE id = ?", (cid,))
         if not cur.fetchone():
             cur.execute(
-                """INSERT INTO categories (id, slug, name_en, name_es, icon, sort_order)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
-                (cid, cslug, cname_en, cname_es, cicon, corder)
+                """INSERT INTO categories (id, slug, name_en, name_es, icon, sort_order, parent_category_id, search_aliases)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (cid, cslug, cname_en, cname_es, cicon, corder, parent_id, aliases)
             )
+        else:
+            cur.execute("UPDATE categories SET name_en = ?, name_es = ?, search_aliases = ? WHERE id = ?", (cname_en, cname_es, aliases, cid))
 
     # 3. Locations (Sosúa is active launch market, others upcoming)
     locations = [
-        ("loc_sosua", "Sosúa", "Puerto Plata Province", "active", 1, 1),
-        ("loc_cabarete", "Cabarete", "Puerto Plata Province", "upcoming", 0, 2),
-        ("loc_puerto_plata", "Puerto Plata", "Puerto Plata Province", "upcoming", 0, 3),
+        ("loc_sosua", "Sosúa", "Puerto Plata Province", "active", 1, 1, "Sosua, El Batey, Los Charamicos"),
+        ("loc_montellano", "Villa Montellano", "Puerto Plata Province", "active", 1, 2, "Montellano, Villa Montellano"),
+        ("loc_cabarete", "Cabarete", "Puerto Plata Province", "upcoming", 0, 3, "Cabarete, Encuentro"),
+        ("loc_puerto_plata", "Puerto Plata", "Puerto Plata Province", "upcoming", 0, 4, "Puerto Plata, Playa Dorada"),
     ]
-    for lid, lname, lreg, lstatus, islaun, lorder in locations:
+    for item in locations:
+        lid, lname, lreg, lstatus, islaun, lorder = item[0], item[1], item[2], item[3], item[4], item[5]
+        aliases = item[6] if len(item) > 6 else ""
         cur.execute("SELECT id FROM locations WHERE id = ?", (lid,))
         if not cur.fetchone():
             cur.execute(
-                """INSERT INTO locations (id, name, region, status, is_launch_market, sort_order)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
-                (lid, lname, lreg, lstatus, islaun, lorder)
+                """INSERT INTO locations (id, name, region, status, is_launch_market, sort_order, search_aliases)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (lid, lname, lreg, lstatus, islaun, lorder, aliases)
             )
+        else:
+            cur.execute("UPDATE locations SET search_aliases = ? WHERE id = ?", (aliases, lid))
 
     # 4. Demo Business Owner 1: Carlos (Has existing website)
     owner1_id = "user_carlos_villas"
@@ -635,6 +650,359 @@ def seed_database(db_path: str):
                     (mid, miid, g_en, g_es, men, mes, pdelta, mcurr, mreq, msort))
 
     # -------------------------------------------------------------
+
+    # -------------------------------------------------------------
+    # Phase 2 Pilot Businesses (1 per target category across locations)
+    # Includes Villa Montellano and Sosúa
+    # -------------------------------------------------------------
+
+    pilot_businesses = [
+        # 1. Massage & Wellness (Activated: In-shop + Mobile/Home visits) - Villa Montellano
+        {
+            "id": "biz_montellano_massage",
+            "owner_email": "ana@montellanomassage.com",
+            "owner_name": "Ana Mercedes Diaz",
+            "trading_name": "Montellano Oasis Massage & Spa",
+            "legal_name": "Oasis Montellano SRL",
+            "slug": "montellano-oasis-massage",
+            "category_id": "cat_wellness_massage",
+            "primary_location_id": "loc_montellano",
+            "description_en": "Holistic therapeutic massage, deep tissue therapy, reflexology, and mobile home/villa visits across Montellano and Sosúa.",
+            "description_es": "Masajes terapéuticos holísticos, terapia de tejido profundo, reflexología y visitas a domicilio en Montellano y Sosúa.",
+            "has_physical_location": 1,
+            "address": "Calle Principal #42, Villa Montellano",
+            "serves_entire_area": 1,
+            "whatsapp": "+18095553101",
+            "phone": "+18095553101",
+            "public_email": "citas@montellanomassage.com",
+            "requests_enabled": 1,
+            "request_action_label_en": "Request an appointment",
+            "request_action_label_es": "Solicitar una cita",
+            "whatsapp_alerts_consent": 1,
+            "whatsapp_alerts_phone": "+18095553101",
+            "service_modes_supported": json.dumps(["in_shop", "mobile_visit"]),
+            "storefront_pin_lat": 19.7421,
+            "storefront_pin_lng": -70.5985,
+            "pickup_pin_lat": 19.7421,
+            "pickup_pin_lng": -70.5985,
+            "pickup_pin_note": "Front Spa Entrance on Calle Principal, Villa Montellano",
+            "services": [
+                ("srv_mas_1", "Full Body Swedish Massage (60 min)", "Masaje Sueco de Cuerpo Completo (60 min)", "Relaxing full body oil massage.", 2200.0, 1),
+                ("srv_mas_2", "Deep Tissue & Sports Therapy (75 min)", "Terapia de Tejido Profundo (75 min)", "Targeted chronic tension relief.", 2800.0, 1),
+                ("srv_mas_3", "Mobile Home/Villa Massage Visit (60 min)", "Masaje a Domicilio en Villa (60 min)", "Therapist travels with massage table.", 3500.0, 1),
+            ],
+            "service_areas": ["loc_montellano", "loc_sosua"]
+        },
+        # 2. Beauty & Personal Care (Activated) - Sosúa
+        {
+            "id": "biz_batey_barber",
+            "owner_email": "danny@bateybarber.com",
+            "owner_name": "Danny Rodriguez",
+            "trading_name": "Batey Cuts Barber & Lounge",
+            "legal_name": "Batey Barber Style SRL",
+            "slug": "batey-cuts-barber",
+            "category_id": "cat_beauty",
+            "primary_location_id": "loc_sosua",
+            "description_en": "Master fades, hot towel beard grooming, styling, and executive haircuts in central Sosúa.",
+            "description_es": "Cortes clásicos y modernos, afeitado con toalla caliente y estilismo profesional en El Batey, Sosúa.",
+            "has_physical_location": 1,
+            "address": "Calle Dr. Rosen #12, El Batey, Sosúa",
+            "serves_entire_area": 0,
+            "whatsapp": "+18095553102",
+            "phone": "+18095553102",
+            "public_email": "info@bateybarber.com",
+            "requests_enabled": 1,
+            "request_action_label_en": "Request an appointment",
+            "request_action_label_es": "Solicitar una cita",
+            "whatsapp_alerts_consent": 1,
+            "whatsapp_alerts_phone": "+18095553102",
+            "service_modes_supported": json.dumps(["in_shop"]),
+            "storefront_pin_lat": 19.7562,
+            "storefront_pin_lng": -70.5142,
+            "pickup_pin_lat": 19.7562,
+            "pickup_pin_lng": -70.5142,
+            "pickup_pin_note": "Ground floor glass door on Dr. Rosen next to cafe",
+            "services": [
+                ("srv_barb_1", "Signature Fade & Beard Sculpting", "Corte Fade y Perfilado de Barba", "Precision fade haircut with razor line and beard oil.", 700.0, 1),
+                ("srv_barb_2", "Hot Towel Shave & Facial Scrub", "Afeitado con Toalla Caliente y Exfoliación", "Traditional barbershop hot towel shave.", 600.0, 1),
+            ],
+            "service_areas": ["loc_sosua"]
+        },
+        # 3. Tours & Activities (Activated: Meeting Point) - Sosúa
+        {
+            "id": "biz_north_coast_tours",
+            "owner_email": "tours@northcoastexcursions.do",
+            "owner_name": "Juan Pablo Tejada",
+            "trading_name": "North Coast Island Excursions",
+            "legal_name": "Tejada Excursions EIRL",
+            "slug": "north-coast-island-excursions",
+            "category_id": "cat_tours",
+            "primary_location_id": "loc_sosua",
+            "description_en": "Guided ATV off-road countryside tours, monkey jungle safaris, and Sosúa reef catamaran snorkeling.",
+            "description_es": "Excursiones guiadas en buggy/four wheels, safari campestre y paseos en catamarán con snorkel en Sosúa.",
+            "has_physical_location": 0,
+            "address": "Playa Alicia Meeting Kiosk, Sosúa",
+            "serves_entire_area": 1,
+            "whatsapp": "+18095553103",
+            "phone": "+18095553103",
+            "public_email": "bookings@northcoastexcursions.do",
+            "requests_enabled": 1,
+            "request_action_label_en": "Request a reservation",
+            "request_action_label_es": "Solicitar una reserva",
+            "whatsapp_alerts_consent": 1,
+            "whatsapp_alerts_phone": "+18095553103",
+            "service_modes_supported": json.dumps(["meeting_point"]),
+            "storefront_pin_lat": 19.7591,
+            "storefront_pin_lng": -70.5165,
+            "pickup_pin_lat": 19.7591,
+            "pickup_pin_lng": -70.5165,
+            "pickup_pin_note": "Meeting Point: Beachside Tour Desk, Playa Alicia Park Entrance",
+            "services": [
+                ("srv_tour_1", "Country ATV Adventure (Half Day)", "Aventura en Four Wheels por el Campo (Medio Día)", "Explore river trails and scenic countryside.", 3200.0, 1),
+                ("srv_tour_2", "Snorkel Catamaran Cruise", "Paseo en Catamarán con Snorkel", "3-hour cruise to Sosúa coral bay with drinks included.", 2500.0, 1),
+            ],
+            "service_areas": ["loc_sosua", "loc_cabarete", "loc_montellano"]
+        },
+        # 4. Transportation & Rentals (Activated) - Sosúa
+        {
+            "id": "biz_caribbean_ride_rentals",
+            "owner_email": "rentals@caribbeanridesosua.com",
+            "owner_name": "Eduardo Morales",
+            "trading_name": "Caribbean Rides Scooter & Car Rental",
+            "legal_name": "Carib Rides SRL",
+            "slug": "caribbean-rides-rentals",
+            "category_id": "cat_transport",
+            "primary_location_id": "loc_sosua",
+            "description_en": "Reliable 150cc scooter rentals, compact SUV rentals, and private airport transfers to Puerto Plata POP & Santiago STI.",
+            "description_es": "Alquiler de pasolas y motonetas 150cc, vehículos compactos y traslados privados a los aeropuertos POP y STI.",
+            "has_physical_location": 1,
+            "address": "Calle Alejo Martínez #8, El Batey, Sosúa",
+            "serves_entire_area": 1,
+            "whatsapp": "+18095553104",
+            "phone": "+18095553104",
+            "public_email": "res@caribbeanridesosua.com",
+            "requests_enabled": 1,
+            "request_action_label_en": "Request a ride or rental",
+            "request_action_label_es": "Solicitar un vehículo o traslado",
+            "whatsapp_alerts_consent": 1,
+            "whatsapp_alerts_phone": "+18095553104",
+            "service_modes_supported": json.dumps(["in_shop", "mobile_visit"]),
+            "storefront_pin_lat": 19.7548,
+            "storefront_pin_lng": -70.5122,
+            "pickup_pin_lat": 19.7548,
+            "pickup_pin_lng": -70.5122,
+            "pickup_pin_note": "Rental Lot Gate, Calle Alejo Martínez opposite Supermercado",
+            "services": [
+                ("srv_ren_1", "150cc Automatic Scooter Rental (24 Hours)", "Alquiler de Pasola 150cc (24 Horas)", "Helmet and lock included.", 1500.0, 1),
+                ("srv_ren_2", "Private Airport Transfer POP -> Sosúa", "Traslado Privado Aeropuerto POP a Sosúa", "A/C van with luggage space.", 1800.0, 1),
+            ],
+            "service_areas": ["loc_sosua", "loc_cabarete", "loc_montellano"]
+        },
+        # 5. Home & Property Services (Activated) - Sosúa
+        {
+            "id": "biz_sosua_crystal_clean",
+            "owner_email": "clean@sosuacrystalclean.com",
+            "owner_name": "Yolanda Castillo",
+            "trading_name": "Sosúa Crystal Clean Services",
+            "legal_name": "Servicios de Limpieza Crystal SRL",
+            "slug": "sosua-crystal-clean",
+            "category_id": "cat_home",
+            "primary_location_id": "loc_sosua",
+            "description_en": "Professional residential villa deep cleaning, condo changeover service, and laundry wash & fold pickup in Sosúa.",
+            "description_es": "Limpieza profunda de villas residenciales, preparación de apartamentos y lavandería con entrega a domicilio.",
+            "has_physical_location": 1,
+            "address": "Calle David Stern #5, Sosúa",
+            "serves_entire_area": 1,
+            "whatsapp": "+18095553105",
+            "phone": "+18095553105",
+            "public_email": "dispatch@sosuacrystalclean.com",
+            "requests_enabled": 1,
+            "request_action_label_en": "Request a service or quote",
+            "request_action_label_es": "Solicitar un servicio o cotización",
+            "whatsapp_alerts_consent": 1,
+            "whatsapp_alerts_phone": "+18095553105",
+            "service_modes_supported": json.dumps(["mobile_visit"]),
+            "storefront_pin_lat": 19.7531,
+            "storefront_pin_lng": -70.5115,
+            "pickup_pin_lat": 19.7531,
+            "pickup_pin_lng": -70.5115,
+            "pickup_pin_note": "Operations Depot, Calle David Stern #5",
+            "services": [
+                ("srv_cln_1", "2-Bedroom Condo Turnover Deep Clean", "Limpieza Profunda Apartamento 2 Habitaciones", "Full sanitize, linens changed, windows and floors.", 2500.0, 1),
+                ("srv_cln_2", "Villa Pool & Patio Power Wash", "Lavado a Presión de Terraza y Piscina", "High pressure wash removing algae and salt build-up.", 3200.0, 1),
+            ],
+            "service_areas": ["loc_sosua", "loc_cabarete"]
+        },
+        # 6. Events & Catering (Activated) - Sosúa & Montellano
+        {
+            "id": "biz_palma_real_events",
+            "owner_email": "events@palmarealdominicana.com",
+            "owner_name": "Gabriel Mendez",
+            "trading_name": "Palma Real Events & DJ Sound",
+            "legal_name": "Eventos Palma Real SRL",
+            "slug": "palma-real-events-dj",
+            "category_id": "cat_events",
+            "primary_location_id": "loc_sosua",
+            "description_en": "Custom party sound systems, bilingual DJs, ambient beach lighting, and Creole BBQ catering for private villas and celebrations.",
+            "description_es": "Sonido profesional para fiestas, DJs bilingües, iluminación ambiental y catering parrillada para villas privadas.",
+            "has_physical_location": 0,
+            "address": "Sosúa Events Warehouse, Carretera Sosúa",
+            "serves_entire_area": 1,
+            "whatsapp": "+18095553106",
+            "phone": "+18095553106",
+            "public_email": "booking@palmarealdominicana.com",
+            "requests_enabled": 1,
+            "request_action_label_en": "Request a quote or date",
+            "request_action_label_es": "Solicitar cotización o fecha",
+            "whatsapp_alerts_consent": 1,
+            "whatsapp_alerts_phone": "+18095553106",
+            "service_modes_supported": json.dumps(["mobile_visit"]),
+            "storefront_pin_lat": 19.7495,
+            "storefront_pin_lng": -70.5190,
+            "pickup_pin_lat": 19.7495,
+            "pickup_pin_lng": -70.5190,
+            "pickup_pin_note": "Audio Warehouse Loading Bay, Carretera Principal",
+            "services": [
+                ("srv_eve_1", "Private Villa Party Sound & DJ Package (4 Hours)", "Paquete de Sonido y DJ para Villa (4 Horas)", "Speakers, subwoofers, party lighting and DJ controller.", 12000.0, 1),
+                ("srv_eve_2", "Beach Wedding Acoustic Setup", "Sistema Acústico para Ceremonia en Playa", "Wireless mics, battery sound and background ambiance.", 7500.0, 1),
+            ],
+            "service_areas": ["loc_sosua", "loc_montellano", "loc_cabarete"]
+        },
+        # 7. Menu-Free Restaurant (Activated: Request an order with missing price & 15-min timer) - Sosúa
+        {
+            "id": "biz_taqueria_del_sol",
+            "owner_email": "tacos@taqueriadelsolsosua.com",
+            "owner_name": "Mateo Gutierrez",
+            "trading_name": "Taqueria Del Sol Sosua",
+            "legal_name": "Comidas del Sol EIRL",
+            "slug": "taqueria-del-sol-sosua",
+            "category_id": "cat_dining",
+            "primary_location_id": "loc_sosua",
+            "description_en": "Authentic street tacos, burritos, quesadillas, and homemade chips & guacamole with fast counter pickup in El Batey.",
+            "description_es": "Auténticos tacos al pastor, burritos estilo callejero y quesadillas recién hechas en El Batey.",
+            "has_physical_location": 1,
+            "address": "Calle Ayuntamiento #22, Sosúa",
+            "serves_entire_area": 1,
+            "whatsapp": "+18095553107",
+            "phone": "+18095553107",
+            "public_email": "ordenes@taqueriadelsolsosua.com",
+            "requests_enabled": 1,
+            "request_action_label_en": "Request an order",
+            "request_action_label_es": "Solicitar un pedido",
+            "whatsapp_alerts_consent": 0, # Merchant without WhatsApp consent to test acceptance requirement!
+            "whatsapp_alerts_phone": "+18095553107",
+            "service_modes_supported": json.dumps(["pickup", "delivery"]),
+            "storefront_pin_lat": 19.7570,
+            "storefront_pin_lng": -70.5135,
+            "pickup_pin_lat": 19.7570,
+            "pickup_pin_lng": -70.5135,
+            "pickup_pin_note": "Taco window on Calle Ayuntamiento #22",
+            "services": [], # Menu-free restaurant! No catalog items.
+            "service_areas": ["loc_sosua"]
+        },
+        # 8. Unactivated Listing (requests_enabled = 0: tests 'Register Interest') - Villa Montellano
+        {
+            "id": "biz_montellano_hardware",
+            "owner_email": "luis@ferreteriamontellano.com",
+            "owner_name": "Luis Alberto Santos",
+            "trading_name": "Ferretería El Cañero Montellano",
+            "legal_name": "Ferretería El Cañero SRL",
+            "slug": "ferreteria-el-canero-montellano",
+            "category_id": "cat_home",
+            "primary_location_id": "loc_montellano",
+            "description_en": "Building supplies, tools, electrical wiring, plumbing, and cement delivery in Villa Montellano.",
+            "description_es": "Materiales de construcción, herramientas, electricidad, plomería y ferretería general en Villa Montellano.",
+            "has_physical_location": 1,
+            "address": "Avenida 27 de Febrero #15, Villa Montellano",
+            "serves_entire_area": 1,
+            "whatsapp": "+18095553108",
+            "phone": "+18095553108",
+            "public_email": "ventas@ferreteriamontellano.com",
+            "requests_enabled": 0, # Unactivated listing! Shows Register Interest
+            "request_action_label_en": "Request a quote",
+            "request_action_label_es": "Solicitar una cotización",
+            "whatsapp_alerts_consent": 0,
+            "whatsapp_alerts_phone": None,
+            "service_modes_supported": json.dumps(["in_shop"]),
+            "storefront_pin_lat": 19.7435,
+            "storefront_pin_lng": -70.5970,
+            "pickup_pin_lat": 19.7435,
+            "pickup_pin_lng": -70.5970,
+            "pickup_pin_note": "Loading dock on Av. 27 de Febrero",
+            "services": [
+                ("srv_fer_1", "Bulk Bagged Cement (Portland 42.5kg)", "Funda de Cemento Gris 42.5kg", "Standard construction cement.", 485.0, 1),
+            ],
+            "service_areas": ["loc_montellano"]
+        }
+    ]
+
+    for p in pilot_businesses:
+        # 1. Owner User
+        cur.execute("SELECT id FROM users WHERE email = ?", (p["owner_email"],))
+        user_row = cur.fetchone()
+        owner_id = user_row[0] if user_row else f"user_{p['id']}"
+        if not user_row:
+            cur.execute(
+                """INSERT INTO users (id, email, password_hash, full_name, role)
+                   VALUES (?, ?, ?, ?, 'owner')""",
+                (owner_id, p["owner_email"], hash_password("PilotPass2026!"), p["owner_name"])
+            )
+
+        # 2. Business
+        cur.execute("SELECT id FROM businesses WHERE id = ? OR slug = ?", (p["id"], p["slug"]))
+        b_row = cur.fetchone()
+        if not b_row:
+            cur.execute(
+                """INSERT INTO businesses (
+                    id, owner_id, trading_name, legal_name, slug, category_id, primary_location_id,
+                    description_en, description_es, status, has_physical_location, address,
+                    serves_entire_area, website_url, whatsapp, phone, public_email,
+                    hours_json, rnc_tax_id, rnc_status, approved_by, approved_at,
+                    requests_enabled, request_action_label_en, request_action_label_es,
+                    whatsapp_alerts_consent, whatsapp_alerts_phone, service_modes_supported,
+                    storefront_pin_lat, storefront_pin_lng, pickup_pin_lat, pickup_pin_lng, pickup_pin_note,
+                    pilot_delivery_enabled
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?, ?, NULL, ?, ?, ?, ?, NULL, 'verified', ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    p["id"], owner_id, p["trading_name"], p["legal_name"], p["slug"], p["category_id"], p["primary_location_id"],
+                    p["description_en"], p["description_es"], p["has_physical_location"], p["address"],
+                    p["serves_entire_area"], p["whatsapp"], p["phone"], p["public_email"],
+                    json.dumps({"monday_saturday": "8:30 AM - 6:00 PM"}), admin_id,
+                    p["requests_enabled"], p["request_action_label_en"], p["request_action_label_es"],
+                    p["whatsapp_alerts_consent"], p["whatsapp_alerts_phone"], p["service_modes_supported"],
+                    p["storefront_pin_lat"], p["storefront_pin_lng"], p["pickup_pin_lat"], p["pickup_pin_lng"], p["pickup_pin_note"],
+                    1 if p["id"] == "biz_taqueria_del_sol" else 0
+                )
+            )
+        else:
+            cur.execute(
+                """UPDATE businesses SET 
+                    requests_enabled = ?, request_action_label_en = ?, request_action_label_es = ?,
+                    whatsapp_alerts_consent = ?, whatsapp_alerts_phone = ?, service_modes_supported = ?,
+                    storefront_pin_lat = ?, storefront_pin_lng = ?, pickup_pin_lat = ?, pickup_pin_lng = ?, pickup_pin_note = ?
+                   WHERE id = ?""",
+                (
+                    p["requests_enabled"], p["request_action_label_en"], p["request_action_label_es"],
+                    p["whatsapp_alerts_consent"], p["whatsapp_alerts_phone"], p["service_modes_supported"],
+                    p["storefront_pin_lat"], p["storefront_pin_lng"], p["pickup_pin_lat"], p["pickup_pin_lng"], p["pickup_pin_note"],
+                    p["id"]
+                )
+            )
+
+        # 3. Service areas
+        for loc_id in p.get("service_areas", []):
+            cur.execute("INSERT OR IGNORE INTO business_service_areas (business_id, location_id) VALUES (?, ?)", (p["id"], loc_id))
+
+        # 4. Services
+        for s_item in p.get("services", []):
+            cur.execute("SELECT id FROM services WHERE id = ?", (s_item[0],))
+            if not cur.fetchone():
+                cur.execute(
+                    """INSERT INTO services (id, business_id, name_en, name_es, description_en, description_es, price, currency, display_price, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, 'DOP', 1, ?)""",
+                    (s_item[0], p["id"], s_item[1], s_item[2], s_item[3], s_item[3], s_item[4], s_item[5])
+                )
+
     # Seed Initial Motorcycle Drivers & Delivery Capacity in Sosúa
     # -------------------------------------------------------------
     cur.execute("SELECT location_id FROM delivery_capacity_settings WHERE location_id = 'loc_sosua'")
