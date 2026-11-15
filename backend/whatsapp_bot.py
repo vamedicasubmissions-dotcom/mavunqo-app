@@ -146,8 +146,30 @@ class WhatsAppOrderBot:
                 total_amount = subtotal + delivery_fee
 
                 # Generate secure, single-use checkout token (stored temporarily in DB)
-                order_temp_id = f"ord_draft_{secrets_id()}"
+                import secrets
+                rand_sfx = secrets.token_hex(4)
+                order_temp_id = f"ord_draft_{rand_sfx}"
+                
                 token_data = create_secure_order_token(order_temp_id, biz_id)
+
+                # Insert draft order to satisfy FK constraint
+                conn.execute(
+                    """
+                    INSERT INTO orders (
+                        id, order_number, business_id, customer_name, customer_phone, customer_alias,
+                        fulfillment_type, status, subtotal, delivery_fee, total,
+                        currency, payment_method, status_token, status_token_expires_at, attribution_source
+                    ) VALUES (
+                        ?, ?, ?, 'WhatsApp Guest', ?, ?, 'delivery', 'pending', ?, ?, ?,
+                        'DOP', 'cash', ?, datetime(?, 'unixepoch'), ?
+                    )
+                    """,
+                    (
+                        order_temp_id, f"MVQ-{rand_sfx.upper()}", biz_id,
+                        customer_phone, alias, subtotal, delivery_fee, total_amount,
+                        token_data["token"], token_data["expires_at"], campaign
+                    )
+                )
 
                 conn.execute(
                     """
