@@ -67,7 +67,26 @@
       font-weight: 800;
       color: #0F5132;
     }
+  
+    .biz-map-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .biz-leaflet-map {
+      height: 240px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 0.6rem;
+      z-index: 1;
+    }
+
   </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
@@ -347,6 +366,36 @@
               </div>
             </div>
 
+            <!-- Business Location Pin & Automatic Geolocation -->
+            <div class="biz-map-box">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                  <strong style="font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">📍 Storefront & Rider Pickup Location</strong>
+                  <span style="font-size: 0.8rem; color: var(--text-secondary);">Drop your exact pin on the map so shoppers and motorcycle delivery riders navigate straight to your entrance.</span>
+                </div>
+                <div>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="locateBusinessOnMap('${b.id}');">🎯 Get Current GPS Location</button>
+                </div>
+              </div>
+
+              <div id="bizMap_${b.id}" class="biz-leaflet-map"></div>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                <span id="bizMapStatus_${b.id}">Click anywhere on map or drag pin to position your storefront.</span>
+                <span id="bizCoords_${b.id}" style="font-weight: 700; color: var(--black);">Lat: ${b.storefront_pin_lat || 19.7550}, Lng: ${b.storefront_pin_lng || -70.5150}</span>
+              </div>
+
+              <input type="hidden" id="bizLat_${b.id}" name="storefront_pin_lat" value="${b.storefront_pin_lat || 19.7550}">
+              <input type="hidden" id="bizLng_${b.id}" name="storefront_pin_lng" value="${b.storefront_pin_lng || -70.5150}">
+              <input type="hidden" id="bizPickupLat_${b.id}" name="pickup_pin_lat" value="${b.pickup_pin_lat || b.storefront_pin_lat || 19.7550}">
+              <input type="hidden" id="bizPickupLng_${b.id}" name="pickup_pin_lng" value="${b.pickup_pin_lng || b.storefront_pin_lng || -70.5150}">
+
+              <div>
+                <label style="font-size: 0.85rem; font-weight: 700;">Driver Pickup Note / Gate Landmark</label>
+                <input type="text" name="pickup_pin_note" class="input-field" value="${b.pickup_pin_note || ''}" placeholder="e.g. Front counter on Pedro Clisante, green gate next to farmacia">
+              </div>
+            </div>
+
             <div class="form-row">
               <div>
                 <label>Cover Photo (Tap to upload or paste)</label>
@@ -403,6 +452,14 @@
         `;
         container.appendChild(panel);
       }
+
+        // Initialize maps for all rendered businesses
+        for (const b of list) {
+          const defaultLat = b.storefront_pin_lat || 19.7550;
+          const defaultLng = b.storefront_pin_lng || -70.5150;
+          initBusinessMap(b.id, defaultLat, defaultLng);
+        }
+
     }
 
     async function uploadStorefrontAsset(inputEl, targetInputId, statusId) {
@@ -689,6 +746,90 @@
     function logout() {
       localStorage.removeItem("mavunqo_token");
       window.location.href = "/login";
+    }
+
+    
+    // Store maps by business ID
+    const bizMaps = {};
+    const bizMarkers = {};
+
+    function initBusinessMap(bizId, initialLat, initialLng) {
+      const mapContainer = document.getElementById(`bizMap_${bizId}`);
+      if (!mapContainer) return;
+      if (bizMaps[bizId]) {
+        bizMaps[bizId].remove();
+      }
+
+      const lat = parseFloat(initialLat) || 19.7550;
+      const lng = parseFloat(initialLng) || -70.5150;
+
+      const map = L.map(`bizMap_${bizId}`).setView([lat, lng], 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+      const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+      marker.bindPopup("<b>Your Business Entrance</b><br>Drag me to exact entrance!").openPopup();
+
+      function updateCoords(newLat, newLng) {
+        document.getElementById(`bizLat_${bizId}`).value = newLat.toFixed(6);
+        document.getElementById(`bizLng_${bizId}`).value = newLng.toFixed(6);
+        document.getElementById(`bizPickupLat_${bizId}`).value = newLat.toFixed(6);
+        document.getElementById(`bizPickupLng_${bizId}`).value = newLng.toFixed(6);
+        document.getElementById(`bizCoords_${bizId}`).innerText = `Lat: ${newLat.toFixed(4)}, Lng: ${newLng.toFixed(4)}`;
+      }
+
+      marker.on('dragend', function(e) {
+        const pos = e.target.getLatLng();
+        updateCoords(pos.lat, pos.lng);
+        document.getElementById(`bizMapStatus_${bizId}`).innerText = "✓ Pin adjusted to new entrance location.";
+      });
+
+      map.on('click', function(e) {
+        marker.setLatLng(e.latlng);
+        updateCoords(e.latlng.lat, e.latlng.lng);
+        document.getElementById(`bizMapStatus_${bizId}`).innerText = "✓ Pin dropped at selected location.";
+      });
+
+      bizMaps[bizId] = map;
+      bizMarkers[bizId] = marker;
+
+      // Invalidate size after DOM layout is ready
+      setTimeout(() => { map.invalidateSize(); }, 300);
+    }
+
+    function locateBusinessOnMap(bizId) {
+      const statusEl = document.getElementById(`bizMapStatus_${bizId}`);
+      if (!navigator.geolocation) {
+        if (statusEl) statusEl.innerText = "Geolocation not supported by your browser.";
+        return;
+      }
+
+      if (statusEl) statusEl.innerText = "Getting current GPS location...";
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const map = bizMaps[bizId];
+          const marker = bizMarkers[bizId];
+
+          if (map && marker) {
+            map.setView([lat, lng], 16);
+            marker.setLatLng([lat, lng]);
+            document.getElementById(`bizLat_${bizId}`).value = lat.toFixed(6);
+            document.getElementById(`bizLng_${bizId}`).value = lng.toFixed(6);
+            document.getElementById(`bizPickupLat_${bizId}`).value = lat.toFixed(6);
+            document.getElementById(`bizPickupLng_${bizId}`).value = lng.toFixed(6);
+            document.getElementById(`bizCoords_${bizId}`).innerText = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+            if (statusEl) statusEl.innerText = "✓ GPS location detected! You can drag pin to refine.";
+          }
+        },
+        (err) => {
+          if (statusEl) statusEl.innerText = "Location permission denied or unavailable. You can click/drag on map.";
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
     }
 
     window.onload = loadDashboard;

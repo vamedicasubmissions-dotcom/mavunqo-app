@@ -424,7 +424,7 @@ class MavunqoService:
         direct_keys = {
             "trading_name", "description_en", "description_es", "address", "has_physical_location",
             "serves_entire_area", "website_url", "whatsapp", "phone", "public_email",
-            "hours_json", "logo_url", "cover_image_url"
+            "hours_json", "logo_url", "cover_image_url", "storefront_pin_lat", "storefront_pin_lng", "pickup_pin_lat", "pickup_pin_lng", "pickup_pin_note"
         }
         direct_updates = {k: v for k, v in update_data.items() if k in direct_keys}
 
