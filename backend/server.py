@@ -100,6 +100,10 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         query = urllib.parse.parse_qs(parsed.query)
 
         # 1. API Routes
+        if path == "/api/delivery/capacity":
+            loc_id = query.get("location", ["loc_sosua"])[0]
+            return self.send_json(service.get_delivery_capacity(loc_id))
+
         if path == "/api/categories":
             return self.send_json(service.get_categories())
 
