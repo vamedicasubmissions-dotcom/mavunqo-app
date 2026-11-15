@@ -564,7 +564,20 @@ def seed_database(db_path: str):
     # -------------------------------------------------------------
     # Clothing Store: Yaha Style RD (Real Boutique Catalog)
     # -------------------------------------------------------------
-    cloth_owner = "user_clothe_yahaira"
+
+    # -------------------------------------------------------------
+    # Demo Client: Shopper for Clothing & Food
+    # -------------------------------------------------------------
+    shopper_id = "user_shopper_demo"
+    cur.execute("SELECT id FROM users WHERE email = 'shopper@mavunqo.com'")
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO users (id, email, password_hash, full_name, role)
+               VALUES (?, ?, ?, ?, ?)""",
+            (shopper_id, "shopper@mavunqo.com", hash_password("Shopper2026!"), "Elena Rodriguez", "owner")
+        )
+
+        cloth_owner = "user_clothe_yahaira"
     cur.execute("SELECT id FROM users WHERE email = 'yahastylerd@gmail.com' OR email = 'yahaira@tropicalwavesboutique.com'")
     if not cur.fetchone():
         cur.execute(

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -388,7 +388,7 @@
       if (b.category_slug === 'dining-food' || b.category_slug === 'groceries-colmados' || b.category_slug === 'clothing-fashion') {
         const isClothing = b.category_slug === 'clothing-fashion';
         const isGrocery = b.category_slug === 'groceries-colmados';
-        const btnText = isClothing ? '🛍️ Browse Collection & Order' : (isGrocery ? '🛒 Browse Aisles & Order' : '🍽️ Browse Menu & Order');
+        const btnText = isClothing ? 'Browse Collection & Order' : (isGrocery ? 'Browse Aisles & Order' : 'Browse Menu & Order');
         const descText = isClothing ? 'Browse dresses, denim, rompers & sets. Order for instant pickup or local courier delivery with cash-on-delivery.' : (isGrocery ? 'Order groceries, drinking water botellones, cold beers & snacks with 20-40 min motorcycle delivery.' : 'Select items from the menu to order for delivery or pickup with cash-on-delivery tracking & driver protection.');
         ctaList.innerHTML = `
           <div style="background: rgba(17, 107, 98, 0.08); border: 1px solid rgba(17, 107, 98, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
@@ -482,6 +482,7 @@
     // --- RESTAURANT MENU RENDERING & CART ---
     function renderRestaurantMenu(categories, container) {
       categories.forEach(cat => {
+        if (!cat.items || cat.items.length === 0) return;
         const catTitle = currentLang === 'es' ? cat.name_es : cat.name_en;
         const section = document.createElement('div');
         section.style.marginBottom = '2rem';
