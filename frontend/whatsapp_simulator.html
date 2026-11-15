@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MAVUNQO WhatsApp Order Bot Simulator</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+  <style>
+    .wa-container {
+      max-width: 480px;
+      margin: 1.5rem auto;
+      background: #efeae2;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+      display: flex;
+      flex-direction: column;
+      height: 82vh;
+      border: 1px solid #d1d7db;
+    }
+    .wa-header {
+      background: #075e54;
+      color: #ffffff;
+      padding: 0.9rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .wa-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #25d366;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      color: white;
+      font-weight: 800;
+    }
+    .wa-header-info h4 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 750;
+    }
+    .wa-header-info p {
+      margin: 0;
+      font-size: 0.75rem;
+      color: #e0f2f1;
+    }
+    .wa-body {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      background: #efeae2;
+      background-image: radial-gradient(#d4ccc3 1px, transparent 1px);
+      background-size: 16px 16px;
+    }
+    .wa-msg {
+      max-width: 82%;
+      padding: 0.65rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      position: relative;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+    .wa-msg-in {
+      align-self: flex-start;
+      background: #ffffff;
+      border-top-left-radius: 2px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .wa-msg-out {
+      align-self: flex-end;
+      background: #d9fdd3;
+      border-top-right-radius: 2px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .wa-time {
+      font-size: 0.68rem;
+      color: #667781;
+      text-align: right;
+      margin-top: 0.25rem;
+    }
+    .wa-footer {
+      background: #f0f2f5;
+      padding: 0.75rem 1rem;
+      display: flex;
+      gap: 0.5rem;
+      border-top: 1px solid #e9edef;
+    }
+    .wa-input {
+      flex: 1;
+      background: #ffffff;
+      border: 1px solid #e9edef;
+      border-radius: 24px;
+      padding: 0.6rem 1rem;
+      font-size: 0.92rem;
+      outline: none;
+    }
+    .wa-send {
+      background: #00a884;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: background 0.15s ease;
+    }
+    .wa-send:hover {
+      background: #008f6f;
+    }
+    .quick-chips {
+      display: flex;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      background: #ffffff;
+      border-top: 1px solid #e9edef;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .quick-chip {
+      background: #f0f2f5;
+      border: 1px solid #d1d7db;
+      border-radius: 16px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .quick-chip:hover {
+      background: #e2e8f0;
+    }
+  </style>
+</head>
+<body style="background: #e5ddd5; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+
+  <div class="wa-container">
+    <div class="wa-header">
+      <div class="wa-avatar">🛍️</div>
+      <div class="wa-header-info" style="flex: 1;">
+        <h4>MAVUNQO Assistant</h4>
+        <p>Yaha Style RD & Local Concierge • Online</p>
+      </div>
+      <div>
+        <a href="/" style="color: white; text-decoration: none; font-size: 0.85rem; font-weight: 700; background: rgba(255,255,255,0.2); padding: 0.35rem 0.65rem; border-radius: 6px;">Exit</a>
+      </div>
+    </div>
+
+    <div id="waBody" class="wa-body">
+      <div class="wa-msg wa-msg-in">
+        👋 Welcome to <strong>MAVUNQO WhatsApp Ordering</strong> for Sosúa, Cabarete & Puerto Plata!<br><br>
+        Ask for menus, browse clothing styles, check available sizes, or place a direct order with cash on delivery.
+        <div class="wa-time">12:00 PM</div>
+      </div>
+    </div>
+
+    <div class="quick-chips">
+      <button class="quick-chip" onclick="sendQuick('Show catalog for Yaha Style RD');">👗 Yaha Style Catalog</button>
+      <button class="quick-chip" onclick="sendQuick('Do you have the Red Twist-Front Dress in Medium?');">🔴 Red Dress Size M</button>
+      <button class="quick-chip" onclick="sendQuick('What jeans do you have in size 3?');">👖 Jeans Size 3</button>
+      <button class="quick-chip" onclick="sendQuick('I want to order 1 Red Twist-Front Ribbed Long Sleeve Dress');">⚡ Order Red Dress</button>
+    </div>
+
+    <form class="wa-footer" onsubmit="handleSend(event);">
+      <input type="text" id="msgInput" class="wa-input" placeholder="Type a message (e.g. 'Show menu' or 'Red dress size M')..." autocomplete="off">
+      <button type="submit" class="wa-send">➤</button>
+    </form>
+  </div>
+
+  <script>
+    const body = document.getElementById("waBody");
+    const input = document.getElementById("msgInput");
+    const testPhone = "+18296414722";
+
+    function getTime() {
+      const now = new Date();
+      return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function appendMsg(text, type) {
+      const div = document.createElement("div");
+      div.className = `wa-msg ${type === 'out' ? 'wa-msg-out' : 'wa-msg-in'}`;
+      div.innerHTML = text.replace(/\n/g, '<br>') + `<div class="wa-time">${getTime()}</div>`;
+      body.appendChild(div);
+      body.scrollTop = body.scrollHeight;
+    }
+
+    async function handleSend(e) {
+      if (e) e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendMsg(text, 'out');
+      input.value = "";
+
+      // Post to WhatsApp bot testing API
+      try {
+        const res = await fetch("/api/whatsapp/test-message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone: testPhone,
+            message: text,
+            business_slug: "yaha-style-rd"
+          })
+        });
+        const data = await res.json();
+        if (data.reply) {
+          appendMsg(data.reply, 'in');
+        } else if (data.text) {
+          appendMsg(data.text, 'in');
+        } else {
+          appendMsg("Received acknowledgment. Let us know how we can assist!", 'in');
+        }
+      } catch (err) {
+        appendMsg("⚠️ Network error communicating with MAVUNQO WhatsApp Bot.", 'in');
+      }
+    }
+
+    function sendQuick(str) {
+      input.value = str;
+      handleSend();
+    }
+  </script>
+</body>
+</html>
