@@ -71,7 +71,7 @@ class WhatsAppOrderBot:
             text_lower = clean_prompt.lower()
 
             # Intent: Menu / Catalog request
-            if any(k in text_lower for k in ["menu", "menú", "carta", "que hay", "qué hay", "opciones", "productos", "catálogo", "catalogo", "hola", "buenas", "hi", "hello"]):
+            if any(k in text_lower for k in ["menu", "menú", "carta", "catalog", "catalogue", "catálogo", "catalogo", "clothes", "dresses", "items", "que hay", "qué hay", "opciones", "productos", "hola", "buenas", "hi", "hello"]):
                 menu_lines = [f"🍽️ *Menú Oficial de {biz_name} en MAVUNQO*:\n"]
                 for item in catalog:
                     desc = f" - _{item['description_en']}_" if item.get('description_en') else ""
