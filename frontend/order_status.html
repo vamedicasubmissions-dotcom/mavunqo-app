@@ -95,9 +95,10 @@
             <span id="orderDeliveryFee"></span>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 850; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border);">
-            <span>Total (Cash):</span>
+            <span id="orderTotalLabel">Total:</span>
             <span id="orderTotal"></span>
           </div>
+          <div id="paymentMethodBadge" style="margin-top: 0.5rem; font-size: 0.85rem; font-weight: 750;"></div>
         </div>
       </div>
 
@@ -256,6 +257,18 @@
       document.getElementById('orderSubtotal').textContent = `${o.subtotal.toFixed(2)} ${o.currency}`;
       document.getElementById('orderDeliveryFee').textContent = `${(o.delivery_fee || 0).toFixed(2)} ${o.currency}`;
       document.getElementById('orderTotal').textContent = `${o.total.toFixed(2)} ${o.currency}`;
+
+      const pmBadge = document.getElementById('paymentMethodBadge');
+      if (pmBadge) {
+        if (o.payment_method === 'cash') {
+          pmBadge.innerHTML = `<span style="color: #15803d; background: #dcfce7; padding: 4px 8px; border-radius: 6px;">💵 Cash on Delivery (Pay Driver at Door)</span>`;
+        } else if (o.payment_method === 'zelle') {
+          const usdAmount = (o.total / 60.0).toFixed(2);
+          pmBadge.innerHTML = `<span style="color: #b45309; background: #fef3c7; padding: 4px 8px; border-radius: 6px;">⚡ Pre-paid via Zelle ($${usdAmount} USD) • 0% Chargeback</span>`;
+        } else if (o.payment_method === 'transfer') {
+          pmBadge.innerHTML = `<span style="color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 6px;">🏦 Pre-paid via Bank Transfer (Banreservas/Popular)</span>`;
+        }
+      }
 
 // Direct contacts bypassed in favor of Masked In-App Chat
     }

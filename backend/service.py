@@ -696,13 +696,17 @@ class MavunqoService:
 
     def place_order(self, business_id: str, customer_data: dict, items: list,
                     fulfillment_type: str = "pickup", delivery_address: str = "",
-                    order_origin: str = "mavunqo", customer_notes: str = ""):
+                    order_origin: str = "mavunqo", customer_notes: str = "",
+                    payment_method: str = "cash"):
         customer_name = (customer_data.get("name") or "").strip()
         customer_phone = (customer_data.get("phone") or "").strip()
         customer_email = (customer_data.get("email") or "").strip()
 
         if not customer_name or not customer_phone:
             raise ValueError("Customer name and phone number are required.")
+
+        if payment_method not in ("cash", "transfer", "zelle", "card", "cash_or_card"):
+            payment_method = "cash"
 
         if not items:
             raise ValueError("Order must contain at least one item.")
@@ -802,12 +806,14 @@ class MavunqoService:
                     id, order_number, business_id, customer_name, customer_phone, customer_email,
                     order_origin, fulfillment_type, delivery_address, customer_notes,
                     status, subtotal, delivery_fee, total, currency, payment_method,
-                    status_token, status_token_expires_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, 'DOP', 'cash', ?, ?)""",
+                    cash_due, status_token, status_token_expires_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, 'DOP', ?, ?, ?, ?)""",
                 (
                     order_id, order_num, business_id, customer_name, customer_phone, customer_email,
                     order_origin, fulfillment_type, delivery_address, customer_notes,
-                    subtotal, delivery_fee, total, status_token, expires_at.isoformat()
+                    subtotal, delivery_fee, total, payment_method,
+                    total if payment_method == 'cash' else 0.0,
+                    status_token, expires_at.isoformat()
                 )
             )
 

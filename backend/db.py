@@ -184,7 +184,7 @@ CREATE TABLE IF NOT EXISTS orders (
     delivery_fee REAL DEFAULT 0.0,
     total REAL NOT NULL,
     currency TEXT DEFAULT 'DOP',
-    payment_method TEXT NOT NULL CHECK(payment_method IN ('cash', 'card', 'transfer', 'cash_or_card')) DEFAULT 'cash',
+    payment_method TEXT NOT NULL CHECK(payment_method IN ('cash', 'card', 'transfer', 'zelle', 'cash_or_card')) DEFAULT 'cash',
     cash_due REAL,
     cash_received REAL,
     cash_reconciled BOOLEAN DEFAULT 0,
@@ -599,8 +599,6 @@ def run_migrations(conn):
             cur.execute("ALTER TABLE categories ADD COLUMN search_aliases TEXT")
         except Exception:
             pass
-
-    conn.commit()
 
 def init_db(db_path: str):
     os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)

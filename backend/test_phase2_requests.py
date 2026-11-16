@@ -366,5 +366,51 @@ class TestPhase2MerchantRequests(unittest.TestCase):
         ]
         self.assertNotIn(order_id, pending_ids_after)
 
+    def test_07_zero_chargeback_payment_methods(self):
+        """Scenario: Customer places order selecting Zelle or Bank Transfer (Transferencia) with 0% chargeback risk."""
+        st_m, body_m = invoke("GET", "/api/restaurants/el-batey-bistro/menu")
+        self.assertEqual(st_m, 200)
+        biz_id = body_m["business_id"]
+        snapper_cat = next(c for c in body_m["categories"] if c["name_en"] == "Fresh Catch & Grill")
+        item = snapper_cat["items"][0]
+
+        # 1. Place order with Zelle
+        zelle_order_payload = {
+            "business_id": biz_id,
+            "customer": {"name": "Michael US Tourist", "phone": "8095551234"},
+            "fulfillment_type": "delivery",
+            "payment_method": "zelle",
+            "delivery_address": "Sosua Ocean Village, Villa 21",
+            "items": [{"menu_item_id": item["id"], "quantity": 2}]
+        }
+        st_z, res_z = invoke("POST", "/api/orders", body=zelle_order_payload)
+        self.assertEqual(st_z, 201)
+        self.assertTrue(res_z["success"])
+        
+        # Verify order details
+        z_tok = res_z["status_url"].split("token=")[1]
+        st_stat, o_stat = invoke("GET", f"/api/orders/status?token={z_tok}")
+        self.assertEqual(st_stat, 200)
+        self.assertEqual(o_stat["payment_method"], "zelle")
+        self.assertEqual(o_stat["cash_due"], 0.0)
+
+        # 2. Place order with Dominican Bank Transfer (Transferencia)
+        transfer_payload = {
+            "business_id": biz_id,
+            "customer": {"name": "Juan Perez Local", "phone": "8095558899"},
+            "fulfillment_type": "pickup",
+            "payment_method": "transfer",
+            "items": [{"menu_item_id": item["id"], "quantity": 1}]
+        }
+        st_t, res_t = invoke("POST", "/api/orders", body=transfer_payload)
+        self.assertEqual(st_t, 201)
+        self.assertTrue(res_t["success"])
+        
+        t_tok = res_t["status_url"].split("token=")[1]
+        st_stat2, o_stat2 = invoke("GET", f"/api/orders/status?token={t_tok}")
+        self.assertEqual(st_stat2, 200)
+        self.assertEqual(o_stat2["payment_method"], "transfer")
+        self.assertEqual(o_stat2["cash_due"], 0.0)
+
 if __name__ == "__main__":
     unittest.main()

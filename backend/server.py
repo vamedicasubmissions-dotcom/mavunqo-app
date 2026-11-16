@@ -747,7 +747,8 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     fulfillment_type=data.get("fulfillment_type", "pickup"),
                     delivery_address=data.get("delivery_address", ""),
                     order_origin=data.get("order_origin", "mavunqo"),
-                    customer_notes=notes_val
+                    customer_notes=notes_val,
+                    payment_method=data.get("payment_method", "cash")
                 )
                 return self.send_json(res, 201)
             except Exception as e:

@@ -390,6 +390,49 @@
           </div>
         </div>
 
+        <!-- Zero-Chargeback Payment Method Selector -->
+        <div style="margin-bottom: 1.25rem;">
+          <label style="font-size: 0.88rem; font-weight: 750; display: block; margin-bottom: 0.4rem;">Payment Method</label>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <label style="border: 2px solid var(--primary, #0284c7); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #f0fdf4;" id="optPayCashWrap">
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <input type="radio" name="checkoutPaymentMethod" value="cash" checked onchange="updatePaymentMethodUI();">
+                <div>
+                  <strong style="display: block; font-size: 0.9rem;">💵 Cash on Delivery (Efectivo)</strong>
+                  <span style="font-size: 0.75rem; color: var(--text-secondary);">Pay driver directly with paper pesos (DOP)</span>
+                </div>
+              </div>
+              <span style="font-size: 0.75rem; background: #dcfce7; color: #15803d; font-weight: 800; padding: 2px 6px; border-radius: 4px;">Standard (80%)</span>
+            </label>
+
+            <label style="border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #fff;" id="optPayTransferWrap">
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <input type="radio" name="checkoutPaymentMethod" value="transfer" onchange="updatePaymentMethodUI();">
+                <div>
+                  <strong style="display: block; font-size: 0.9rem;">🏦 Dominican Bank Transfer (Transferencia)</strong>
+                  <span style="font-size: 0.75rem; color: var(--text-secondary);">Banreservas, Banco Popular, or BHD</span>
+                </div>
+              </div>
+              <span style="font-size: 0.75rem; background: #e0f2fe; color: #0369a1; font-weight: 800; padding: 2px 6px; border-radius: 4px;">Instant (0% Fee)</span>
+            </label>
+
+            <label style="border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #fff;" id="optPayZelleWrap">
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <input type="radio" name="checkoutPaymentMethod" value="zelle" onchange="updatePaymentMethodUI();">
+                <div>
+                  <strong style="display: block; font-size: 0.9rem;">⚡ Zelle (USD Instant Transfer)</strong>
+                  <span style="font-size: 0.75rem; color: var(--text-secondary);">For US Bank Accounts • Zero chargeback risk</span>
+                </div>
+              </div>
+              <span style="font-size: 0.75rem; background: #fef3c7; color: #b45309; font-weight: 800; padding: 2px 6px; border-radius: 4px;">USD Accepted</span>
+            </label>
+          </div>
+
+          <!-- Dynamic Payment Instruction Box -->
+          <div id="paymentInstructionsBox" style="display: none; margin-top: 0.6rem; padding: 0.75rem 0.9rem; border-radius: 8px; font-size: 0.82rem; line-height: 1.45; border: 1px solid #cbd5e1; background: #f8fafc;">
+          </div>
+        </div>
+
         <!-- Customer Inputs -->
         <form id="orderForm" onsubmit="submitGuestOrder(event);">
           <div style="margin-bottom: 0.75rem;">
@@ -1095,21 +1138,70 @@
     }
 
     function toggleFulfillmentMode() {
-      const mode = document.querySelector('input[name="checkoutFulfillment"]:checked').value;
+      updatePaymentMethodUI();
+      calculateCheckoutTotal();
+    }
+
+    function updatePaymentMethodUI() {
+      const mode = document.querySelector('input[name="checkoutFulfillment"]:checked')?.value || 'delivery';
+      const payMethod = document.querySelector('input[name="checkoutPaymentMethod"]:checked')?.value || 'cash';
       const addrRow = document.getElementById("orderDeliveryAddressRow");
       const addrInput = document.getElementById("orderDeliveryAddress");
       const btn = document.getElementById("btnPlaceOrder");
+      const infoBox = document.getElementById("paymentInstructionsBox");
 
+      // Style wraps
+      const wrapCash = document.getElementById("optPayCashWrap");
+      const wrapTransfer = document.getElementById("optPayTransferWrap");
+      const wrapZelle = document.getElementById("optPayZelleWrap");
+      if (wrapCash) wrapCash.style.borderColor = (payMethod === 'cash') ? 'var(--primary, #0284c7)' : 'var(--border)';
+      if (wrapCash) wrapCash.style.background = (payMethod === 'cash') ? '#f0fdf4' : '#fff';
+      if (wrapTransfer) wrapTransfer.style.borderColor = (payMethod === 'transfer') ? 'var(--primary, #0284c7)' : 'var(--border)';
+      if (wrapTransfer) wrapTransfer.style.background = (payMethod === 'transfer') ? '#f0f9ff' : '#fff';
+      if (wrapZelle) wrapZelle.style.borderColor = (payMethod === 'zelle') ? 'var(--primary, #0284c7)' : 'var(--border)';
+      if (wrapZelle) wrapZelle.style.background = (payMethod === 'zelle') ? '#fefce8' : '#fff';
+
+      // Address visibility
       if (mode === 'delivery') {
         addrRow.style.display = 'block';
         addrInput.required = true;
-        btn.textContent = "Place Order (Cash on Delivery)";
       } else {
         addrRow.style.display = 'none';
         addrInput.required = false;
-        btn.textContent = "Place Order (Cash on Pickup)";
       }
-      calculateCheckoutTotal();
+
+      // Update button text and dynamic instruction box
+      const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      const deliveryFee = (mode === 'delivery') ? 100.0 : 0.0;
+      const totalDop = subtotal + deliveryFee;
+      const totalUsd = (totalDop / 60.0).toFixed(2);
+
+      if (payMethod === 'cash') {
+        infoBox.style.display = 'none';
+        btn.textContent = mode === 'delivery' ? `Place Order (Cash on Delivery: ${totalDop.toFixed(2)} DOP)` : `Place Order (Cash on Pickup: ${totalDop.toFixed(2)} DOP)`;
+      } else if (payMethod === 'transfer') {
+        infoBox.style.display = 'block';
+        infoBox.innerHTML = `
+          <div style="font-weight: 800; color: #0369a1; margin-bottom: 0.2rem;">🏦 Dominican Bank Transfer Instructions:</div>
+          <div>Bank: <strong>Banreservas / Banco Popular</strong> • Account Type: <strong>Corriente</strong></div>
+          <div>Account: <strong>960-234812-4</strong> (Mavunqo Operaciones SRL)</div>
+          <div style="color: var(--text-secondary); margin-top: 0.25rem;">
+            After placing order, send screenshot receipt via WhatsApp to Dispatch for immediate instant kitchen release.
+          </div>
+        `;
+        btn.textContent = `Confirm Order via Transfer (${totalDop.toFixed(2)} DOP)`;
+      } else if (payMethod === 'zelle') {
+        infoBox.style.display = 'block';
+        infoBox.innerHTML = `
+          <div style="font-weight: 800; color: #b45309; margin-bottom: 0.2rem;">⚡ Zelle Instant Transfer (USD):</div>
+          <div>Send Exact Amount: <strong style="color: #15803d; font-size: 0.95rem;">$${totalUsd} USD</strong> (Converted from ${totalDop.toFixed(2)} DOP)</div>
+          <div>Zelle Email: <strong style="font-family: monospace;">payments@mavunqo.com</strong> (Mavunqo RD)</div>
+          <div style="color: var(--text-secondary); margin-top: 0.25rem;">
+            🛡️ Zero chargeback risk • Include your name or order in Zelle memo. Verified instantly by dispatcher!
+          </div>
+        `;
+        btn.textContent = `Confirm Order via Zelle ($${totalUsd} USD)`;
+      }
     }
 
     function calculateCheckoutTotal() {
@@ -1117,12 +1209,14 @@
       const mode = document.querySelector('input[name="checkoutFulfillment"]:checked')?.value || 'delivery';
       const deliveryFee = (mode === 'delivery') ? 100.0 : 0.0;
       const total = subtotal + deliveryFee;
-      document.getElementById("checkoutTotalText").textContent = `${total.toFixed(2)} DOP`;
+      const totalUsd = (total / 60.0).toFixed(2);
+      document.getElementById("checkoutTotalText").textContent = `${total.toFixed(2)} DOP (~$${totalUsd} USD)`;
     }
 
     async function submitGuestOrder(e) {
       e.preventDefault();
       const mode = document.querySelector('input[name="checkoutFulfillment"]:checked').value;
+      const payMethod = document.querySelector('input[name="checkoutPaymentMethod"]:checked')?.value || 'cash';
       const name = document.getElementById("orderCustName").value.trim();
       const phone = document.getElementById("orderCustPhone").value.trim();
       const address = document.getElementById("orderDeliveryAddress").value.trim();
@@ -1138,6 +1232,7 @@
         customer_name: name,
         customer_phone: phone,
         fulfillment_type: mode,
+        payment_method: payMethod,
         delivery_address: address,
         delivery_pin_lat: parseFloat(document.getElementById("orderPinLat").value) || null,
         delivery_pin_lng: parseFloat(document.getElementById("orderPinLng").value) || null,
@@ -1161,12 +1256,12 @@
         } else {
           alert("Order Error: " + (data.error || "Unable to place order."));
           btn.disabled = false;
-          btn.textContent = "Place Order";
+          updatePaymentMethodUI();
         }
       } catch (err) {
         alert("Network error placing order.");
         btn.disabled = false;
-        btn.textContent = "Place Order";
+        updatePaymentMethodUI();
       }
     }
 
