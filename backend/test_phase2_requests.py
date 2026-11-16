@@ -483,7 +483,9 @@ class TestPhase2MerchantRequests(unittest.TestCase):
         self.assertEqual(res_p["status"], "ok")
 
         # 8. Payment proof upload + dispatcher verify-payment + bank email monitor check
-        sample_png_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        import base64 as _b64, uuid as _uuid
+        _base_png = _b64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=")
+        sample_png_b64 = "data:image/png;base64," + _b64.b64encode(_base_png + _uuid.uuid4().bytes).decode("ascii")
         st_proof, res_proof = invoke("POST", "/api/orders", body={
             "business_id": biz_id,
             "customer": {"name": "Zelle Proof Customer", "phone": "8095553344"},

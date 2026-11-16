@@ -240,7 +240,13 @@
               ${o.payment_method !== 'cash' ? (
                 o.payment_verified
                   ? `<span style="margin-left: 6px; color: #15803d; font-size: 0.78rem; font-weight: 800;">✅ Verified</span>`
-                  : `<span style="margin-left: 6px; color: #dc2626; font-size: 0.78rem; font-weight: 800;">⏳ Unverified</span> <button class="btn btn-sm" onclick="verifyOrderPayment('${o.id}')" style="padding: 2px 6px; font-size: 0.72rem; background: #16a34a; color: #fff; border: none; border-radius: 4px;">Verify</button>`
+                  : `<span style="margin-left: 6px; color: #dc2626; font-size: 0.78rem; font-weight: 800;">⏳ Unverified</span> ` +
+                    (bankEmailMatches[o.id]
+                      ? (bankEmailMatches[o.id].matched
+                          ? `<span title="${bankEmailMatches[o.id].matched_subject || ''}" style="margin-left: 4px; background: #dcfce7; color: #15803d; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 800;">👍 Bank Match</span> `
+                          : `<span style="margin-left: 4px; background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 800;">👎 No Bank Email Yet</span> `)
+                      : '') +
+                    `<button class="btn btn-sm" onclick="verifyOrderPayment('${o.id}')" style="padding: 2px 6px; font-size: 0.72rem; background: #16a34a; color: #fff; border: none; border-radius: 4px;">Verify</button>`
               ) : ''}
               ${o.payment_proof_url ? `<a href="${o.payment_proof_url}" target="_blank" style="margin-left: 6px; font-size: 0.78rem; color: #2563eb; text-decoration: underline;">🖼️ View Proof</a>` : ''}
             </div>
@@ -279,6 +285,8 @@
       }
     }
 
+    let bankEmailMatches = {};
+
     async function checkBankInbox() {
       try {
         const res = await fetch("/api/dispatcher/check-bank-emails", {
@@ -293,13 +301,19 @@
           alert("Error checking bank inbox: " + d.error);
           return;
         }
+        bankEmailMatches = d.order_matches || {};
+        if (queueData) renderQueue(queueData);
+
+        const matchLines = Object.values(bankEmailMatches).map(m =>
+          m.matched
+            ? `👍 ${m.order_number} (${m.payment_method.toUpperCase()}): Bank email matched! [${m.matched_subject}]`
+            : `👎 ${m.order_number} (${m.payment_method.toUpperCase()}): No matching bank email yet`
+        );
         const deps = d.deposits || [];
-        if (deps.length === 0) {
-          alert("📧 Inbox checked: No recent Zelle or Dominican bank deposit alerts found.");
-        } else {
-          const summary = deps.slice(0, 6).map(x => `• ${x.subject} (USD: ${x.usd_amounts.join(', ') || '-'} | DOP: ${x.dop_amounts.join(', ') || '-'})`).join("\n");
-          alert(`📧 Recent Bank Deposit Emails Found (${deps.length}):\n\n${summary}`);
-        }
+        alert(
+          `📧 Bank Inbox Check Complete (${deps.length} bank alerts scanned)\n\n` +
+          (matchLines.length ? matchLines.join("\n") : "No unverified Zelle/Transfer orders pending.")
+        );
       } catch (e) {
         alert("Network error checking bank inbox.");
       }

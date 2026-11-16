@@ -398,7 +398,44 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             if not user or user.get("role") not in ("admin", "manager", "staff"):
                 return self.send_json({"error": "Forbidden: Dispatcher role required"}, 403)
             from .payment_monitor import check_inbox_for_bank_deposits
-            return self.send_json(check_inbox_for_bank_deposits())
+            inbox_res = check_inbox_for_bank_deposits()
+            deposits = inbox_res.get("deposits", [])
+            order_matches = {}
+
+            with service.get_connection() as conn:
+                unverified = conn.execute("""
+                    SELECT id, order_number, payment_method, total
+                    FROM orders
+                    WHERE payment_method IN ('zelle', 'transfer')
+                      AND (payment_verified = 0 OR payment_verified IS NULL)
+                      AND status NOT IN ('cancelled', 'declined')
+                """).fetchall()
+
+            for o in unverified:
+                total_dop = float(o["total"] or 0.0)
+                expected_usd = round(total_dop / 60.0, 2)
+                matched_dep = None
+                for dep in deposits:
+                    if o["payment_method"] == "zelle":
+                        if any(abs(amt - expected_usd) <= 0.05 for amt in dep.get("usd_amounts", [])):
+                            matched_dep = dep
+                            break
+                    elif o["payment_method"] == "transfer":
+                        if any(abs(amt - total_dop) <= 1.0 for amt in dep.get("dop_amounts", [])):
+                            matched_dep = dep
+                            break
+
+                order_matches[o["id"]] = {
+                    "order_number": o["order_number"],
+                    "payment_method": o["payment_method"],
+                    "expected_usd": expected_usd,
+                    "expected_dop": total_dop,
+                    "matched": bool(matched_dep),
+                    "matched_subject": matched_dep["subject"] if matched_dep else None,
+                }
+
+            inbox_res["order_matches"] = order_matches
+            return self.send_json(inbox_res)
 
         if path == "/api/driver/jobs":
             driver_id = query.get("driver_id", [""])[0]
