@@ -412,6 +412,24 @@ class TestPhase2MerchantRequests(unittest.TestCase):
         self.assertEqual(o_stat2["payment_method"], "transfer")
         self.assertEqual(o_stat2["cash_due"], 0.0)
 
+        # 3. Place order with Wise (Europe / Canada Instant Transfer)
+        wise_payload = {
+            "business_id": biz_id,
+            "customer": {"name": "Hans EU Tourist", "phone": "8095557766"},
+            "fulfillment_type": "delivery",
+            "payment_method": "wise",
+            "delivery_address": "Cabarete Kite Beach Apt 4",
+            "items": [{"menu_item_id": item["id"], "quantity": 1}]
+        }
+        st_w, res_w = invoke("POST", "/api/orders", body=wise_payload)
+        self.assertEqual(st_w, 201)
+        self.assertTrue(res_w["success"])
+        w_tok = res_w["status_url"].split("token=")[1]
+        st_stat3, o_stat3 = invoke("GET", f"/api/orders/status?token={w_tok}")
+        self.assertEqual(st_stat3, 200)
+        self.assertEqual(o_stat3["payment_method"], "wise")
+        self.assertEqual(o_stat3["cash_due"], 0.0)
+
     def test_08_driver_tip_rain_mode_and_pin(self):
         # 1. Admin login for Rain Mode toggle
         st_l, res_l = invoke("POST", "/api/auth/login", body={

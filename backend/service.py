@@ -706,7 +706,7 @@ class MavunqoService:
         if not customer_name or not customer_phone:
             raise ValueError("Customer name and phone number are required.")
 
-        if payment_method not in ("cash", "transfer", "zelle", "card", "cash_or_card"):
+        if payment_method not in ("cash", "transfer", "zelle", "wise", "card", "cash_or_card"):
             payment_method = "cash"
 
         if not items:

@@ -186,7 +186,7 @@ CREATE TABLE IF NOT EXISTS orders (
     driver_tip REAL DEFAULT 0.0,
     total REAL NOT NULL,
     currency TEXT DEFAULT 'DOP',
-    payment_method TEXT NOT NULL CHECK(payment_method IN ('cash', 'card', 'transfer', 'zelle', 'cash_or_card')) DEFAULT 'cash',
+    payment_method TEXT NOT NULL CHECK(payment_method IN ('cash', 'card', 'transfer', 'zelle', 'wise', 'cash_or_card')) DEFAULT 'cash',
     payment_proof_url TEXT,
     payment_proof_hash TEXT,
     payment_verified BOOLEAN DEFAULT 0,
@@ -601,6 +601,65 @@ def run_migrations(conn):
                 cur.execute(f"ALTER TABLE orders ADD COLUMN {col_name} {col_def}")
             except Exception:
                 pass
+
+    # Upgrade orders.payment_method CHECK constraint to include 'wise' if missing
+    ord_sql_row = cur.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='orders'").fetchone()
+    if ord_sql_row and "'wise'" not in ord_sql_row[0]:
+        try:
+            cur.execute("PRAGMA foreign_keys = OFF")
+            cur.execute("PRAGMA legacy_alter_table = ON")
+            cur.execute("PRAGMA table_info(orders)")
+            existing_ord_cols = [r[1] for r in cur.fetchall()]
+            cols_csv = ", ".join(existing_ord_cols)
+            cur.execute("ALTER TABLE orders RENAME TO orders_old_mig")
+            cur.execute("""
+                CREATE TABLE orders (
+                    id TEXT PRIMARY KEY,
+                    order_number TEXT UNIQUE NOT NULL,
+                    business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+                    customer_name TEXT NOT NULL,
+                    customer_phone TEXT NOT NULL,
+                    customer_email TEXT,
+                    order_origin TEXT NOT NULL CHECK(order_origin IN ('mavunqo', 'merchant')) DEFAULT 'mavunqo',
+                    fulfillment_type TEXT NOT NULL CHECK(fulfillment_type IN ('pickup', 'delivery')) DEFAULT 'pickup',
+                    delivery_address TEXT,
+                    customer_notes TEXT,
+                    status TEXT NOT NULL CHECK(status IN ('pending', 'accepted', 'in_kitchen', 'ready', 'completed', 'cancelled', 'declined')) DEFAULT 'pending',
+                    subtotal REAL NOT NULL,
+                    delivery_fee REAL DEFAULT 0.0,
+                    driver_tip REAL DEFAULT 0.0,
+                    total REAL NOT NULL,
+                    currency TEXT DEFAULT 'DOP',
+                    payment_method TEXT NOT NULL CHECK(payment_method IN ('cash', 'card', 'transfer', 'zelle', 'wise', 'cash_or_card')) DEFAULT 'cash',
+                    payment_proof_url TEXT,
+                    payment_proof_hash TEXT,
+                    payment_verified BOOLEAN DEFAULT 0,
+                    payment_verified_source TEXT,
+                    cash_due REAL,
+                    cash_received REAL,
+                    cash_reconciled BOOLEAN DEFAULT 0,
+                    cash_exception_reason TEXT,
+                    customer_alias TEXT,
+                    phone_hash TEXT,
+                    attribution_source TEXT DEFAULT 'mavunqo',
+                    is_manual_fallback BOOLEAN DEFAULT 0,
+                    estimated_ready_at TIMESTAMP,
+                    status_token TEXT UNIQUE NOT NULL,
+                    status_token_expires_at TIMESTAMP NOT NULL,
+                    decline_reason TEXT,
+                    cancellation_reason TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cur.execute(f"INSERT INTO orders ({cols_csv}) SELECT {cols_csv} FROM orders_old_mig")
+            cur.execute("DROP TABLE orders_old_mig")
+            cur.execute("PRAGMA legacy_alter_table = OFF")
+            cur.execute("PRAGMA foreign_keys = ON")
+        except Exception as e:
+            print(f"[DB Migration] orders CHECK upgrade warning: {e}")
+            cur.execute("PRAGMA legacy_alter_table = OFF")
+            cur.execute("PRAGMA foreign_keys = ON")
 
     # Check drivers columns
     cur.execute("PRAGMA table_info(drivers)")

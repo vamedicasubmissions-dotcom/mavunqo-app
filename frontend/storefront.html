@@ -426,6 +426,17 @@
               </div>
               <span style="font-size: 0.75rem; background: #fef3c7; color: #b45309; font-weight: 800; padding: 2px 6px; border-radius: 4px;">USD Accepted</span>
             </label>
+
+            <label style="border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #fff;" id="optPayWiseWrap">
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <input type="radio" name="checkoutPaymentMethod" value="wise" onchange="updatePaymentMethodUI();">
+                <div>
+                  <strong style="display: block; font-size: 0.9rem;">🌍 Wise (Europe / Canada Instant)</strong>
+                  <span style="font-size: 0.75rem; color: var(--text-secondary);">Pay via Wise in EUR, CAD, GBP, or USD • 0% chargeback</span>
+                </div>
+              </div>
+              <span style="font-size: 0.75rem; background: #ecfccb; color: #3f6212; font-weight: 800; padding: 2px 6px; border-radius: 4px;">EU / CA</span>
+            </label>
           </div>
 
           <!-- Dynamic Payment Instruction Box -->
@@ -1244,12 +1255,15 @@
       const wrapCash = document.getElementById("optPayCashWrap");
       const wrapTransfer = document.getElementById("optPayTransferWrap");
       const wrapZelle = document.getElementById("optPayZelleWrap");
+      const wrapWise = document.getElementById("optPayWiseWrap");
       if (wrapCash) wrapCash.style.borderColor = (payMethod === 'cash') ? 'var(--primary, #0284c7)' : 'var(--border)';
       if (wrapCash) wrapCash.style.background = (payMethod === 'cash') ? '#f0fdf4' : '#fff';
       if (wrapTransfer) wrapTransfer.style.borderColor = (payMethod === 'transfer') ? 'var(--primary, #0284c7)' : 'var(--border)';
       if (wrapTransfer) wrapTransfer.style.background = (payMethod === 'transfer') ? '#f0f9ff' : '#fff';
       if (wrapZelle) wrapZelle.style.borderColor = (payMethod === 'zelle') ? 'var(--primary, #0284c7)' : 'var(--border)';
       if (wrapZelle) wrapZelle.style.background = (payMethod === 'zelle') ? '#fefce8' : '#fff';
+      if (wrapWise) wrapWise.style.borderColor = (payMethod === 'wise') ? 'var(--primary, #0284c7)' : 'var(--border)';
+      if (wrapWise) wrapWise.style.background = (payMethod === 'wise') ? '#f7fee7' : '#fff';
 
       const tipBox = document.getElementById("tipSelectorBox");
 
@@ -1318,6 +1332,24 @@
           ${proofUploadHtml}
         `;
         btn.textContent = `Confirm Order via Zelle ($${totalUsd} USD)`;
+      } else if (payMethod === 'wise') {
+        infoBox.style.display = 'block';
+        infoBox.innerHTML = `
+          <div style="font-weight: 800; color: #3f6212; margin-bottom: 0.25rem;">🌍 Wise Instant Transfer (Europe / Canada / Global):</div>
+          <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+            <span>Send Exact Amount: <strong style="color: #15803d; font-size: 0.95rem;">$${totalUsd} USD</strong> (or <strong>RD$ ${totalDop.toFixed(2)} DOP</strong>)</span>
+            <button type="button" onclick="copyCheckoutText('${totalUsd}', this)" style="padding: 2px 8px; font-size: 0.72rem; border: 1px solid #3f6212; background: #ecfccb; color: #3f6212; border-radius: 4px; cursor: pointer; font-weight: 700;">📋 Copy $${totalUsd}</button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.25rem;">
+            <span>Wise Email: <strong style="font-family: monospace;">payments@mavunqo.com</strong></span>
+            <button type="button" onclick="copyCheckoutText('payments@mavunqo.com', this)" style="padding: 2px 8px; font-size: 0.72rem; border: 1px solid #3f6212; background: #ecfccb; color: #3f6212; border-radius: 4px; cursor: pointer; font-weight: 700;">📋 Copy Wise Email</button>
+          </div>
+          <div style="color: var(--text-secondary); margin-top: 0.35rem;">
+            🛡️ Zero chargeback risk • Send from EUR, CAD, GBP, or USD in Wise & attach your screenshot below.
+          </div>
+          ${proofUploadHtml}
+        `;
+        btn.textContent = `Confirm Order via Wise ($${totalUsd} USD)`;
       }
     }
 

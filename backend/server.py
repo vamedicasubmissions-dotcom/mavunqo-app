@@ -406,7 +406,7 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 unverified = conn.execute("""
                     SELECT id, order_number, payment_method, total
                     FROM orders
-                    WHERE payment_method IN ('zelle', 'transfer')
+                    WHERE payment_method IN ('zelle', 'transfer', 'wise')
                       AND (payment_verified = 0 OR payment_verified IS NULL)
                       AND status NOT IN ('cancelled', 'declined')
                 """).fetchall()
@@ -422,6 +422,10 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                             break
                     elif o["payment_method"] == "transfer":
                         if any(abs(amt - total_dop) <= 1.0 for amt in dep.get("dop_amounts", [])):
+                            matched_dep = dep
+                            break
+                    elif o["payment_method"] == "wise":
+                        if any(abs(amt - expected_usd) <= 0.05 for amt in dep.get("usd_amounts", [])) or any(abs(amt - total_dop) <= 1.0 for amt in dep.get("dop_amounts", [])):
                             matched_dep = dep
                             break
 
@@ -896,8 +900,8 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     payment_proof_hash=proof_hash
                 )
 
-                # Send non-blocking email alert for Zelle / Bank Transfer orders
-                if res.get("payment_method") in ("zelle", "transfer"):
+                # Send non-blocking email alert for Zelle / Bank Transfer / Wise orders
+                if res.get("payment_method") in ("zelle", "transfer", "wise"):
                     import threading
                     from .payment_monitor import send_payment_alert_email
                     alert_payload = {

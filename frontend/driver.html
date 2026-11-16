@@ -226,7 +226,7 @@
       }
 
       container.innerHTML = jobs.map(j => {
-        const isPrepaid = j.payment_method === 'zelle' || j.payment_method === 'transfer';
+        const isPrepaid = j.payment_method === 'zelle' || j.payment_method === 'transfer' || j.payment_method === 'wise';
         const collectAmount = isPrepaid ? 0 : (j.cash_due || j.total);
 
         return `

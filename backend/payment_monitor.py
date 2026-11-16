@@ -152,7 +152,7 @@ def check_inbox_for_bank_deposits(limit: int = 20) -> dict:
             combined = f"{subject} {sender}".lower()
             is_bank_alert = any(
                 kw in combined
-                for kw in ("zelle", "banreservas", "popular", "bhd", "santa cruz", "transferencia", "deposit", "received", "recibiste")
+                for kw in ("zelle", "wise", "transferwise", "banreservas", "popular", "bhd", "santa cruz", "transferencia", "deposit", "received", "recibiste")
             )
             if not is_bank_alert:
                 continue
