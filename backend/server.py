@@ -1383,8 +1383,9 @@ def run_server(port=8080, db_path=None):
         global service
         service = MavunqoService(db_path)
     server_address = ('0.0.0.0', port)
-    socketserver.TCPServer.allow_reuse_address = True
-    httpd = socketserver.TCPServer(server_address, MavunqoRequestHandler)
+    socketserver.ThreadingTCPServer.allow_reuse_address = True
+    socketserver.ThreadingTCPServer.daemon_threads = True
+    httpd = socketserver.ThreadingTCPServer(server_address, MavunqoRequestHandler)
     print(f"Mavunqo server active on http://127.0.0.1:{port} and http://localhost:{port}", flush=True)
     try:
         httpd.serve_forever()
