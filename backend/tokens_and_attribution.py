@@ -10,8 +10,8 @@ SECRET_KEY = os.environ.get("MAVUNQO_SECRET_KEY", "mavunqo_tamper_resistant_secr
 TOKEN_VALIDITY_SECONDS = 1800  # 30 minutes
 
 # Configurable standard commission rate (can be overridden via environment variable)
-# Default is 0.11 (11%) across all acquisition channels during initial launch
-STANDARD_COMMISSION_RATE = float(os.environ.get("MAVUNQO_LAUNCH_COMMISSION_RATE", "0.11"))
+# Default is 0.15 (15%) across all acquisition channels during initial launch
+STANDARD_COMMISSION_RATE = float(os.environ.get("MAVUNQO_LAUNCH_COMMISSION_RATE", "0.15"))
 STANDARD_RULE_VERSION = os.environ.get("MAVUNQO_FEE_RULE_VERSION", "v1_tiered_2026")
 
 CATEGORY_COMMISSION_RATES = {

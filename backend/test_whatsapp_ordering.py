@@ -80,20 +80,20 @@ class TestWhatsAppOrderingSystem(unittest.TestCase):
         self.assertTrue(order_res["order_id"].startswith("ord_"))
         self.assertTrue(order_res["order_number"].startswith("MVQ-"))
         self.assertEqual(order_res["source_type"], "mavunqo_acquired")
-        self.assertEqual(order_res["commission_rate"], 0.11)
-        self.assertAlmostEqual(order_res["commission_amount"], round(order_res["customer_selling_price"] * 0.11, 2))
+        self.assertEqual(order_res["commission_rate"], 0.15)
+        self.assertAlmostEqual(order_res["commission_amount"], round(order_res["customer_selling_price"] * 0.15, 2))
         self.assertAlmostEqual(order_res["merchant_payout"], round(order_res["customer_selling_price"] - order_res["commission_amount"], 2))
 
-    def test_03_standard_11_percent_commission_across_all_sources(self):
+    def test_03_standard_15_percent_commission_across_all_sources(self):
         """
-        Verify single standard 11% commission across both Mavunqo-acquired and merchant-acquired orders.
-        Attribution is tracked for analytics, but initial launch commission remains 11% flat.
+        Verify single standard 15% commission across both Mavunqo-acquired and merchant-acquired orders.
+        Attribution is tracked for analytics, and initial launch commission is 15% flat.
         """
         biz_id = "biz_el_batey_bistro"
         campaign = "table_qr_05"
         valid_sig = generate_attribution_signature(biz_id, campaign)
 
-        # 1. Merchant-acquired order -> identified as merchant_acquired, charged 11%
+        # 1. Merchant-acquired order -> identified as merchant_acquired, charged 15%
         res_merchant = self.wa_service.create_whatsapp_assisted_order(
             business_id=biz_id,
             customer_phone="8292223344",
@@ -101,19 +101,19 @@ class TestWhatsAppOrderingSystem(unittest.TestCase):
             attribution_payload={"m_biz": biz_id, "m_camp": campaign, "m_sig": valid_sig}
         )
         self.assertEqual(res_merchant["source_type"], "merchant_acquired")
-        self.assertEqual(res_merchant["commission_rate"], 0.11)
-        self.assertEqual(res_merchant["commission_amount"], round(res_merchant["customer_selling_price"] * 0.11, 2))
+        self.assertEqual(res_merchant["commission_rate"], 0.15)
+        self.assertEqual(res_merchant["commission_amount"], round(res_merchant["customer_selling_price"] * 0.15, 2))
         self.assertEqual(res_merchant["merchant_payout"], round(res_merchant["customer_selling_price"] - res_merchant["commission_amount"], 2))
 
-        # 2. Mavunqo-acquired order -> identified as mavunqo_acquired, charged 11%
+        # 2. Mavunqo-acquired order -> identified as mavunqo_acquired, charged 15%
         res_mavunqo = self.wa_service.create_whatsapp_assisted_order(
             business_id=biz_id,
             customer_phone="8293334455",
             items=[{"menu_item_id": "mi_red_snapper", "quantity": 1}]
         )
         self.assertEqual(res_mavunqo["source_type"], "mavunqo_acquired")
-        self.assertEqual(res_mavunqo["commission_rate"], 0.11)
-        self.assertEqual(res_mavunqo["commission_amount"], round(res_mavunqo["customer_selling_price"] * 0.11, 2))
+        self.assertEqual(res_mavunqo["commission_rate"], 0.15)
+        self.assertEqual(res_mavunqo["commission_amount"], round(res_mavunqo["customer_selling_price"] * 0.15, 2))
         self.assertEqual(res_mavunqo["merchant_payout"], round(res_mavunqo["customer_selling_price"] - res_mavunqo["commission_amount"], 2))
 
         # 3. Tampered attribution signature defaults to mavunqo_acquired, still charged 11%
@@ -124,7 +124,7 @@ class TestWhatsAppOrderingSystem(unittest.TestCase):
             attribution_payload={"m_biz": biz_id, "m_camp": campaign, "m_sig": "invalid_tampered_sig"}
         )
         self.assertEqual(res_tampered["source_type"], "mavunqo_acquired")
-        self.assertEqual(res_tampered["commission_rate"], 0.11)
+        self.assertEqual(res_tampered["commission_rate"], 0.15)
 
     def test_04_idempotent_webhook_and_replay_prevention(self):
         """Duplicate WhatsApp events must be rejected to prevent duplicate processing."""
@@ -235,7 +235,7 @@ class TestWhatsAppOrderingSystem(unittest.TestCase):
         self.assertIn("Customer Alias", csv_data)
         self.assertIn("Customer Selling Price", csv_data)
         self.assertIn("Commission Rate", csv_data)
-        self.assertIn("11.0%", csv_data)
+        self.assertIn("15.0%", csv_data)
         self.assertIn("Merchant Payout", csv_data)
         # Assert no phone numbers in customer columns
         for row in csv_data.splitlines()[1:]:

@@ -262,9 +262,9 @@ class TestMavunqoPhase1(unittest.TestCase):
         self.service.update_order_status("user_rosa_autofix", "biz_caribe_fix", order_id, "ready")
         self.service.update_order_status("user_rosa_autofix", "biz_caribe_fix", order_id, "completed", cash_received=1160.0)
 
-        # 5. Check fee statement (Standard launch 11% of 1160 DOP = 127.60 DOP accrued)
+        # 5. Check fee statement (Standard launch 15% of 1160 DOP = 174.00 DOP accrued)
         statement = self.service.get_merchant_fee_statement("user_rosa_autofix", "biz_caribe_fix")
-        self.assertEqual(statement["total_accrued_fees"], 127.60)
+        self.assertEqual(statement["total_accrued_fees"], 174.00)
         self.assertEqual(statement["total_pending_fees"], 0.0)
 
         # 6. Verify cross-tenant isolation on orders
