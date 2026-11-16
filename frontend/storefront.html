@@ -410,6 +410,12 @@
               <input type="hidden" id="orderPinLat" value="19.7550">
               <input type="hidden" id="orderPinLng" value="-70.5150">
             </div>
+
+            <div id="checkoutPickupLocationBox" style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.75rem 0.9rem;">
+              <div style="font-weight: 800; color: #166534; font-size: 0.85rem; margin-bottom: 0.25rem;">📍 Store Pickup Pin (Go Here)</div>
+              <div id="checkoutPickupAddressText" style="font-size: 0.82rem; color: #1e293b; margin-bottom: 0.4rem;"></div>
+              <a id="checkoutPickupMapLink" href="#" target="_blank" class="btn btn-outline btn-sm" style="background: #fff; color: var(--teal-primary); font-size: 0.78rem; font-weight: 750;">Open Pickup Pin in Google Maps ↗</a>
+            </div>
           </div>
 
           <!-- Step 2: Customer Details & Notes -->
@@ -652,6 +658,12 @@
           <div>
             <input type="text" id="pinNote" class="input-field" placeholder="Landmark or entrance note (e.g. Villa 14, green gate, call when outside)" style="font-size: 0.85rem;">
           </div>
+        </div>
+
+        <div id="requestPickupLocationBox" style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1rem;">
+          <div style="font-weight: 800; color: #166534; font-size: 0.85rem; margin-bottom: 0.25rem;">📍 Business Location / Meeting Pin (Go Here)</div>
+          <div id="requestPickupAddressText" style="font-size: 0.82rem; color: #1e293b; margin-bottom: 0.45rem;"></div>
+          <a id="requestPickupMapLink" href="#" target="_blank" class="btn btn-outline btn-sm" style="background: #fff; color: var(--teal-primary); font-size: 0.78rem; font-weight: 750;">Open Location Pin in Google Maps ↗</a>
         </div>
 
         <!-- Step 2: Service Details & Preferred Date/Time -->
@@ -1288,16 +1300,36 @@
       if (wrapWise) wrapWise.style.background = (payMethod === 'wise') ? '#f7fee7' : '#fff';
 
       const tipBox = document.getElementById("tipSelectorBox");
+      const pickupBox = document.getElementById("checkoutPickupLocationBox");
 
       // Address & Tip visibility
       if (mode === 'delivery') {
         addrRow.style.display = 'block';
         addrInput.required = true;
         if (tipBox) tipBox.style.display = 'block';
+        if (pickupBox) pickupBox.style.display = 'none';
       } else {
         addrRow.style.display = 'none';
         addrInput.required = false;
         if (tipBox) tipBox.style.display = 'none';
+        if (pickupBox && currentBusiness) {
+          const lat = currentBusiness.pickup_pin_lat || currentBusiness.storefront_pin_lat;
+          const lng = currentBusiness.pickup_pin_lng || currentBusiness.storefront_pin_lng;
+          const addr = currentBusiness.address || currentBusiness.location_name || currentBusiness.trading_name;
+          const note = currentBusiness.pickup_pin_note ? ` (${currentBusiness.pickup_pin_note})` : '';
+          document.getElementById("checkoutPickupAddressText").textContent = `${currentBusiness.trading_name} — ${addr}${note}`;
+          const link = document.getElementById("checkoutPickupMapLink");
+          if (lat && lng) {
+            link.href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+            link.style.display = 'inline-flex';
+          } else if (addr) {
+            link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr + ' ' + (currentBusiness.location_name || 'Sosua'))}`;
+            link.style.display = 'inline-flex';
+          } else {
+            link.style.display = 'none';
+          }
+          pickupBox.style.display = 'block';
+        }
       }
 
       // Update button text and dynamic instruction box
@@ -1861,6 +1893,7 @@ A confirmation has been registered for front desk check-in.`);
       const pinSec = document.getElementById("mapPinSection");
       const latIn = document.getElementById("pinLat");
       const lngIn = document.getElementById("pinLng");
+      const bizPinBox = document.getElementById("requestPickupLocationBox");
 
       if (mode === "mobile_visit" || mode === "delivery") {
         pinSec.style.display = "block";
@@ -1870,11 +1903,30 @@ A confirmation has been registered for front desk check-in.`);
           latIn.value = "19.7550";
           lngIn.value = "-70.5150";
         }
+        if (bizPinBox) bizPinBox.style.display = "none";
         setupRequestMap();
       } else {
         pinSec.style.display = "none";
         latIn.required = false;
         lngIn.required = false;
+        if (bizPinBox && currentBusiness) {
+          const lat = currentBusiness.pickup_pin_lat || currentBusiness.storefront_pin_lat;
+          const lng = currentBusiness.pickup_pin_lng || currentBusiness.storefront_pin_lng;
+          const addr = currentBusiness.address || currentBusiness.location_name || currentBusiness.trading_name;
+          const note = currentBusiness.pickup_pin_note ? ` (${currentBusiness.pickup_pin_note})` : '';
+          document.getElementById("requestPickupAddressText").textContent = `${currentBusiness.trading_name} — ${addr}${note}`;
+          const link = document.getElementById("requestPickupMapLink");
+          if (lat && lng) {
+            link.href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+            link.style.display = "inline-flex";
+          } else if (addr) {
+            link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr + ' ' + (currentBusiness.location_name || 'Sosua'))}`;
+            link.style.display = "inline-flex";
+          } else {
+            link.style.display = "none";
+          }
+          bizPinBox.style.display = "block";
+        }
       }
     }
 
@@ -2226,5 +2278,6 @@ A confirmation has been registered for front desk check-in.`);
 
   <!-- Bilingual AI Concierge -->
   <script src="/frontend/concierge.js"></script>
+  <script src="/frontend/pwa_nav.js"></script>
 </body>
 </html>
