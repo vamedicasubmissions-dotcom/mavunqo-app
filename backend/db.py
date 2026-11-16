@@ -26,6 +26,12 @@ CREATE TABLE IF NOT EXISTS categories (
     sort_order INTEGER DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS platform_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS locations (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
@@ -579,7 +585,8 @@ def run_migrations(conn):
         ("pickup_pin_lng", "REAL"),
         ("pickup_pin_note", "TEXT"),
         ("pilot_delivery_enabled", "BOOLEAN DEFAULT 0"),
-        ("power_backup_type", "TEXT DEFAULT 'none'")
+        ("power_backup_type", "TEXT DEFAULT 'none'"),
+        ("custom_commission_rate", "REAL")
     ]
     for col_name, col_def in new_business_cols:
         if col_name not in existing_cols:
@@ -714,6 +721,14 @@ def init_db(db_path: str):
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.executescript(SCHEMA_SQL)
     run_migrations(conn)
+    for k, v in [
+        ("standard_commission_rate", "0.15"),
+        ("delivery_fee_dop", "100.0"),
+        ("rain_hazard_fee_dop", "50.0"),
+        ("max_driver_cash_float_dop", "3000.0"),
+        ("dop_to_usd_rate", "60.0"),
+    ]:
+        conn.execute("INSERT OR IGNORE INTO platform_settings (key, value) VALUES (?, ?)", (k, v))
     conn.commit()
     return conn
 

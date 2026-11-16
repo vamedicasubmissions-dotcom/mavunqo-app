@@ -740,7 +740,7 @@ class MavunqoService:
 
         with self.get_connection() as conn:
             biz = conn.execute(
-                "SELECT id, trading_name, status FROM businesses WHERE id = ? AND status = 'approved'",
+                "SELECT id, trading_name, status, custom_commission_rate FROM businesses WHERE id = ? AND status = 'approved'",
                 (business_id,)
             ).fetchone()
             if not biz:
@@ -804,7 +804,9 @@ class MavunqoService:
             ).fetchone()
             rain_mode_active = bool(cap_row["rain_mode_active"]) if cap_row else False
 
-            delivery_fee = (150.0 if rain_mode_active else 100.0) if fulfillment_type == "delivery" else 0.0
+            base_del_fee = self._get_setting_float(conn, "delivery_fee_dop", 100.0)
+            rain_fee = self._get_setting_float(conn, "rain_hazard_fee_dop", 50.0)
+            delivery_fee = (base_del_fee + (rain_fee if rain_mode_active else 0.0)) if fulfillment_type == "delivery" else 0.0
             tip_amount = round(max(0.0, float(driver_tip or 0.0)), 2) if fulfillment_type == "delivery" else 0.0
             total = round(subtotal + delivery_fee + tip_amount, 2)
 
@@ -839,10 +841,11 @@ class MavunqoService:
                 )
 
             # Accrue preliminary fee record:
-            # 12% for Mavunqo-sourced orders, 0% (or configurable lower rate) for merchant-originated orders.
-            # Delivery fee is excluded from commission base.
+            # Uses per-business negotiated override if set, otherwise global platform standard commission rate.
+            # Delivery fee and driver tip are excluded from commission base.
             from .tokens_and_attribution import STANDARD_COMMISSION_RATE
-            commission_rate = STANDARD_COMMISSION_RATE
+            global_rate = self._get_setting_float(conn, "standard_commission_rate", STANDARD_COMMISSION_RATE)
+            commission_rate = float(biz["custom_commission_rate"]) if biz["custom_commission_rate"] is not None else global_rate
             commissionable_amount = subtotal
             fee_amount = round(commissionable_amount * commission_rate, 2)
             fee_id = f"fee_{uuid.uuid4().hex[:12]}"
@@ -1046,8 +1049,13 @@ class MavunqoService:
             raise PermissionError("Access denied.")
 
         with self.get_connection() as conn:
+            from .tokens_and_attribution import STANDARD_COMMISSION_RATE
+            biz_row = conn.execute("SELECT custom_commission_rate FROM businesses WHERE id = ?", (business_id,)).fetchone()
+            global_rate = self._get_setting_float(conn, "standard_commission_rate", STANDARD_COMMISSION_RATE)
+            effective_rate = float(biz_row["custom_commission_rate"]) if (biz_row and biz_row["custom_commission_rate"] is not None) else global_rate
+
             rows = conn.execute(
-                """SELECT f.*, o.order_number, o.created_at AS order_created_at
+                """SELECT f.*, o.order_number, o.status AS order_status, o.payment_method, o.created_at AS order_created_at
                    FROM fee_records f
                    JOIN orders o ON f.order_id = o.id
                    WHERE f.business_id = ?
@@ -1059,14 +1067,34 @@ class MavunqoService:
             total_accrued = sum(r["fee_amount"] for r in records if r["status"] == "accrued")
             total_pending = sum(r["fee_amount"] for r in records if r["status"] == "pending")
             total_reversed = sum(r["fee_amount"] for r in records if r["status"] == "reversed")
+            gross_completed = sum(r["commissionable_amount"] for r in records if r["status"] == "accrued")
+            gross_pending = sum(r["commissionable_amount"] for r in records if r["status"] == "pending")
+            completed_count = sum(1 for r in records if r["status"] == "accrued")
+            pending_count = sum(1 for r in records if r["status"] == "pending")
+
+            payout_rows = conn.execute(
+                """SELECT payout_batch_id, gross_subtotal, commission_retained, net_payout_amount, payout_method, status, settled_at, created_at
+                   FROM merchant_payouts
+                   WHERE business_id = ?
+                   ORDER BY created_at DESC LIMIT 20""",
+                (business_id,)
+            ).fetchall()
 
             return {
                 "business_id": business_id,
+                "effective_commission_rate": effective_rate,
+                "total_orders_count": len(records),
+                "completed_orders_count": completed_count,
+                "pending_orders_count": pending_count,
+                "gross_completed_sales": round(gross_completed, 2),
+                "gross_pending_sales": round(gross_pending, 2),
+                "net_completed_payout": round(gross_completed - total_accrued, 2),
                 "total_accrued_fees": round(total_accrued, 2),
                 "total_pending_fees": round(total_pending, 2),
                 "total_reversed_fees": round(total_reversed, 2),
                 "currency": "DOP",
-                "statement_lines": records
+                "statement_lines": records,
+                "payouts_history": [dict(p) for p in payout_rows]
             }
 
     # -------------------------------------------------------------
@@ -1569,6 +1597,8 @@ class MavunqoService:
                 delivery_available = True
                 status_reason = "Delivery available"
 
+            base_del_fee = self._get_setting_float(conn, "delivery_fee_dop", 100.0)
+            rain_fee = self._get_setting_float(conn, "rain_hazard_fee_dop", 50.0)
             return {
                 "location_id": location_id,
                 "delivery_available": delivery_available,
@@ -1579,7 +1609,7 @@ class MavunqoService:
                 "reason": status_reason,
                 "override_active": override_active,
                 "rain_mode_active": rain_mode_active,
-                "delivery_fee": 150.0 if rain_mode_active else 100.0
+                "delivery_fee": base_del_fee + (rain_fee if rain_mode_active else 0.0)
             }
 
     def set_rain_mode(self, user_id: str, location_id: str, rain_mode_active: bool):
@@ -2249,7 +2279,7 @@ class MavunqoService:
             """, (driver_id,)).fetchone()
             
             current_float = float(unsettled_cash["unreconciled_total"]) if unsettled_cash else 0.0
-            MAX_DRIVER_CASH_FLOAT = 3000.0  # RD$ 3,000 DOP cap
+            MAX_DRIVER_CASH_FLOAT = self._get_setting_float(conn, "max_driver_cash_float_dop", 3000.0)
             
             if current_float >= MAX_DRIVER_CASH_FLOAT:
                 raise ValueError(
@@ -2409,6 +2439,85 @@ class MavunqoService:
             "status": status,
             "is_discrepancy": status == "unresolved_discrepancy"
         }
+
+    def _get_setting_float(self, conn, key: str, default: float) -> float:
+        try:
+            row = conn.execute("SELECT value FROM platform_settings WHERE key = ?", (key,)).fetchone()
+            if row and row["value"] is not None:
+                return float(row["value"])
+        except Exception:
+            pass
+        return float(default)
+
+    def get_platform_settings(self):
+        from .tokens_and_attribution import STANDARD_COMMISSION_RATE
+        defaults = {
+            "standard_commission_rate": STANDARD_COMMISSION_RATE,
+            "delivery_fee_dop": 100.0,
+            "rain_hazard_fee_dop": 50.0,
+            "max_driver_cash_float_dop": 3000.0,
+            "dop_to_usd_rate": 60.0,
+        }
+        with self.get_connection() as conn:
+            result = {k: self._get_setting_float(conn, k, v) for k, v in defaults.items()}
+            biz_rows = conn.execute(
+                """SELECT id, trading_name, slug, category_id, custom_commission_rate, status
+                   FROM businesses
+                   ORDER BY trading_name ASC"""
+            ).fetchall()
+            result["businesses"] = [dict(b) for b in biz_rows]
+        return result
+
+    def update_platform_settings(self, admin_id: str, updates: dict):
+        with self.get_connection() as conn:
+            u = conn.execute("SELECT role FROM users WHERE id = ?", (admin_id,)).fetchone()
+            if not u or u["role"] != "admin":
+                raise PermissionError("Admin role required to update platform settings.")
+
+            allowed = {
+                "standard_commission_rate": (0.0, 0.50),
+                "delivery_fee_dop": (0.0, 2000.0),
+                "rain_hazard_fee_dop": (0.0, 1000.0),
+                "max_driver_cash_float_dop": (500.0, 50000.0),
+                "dop_to_usd_rate": (30.0, 120.0),
+            }
+            for k, (min_v, max_v) in allowed.items():
+                if k in updates and updates[k] is not None and updates[k] != "":
+                    val = float(updates[k])
+                    if val < min_v or val > max_v:
+                        raise ValueError(f"{k} must be between {min_v} and {max_v}.")
+                    conn.execute(
+                        """INSERT INTO platform_settings (key, value, updated_at)
+                           VALUES (?, ?, CURRENT_TIMESTAMP)
+                           ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP""",
+                        (k, str(val))
+                    )
+            conn.commit()
+        return self.get_platform_settings()
+
+    def set_business_commission_rate(self, admin_id: str, business_id: str, custom_rate):
+        with self.get_connection() as conn:
+            u = conn.execute("SELECT role FROM users WHERE id = ?", (admin_id,)).fetchone()
+            if not u or u["role"] != "admin":
+                raise PermissionError("Admin role required to set business commission rate.")
+
+            biz = conn.execute("SELECT id, trading_name FROM businesses WHERE id = ?", (business_id,)).fetchone()
+            if not biz:
+                raise ValueError("Business not found.")
+
+            if custom_rate is None or custom_rate == "":
+                rate_val = None
+            else:
+                rate_val = float(custom_rate)
+                if rate_val < 0.0 or rate_val > 0.50:
+                    raise ValueError("Commission rate must be between 0.0 (0%) and 0.50 (50%).")
+
+            conn.execute(
+                "UPDATE businesses SET custom_commission_rate = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (rate_val, business_id)
+            )
+            conn.commit()
+        return {"success": True, "business_id": business_id, "trading_name": biz["trading_name"], "custom_commission_rate": rate_val}
 
     def get_merchant_clearinghouse_settlements(self):
         """

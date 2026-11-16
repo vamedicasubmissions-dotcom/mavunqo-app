@@ -567,5 +567,31 @@ class TestPhase2MerchantRequests(unittest.TestCase):
         self.assertEqual(st_bad_img, 400)
         self.assertIn("Only JPG, PNG, or WEBP", res_bad_img["error"])
 
+        # 11. Admin Dynamic Settings & Per-Business Commission Override
+        st_gs, res_gs = invoke("GET", "/api/admin/settings", headers=headers)
+        self.assertEqual(st_gs, 200)
+        self.assertEqual(res_gs["standard_commission_rate"], 0.15)
+
+        st_bc, res_bc = invoke("POST", f"/api/admin/businesses/{biz_id}/commission", headers=headers, body={
+            "custom_commission_rate": 0.10
+        })
+        self.assertEqual(st_bc, 200)
+        self.assertEqual(res_bc["custom_commission_rate"], 0.10)
+
+        st_co, res_co = invoke("POST", "/api/orders", body={
+            "business_id": biz_id,
+            "customer": {"name": "Custom Rate Tester", "phone": "8095551212"},
+            "fulfillment_type": "pickup",
+            "payment_method": "cash",
+            "items": [{"menu_item_id": item["id"], "quantity": 1}]
+        })
+        self.assertEqual(st_co, 201)
+        with service.get_connection() as conn:
+            fee_row = conn.execute("SELECT commission_rate FROM fee_records WHERE order_id = ?", (res_co["order_id"],)).fetchone()
+        self.assertAlmostEqual(float(fee_row["commission_rate"]), 0.10, places=4)
+
+        # Reset business override back to default
+        invoke("POST", f"/api/admin/businesses/{biz_id}/commission", headers=headers, body={"custom_commission_rate": None})
+
 if __name__ == "__main__":
     unittest.main()

@@ -148,6 +148,12 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return self.send_json({"error": "Forbidden: Admin access only"}, 403)
             return self.send_json(service.get_admin_analytics())
 
+        if path == "/api/admin/settings":
+            user = self.get_auth_user()
+            if not user or user.get("role") != "admin":
+                return self.send_json({"error": "Forbidden: Admin access only"}, 403)
+            return self.send_json(service.get_platform_settings())
+
         # Owner Routes
         if path == "/api/owner/businesses":
             user = self.get_auth_user()
@@ -1245,6 +1251,30 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 service.reject_business(user["uid"], biz_id, reason=data.get("reason", "Did not meet requirements"))
                 return self.send_json({"success": True, "message": "Business application rejected."})
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/admin/settings":
+            user = self.get_auth_user()
+            if not user or user.get("role") != "admin":
+                return self.send_json({"error": "Forbidden: Admin access only"}, 403)
+            data = self.read_json_body()
+            try:
+                res = service.update_platform_settings(user["uid"], data)
+                return self.send_json({"success": True, "settings": res})
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path.startswith("/api/admin/businesses/") and path.endswith("/commission"):
+            user = self.get_auth_user()
+            if not user or user.get("role") != "admin":
+                return self.send_json({"error": "Forbidden: Admin access only"}, 403)
+            parts = path.split("/")
+            biz_id = parts[4]
+            data = self.read_json_body()
+            try:
+                res = service.set_business_commission_rate(user["uid"], biz_id, data.get("custom_commission_rate"))
+                return self.send_json(res)
             except Exception as e:
                 return self.send_json({"error": str(e)}, 400)
 

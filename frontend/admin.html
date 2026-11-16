@@ -103,6 +103,57 @@
         </table>
       </div>
     </div>
+
+    <!-- Dynamic Platform Settings -->
+    <div style="background: #ffffff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: var(--shadow-sm); margin-top: 2rem;">
+      <h2 style="font-size: 1.35rem; font-weight: 850; margin-bottom: 0.35rem;">⚙️ Platform Pricing & Operational Settings</h2>
+      <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.25rem;">Adjust global commission rates, delivery fees, and driver cash caps live without touching code.</p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 750; display: block; margin-bottom: 0.25rem;">Default Commission (%)</label>
+          <input type="number" step="0.5" min="0" max="50" id="setCommPct" class="input-field" placeholder="15">
+        </div>
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 750; display: block; margin-bottom: 0.25rem;">Base Delivery Fee (RD$)</label>
+          <input type="number" step="10" min="0" id="setDeliveryFee" class="input-field" placeholder="100">
+        </div>
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 750; display: block; margin-bottom: 0.25rem;">Rain Hazard Fee (RD$)</label>
+          <input type="number" step="10" min="0" id="setRainFee" class="input-field" placeholder="50">
+        </div>
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 750; display: block; margin-bottom: 0.25rem;">Driver Cash Cap (RD$)</label>
+          <input type="number" step="100" min="500" id="setCashCap" class="input-field" placeholder="3000">
+        </div>
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 750; display: block; margin-bottom: 0.25rem;">DOP per $1 USD</label>
+          <input type="number" step="0.5" min="30" id="setFxRate" class="input-field" placeholder="60">
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="savePlatformSettings();" style="font-weight: 800;">💾 Save Global Settings</button>
+      <span id="settingsSaveStatus" style="margin-left: 0.75rem; font-size: 0.85rem; font-weight: 700;"></span>
+
+      <!-- Per-Business Negotiated Commission Rates -->
+      <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+        <h3 style="font-size: 1.15rem; font-weight: 850; margin-bottom: 0.25rem;">🤝 Negotiated Per-Business Commission Rates</h3>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">Override the default rate for specific partners (e.g. 10% for Supermarkets/Colmados, 12% for Founding Restaurants). Leave blank to use the global default.</p>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Business</th>
+                <th>Current Rate</th>
+                <th>Custom % Override</th>
+                <th>Save</th>
+              </tr>
+            </thead>
+            <tbody id="businessRatesBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </main>
 
   <footer class="footer">
@@ -142,9 +193,95 @@
 
         // Render table
         renderTable(apps);
+        loadPlatformSettings();
       } catch (err) {
         console.error(err);
       }
+    }
+
+    async function loadPlatformSettings() {
+      try {
+        const res = await fetch("/api/admin/settings", { headers: { "Authorization": `Bearer ${token}` } });
+        if (!res.ok) return;
+        const s = await res.json();
+        document.getElementById("setCommPct").value = (parseFloat(s.standard_commission_rate) * 100).toFixed(1).replace(/\.0$/, '');
+        document.getElementById("setDeliveryFee").value = s.delivery_fee_dop;
+        document.getElementById("setRainFee").value = s.rain_hazard_fee_dop;
+        document.getElementById("setCashCap").value = s.max_driver_cash_float_dop;
+        document.getElementById("setFxRate").value = s.dop_to_usd_rate;
+
+        const defaultPct = (parseFloat(s.standard_commission_rate) * 100).toFixed(1).replace(/\.0$/, '');
+        const tbody = document.getElementById("businessRatesBody");
+        tbody.innerHTML = (s.businesses || []).map(b => {
+          const hasCustom = b.custom_commission_rate !== null && b.custom_commission_rate !== undefined;
+          const customPct = hasCustom ? (parseFloat(b.custom_commission_rate) * 100).toFixed(1).replace(/\.0$/, '') : '';
+          return `
+            <tr>
+              <td><strong>${b.trading_name}</strong><br><span style="font-size:0.78rem; color:var(--text-secondary);">${b.id}</span></td>
+              <td>${hasCustom ? `<span class="uber-badge" style="background:#e0f2fe; color:#0369a1;">Custom: ${customPct}%</span>` : `<span style="color:var(--text-secondary);">Default (${defaultPct}%)</span>`}</td>
+              <td><input type="number" step="0.5" min="0" max="50" id="rate_${b.id}" value="${customPct}" placeholder="${defaultPct}" class="input-field" style="width: 90px; padding: 0.3rem 0.5rem;"> %</td>
+              <td>
+                <button class="btn btn-sm btn-primary" onclick="saveBusinessRate('${b.id}');">Save</button>
+                ${hasCustom ? `<button class="btn btn-sm btn-outline" onclick="clearBusinessRate('${b.id}');">Reset</button>` : ''}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function savePlatformSettings() {
+      const statusEl = document.getElementById("settingsSaveStatus");
+      statusEl.textContent = "Saving...";
+      try {
+        const commPct = parseFloat(document.getElementById("setCommPct").value);
+        const res = await fetch("/api/admin/settings", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            standard_commission_rate: (commPct / 100.0).toFixed(4),
+            delivery_fee_dop: document.getElementById("setDeliveryFee").value,
+            rain_hazard_fee_dop: document.getElementById("setRainFee").value,
+            max_driver_cash_float_dop: document.getElementById("setCashCap").value,
+            dop_to_usd_rate: document.getElementById("setFxRate").value
+          })
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          statusEl.style.color = "#15803d";
+          statusEl.textContent = "✓ Settings saved!";
+          loadPlatformSettings();
+        } else {
+          statusEl.style.color = "#dc2626";
+          statusEl.textContent = d.error || "Error saving settings.";
+        }
+      } catch (e) {
+        statusEl.style.color = "#dc2626";
+        statusEl.textContent = "Network error.";
+      }
+    }
+
+    async function saveBusinessRate(bizId) {
+      const raw = document.getElementById(`rate_${bizId}`).value.trim();
+      const customRate = raw === "" ? null : (parseFloat(raw) / 100.0);
+      const res = await fetch(`/api/admin/businesses/${bizId}/commission`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ custom_commission_rate: customRate })
+      });
+      const d = await res.json();
+      if (res.ok && d.success) {
+        loadPlatformSettings();
+      } else {
+        alert(d.error || "Error saving custom rate.");
+      }
+    }
+
+    async function clearBusinessRate(bizId) {
+      document.getElementById(`rate_${bizId}`).value = "";
+      await saveBusinessRate(bizId);
     }
 
     function renderTable(apps) {
