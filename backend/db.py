@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS businesses (
     logo_url TEXT,
     cover_image_url TEXT,
     hours_json TEXT, -- JSON string for weekly hours
+    power_backup_type TEXT DEFAULT 'none' CHECK(power_backup_type IN ('generator', 'inverter', 'none')),
     rnc_tax_id TEXT, -- Optional Dominican Republic tax identifier
     rnc_status TEXT DEFAULT 'unverified',
     rejection_reason TEXT,

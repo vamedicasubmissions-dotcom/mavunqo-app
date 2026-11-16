@@ -53,7 +53,7 @@ class MavunqoService:
             SELECT DISTINCT b.id, b.trading_name, b.slug, b.category_id, b.primary_location_id,
                    b.description_en, b.description_es, b.has_physical_location, b.address,
                    b.serves_entire_area, b.website_url, b.whatsapp, b.phone, b.public_email,
-                   b.logo_url, b.cover_image_url,
+                   b.logo_url, b.cover_image_url, b.power_backup_type,
                    c.name_en AS category_name_en, c.name_es AS category_name_es, c.slug AS category_slug,
                    l.name AS location_name, l.status AS location_status
             FROM businesses b
