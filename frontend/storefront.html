@@ -433,6 +433,22 @@
           </div>
         </div>
 
+        <!-- 1-Tap Driver Tip Selector -->
+        <div id="tipSelectorBox" style="margin-bottom: 1.25rem; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 0.85rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <label style="font-size: 0.88rem; font-weight: 750; margin: 0; display: flex; align-items: center; gap: 4px;">
+              <span>🛵</span> <span>Courier Driver Tip</span>
+            </label>
+            <span style="font-size: 0.75rem; color: #15803d; font-weight: 750;">100% goes to driver</span>
+          </div>
+          <div style="display: flex; gap: 0.4rem;" id="tipBtnGroup">
+            <button type="button" class="btn btn-sm btn-outline tip-btn active" onclick="setDriverTip(0, this);" style="flex: 1; font-weight: 700; font-size: 0.8rem; background: #0284c7; color: #fff; border-color: #0284c7;">RD$ 0</button>
+            <button type="button" class="btn btn-sm btn-outline tip-btn" onclick="setDriverTip(50, this);" style="flex: 1; font-weight: 700; font-size: 0.8rem;">+50</button>
+            <button type="button" class="btn btn-sm btn-outline tip-btn" onclick="setDriverTip(100, this);" style="flex: 1; font-weight: 700; font-size: 0.8rem;">+100</button>
+            <button type="button" class="btn btn-sm btn-outline tip-btn" onclick="setDriverTip(200, this);" style="flex: 1; font-weight: 700; font-size: 0.8rem;">+200</button>
+          </div>
+        </div>
+
         <!-- Customer Inputs -->
         <form id="orderForm" onsubmit="submitGuestOrder(event);">
           <div id="repeatCustomerNotice" style="display: none; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; font-size: 0.8rem; color: #166534; display: flex; justify-content: space-between; align-items: center;">
@@ -1233,7 +1249,7 @@
       // Update button text and dynamic instruction box
       const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
       const deliveryFee = (mode === 'delivery') ? 100.0 : 0.0;
-      const totalDop = subtotal + deliveryFee;
+      const totalDop = subtotal + deliveryFee + (mode === 'delivery' ? currentDriverTip : 0.0);
       const totalUsd = (totalDop / 60.0).toFixed(2);
 
       if (payMethod === 'cash') {
@@ -1264,13 +1280,32 @@
       }
     }
 
+    let currentDriverTip = 0.0;
+
+    function setDriverTip(amount, btn) {
+      currentDriverTip = parseFloat(amount) || 0.0;
+      document.querySelectorAll('.tip-btn').forEach(b => {
+        b.style.background = 'transparent';
+        b.style.color = 'inherit';
+        b.style.borderColor = 'var(--border)';
+      });
+      if (btn) {
+        btn.style.background = '#0284c7';
+        btn.style.color = '#fff';
+        btn.style.borderColor = '#0284c7';
+      }
+      calculateCheckoutTotal();
+      updatePaymentMethodUI();
+    }
+
     function calculateCheckoutTotal() {
       const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
       const mode = document.querySelector('input[name="checkoutFulfillment"]:checked')?.value || 'delivery';
       const deliveryFee = (mode === 'delivery') ? 100.0 : 0.0;
-      const total = subtotal + deliveryFee;
+      const total = subtotal + deliveryFee + currentDriverTip;
       const totalUsd = (total / 60.0).toFixed(2);
-      document.getElementById("checkoutTotalText").textContent = `${total.toFixed(2)} DOP (~$${totalUsd} USD)`;
+      const tipText = currentDriverTip > 0 ? ` (incl. RD$ ${currentDriverTip.toFixed(0)} tip)` : '';
+      document.getElementById("checkoutTotalText").textContent = `${total.toFixed(2)} DOP${tipText} (~$${totalUsd} USD)`;
     }
 
     async function submitGuestOrder(e) {
