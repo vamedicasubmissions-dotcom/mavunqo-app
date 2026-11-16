@@ -697,7 +697,8 @@ class MavunqoService:
     def place_order(self, business_id: str, customer_data: dict, items: list,
                     fulfillment_type: str = "pickup", delivery_address: str = "",
                     order_origin: str = "mavunqo", customer_notes: str = "",
-                    payment_method: str = "cash", driver_tip: float = 0.0):
+                    payment_method: str = "cash", driver_tip: float = 0.0,
+                    payment_proof_url: str = None, payment_proof_hash: str = None):
         customer_name = (customer_data.get("name") or "").strip()
         customer_phone = (customer_data.get("phone") or "").strip()
         customer_email = (customer_data.get("email") or "").strip()
@@ -812,12 +813,13 @@ class MavunqoService:
                     id, order_number, business_id, customer_name, customer_phone, customer_email,
                     order_origin, fulfillment_type, delivery_address, customer_notes,
                     status, subtotal, delivery_fee, driver_tip, total, currency, payment_method,
-                    cash_due, status_token, status_token_expires_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, 'DOP', ?, ?, ?, ?)""",
+                    payment_proof_url, payment_proof_hash, cash_due, status_token, status_token_expires_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, 'DOP', ?, ?, ?, ?, ?, ?)""",
                 (
                     order_id, order_num, business_id, customer_name, customer_phone, customer_email,
                     order_origin, fulfillment_type, delivery_address, customer_notes,
                     subtotal, delivery_fee, tip_amount, total, payment_method,
+                    payment_proof_url, payment_proof_hash,
                     total if payment_method == 'cash' else 0.0,
                     status_token, expires_at.isoformat()
                 )
@@ -868,11 +870,31 @@ class MavunqoService:
             "success": True,
             "order_id": order_id,
             "order_number": order_num,
+            "business_name": biz["trading_name"],
             "total": total,
             "currency": "DOP",
+            "payment_method": payment_method,
+            "payment_proof_url": payment_proof_url,
             "status_token": status_token,
             "status_url": f"/order/status?token={status_token}"
         }
+
+    def verify_order_payment(self, order_id: str, dispatcher_id: str, source: str = "dispatcher_manual"):
+        with self.get_connection() as conn:
+            disp_user = conn.execute("SELECT role FROM users WHERE id = ?", (dispatcher_id,)).fetchone()
+            if not disp_user or disp_user["role"] not in ("admin", "manager", "staff"):
+                raise PermissionError("Access denied: Mavunqo dispatcher role required.")
+            order = conn.execute("SELECT id, order_number FROM orders WHERE id = ?", (order_id,)).fetchone()
+            if not order:
+                raise ValueError("Order not found.")
+            conn.execute(
+                """UPDATE orders
+                   SET payment_verified = 1, payment_verified_source = ?, updated_at = CURRENT_TIMESTAMP
+                   WHERE id = ?""",
+                (source, order_id)
+            )
+            conn.commit()
+        return {"success": True, "order_id": order_id, "order_number": order["order_number"], "payment_verified": True}
 
     def get_order_by_token(self, status_token: str):
         with self.get_connection() as conn:

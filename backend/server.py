@@ -99,6 +99,10 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         path = parsed.path
         query = urllib.parse.parse_qs(parsed.query)
 
+        # 0. Health / Keep-Alive Ping Route
+        if path in ("/ping", "/health"):
+            return self.send_json({"status": "ok", "service": "mavunqo"})
+
         # 1. API Routes
         if path == "/api/delivery/capacity":
             loc_id = query.get("location", ["loc_sosua"])[0]
@@ -389,6 +393,13 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return self.send_json({"error": "Forbidden: Dispatcher role required"}, 403)
             return self.send_json(service.get_merchant_clearinghouse_settlements())
 
+        if path == "/api/dispatcher/check-bank-emails":
+            user = self.get_auth_user()
+            if not user or user.get("role") not in ("admin", "manager", "staff"):
+                return self.send_json({"error": "Forbidden: Dispatcher role required"}, 403)
+            from .payment_monitor import check_inbox_for_bank_deposits
+            return self.send_json(check_inbox_for_bank_deposits())
+
         if path == "/api/driver/jobs":
             driver_id = query.get("driver_id", [""])[0]
             if not driver_id:
@@ -659,6 +670,23 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 return self.send_json({"error": str(e)}, 400)
 
+        if path == "/api/dispatcher/verify-payment":
+            user = self.get_auth_user()
+            if not user or user.get("role") not in ("admin", "manager", "staff"):
+                return self.send_json({"error": "Forbidden: Dispatcher role required"}, 403)
+            data = self.read_json_body()
+            try:
+                res = service.verify_order_payment(
+                    order_id=data.get("order_id", ""),
+                    dispatcher_id=user["uid"],
+                    source=data.get("source", "dispatcher_manual")
+                )
+                return self.send_json(res)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
         if path == "/api/dispatcher/cash-handoff":
             user = self.get_auth_user()
             if not user or user.get("role") not in ("admin", "manager", "staff"):
@@ -772,6 +800,49 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 cust_dict["email"] = data.get("customer_email")
 
             notes_val = data.get("customer_notes") or data.get("notes") or ""
+            proof_url = data.get("payment_proof_url")
+            proof_hash = None
+            proof_disk_path = None
+            proof_b64 = data.get("payment_proof_image")
+
+            if proof_b64 and isinstance(proof_b64, str) and len(proof_b64) > 20:
+                import base64
+                import hashlib
+                import uuid
+                try:
+                    b64_payload = proof_b64.split(",", 1)[1] if "," in proof_b64 else proof_b64
+                    raw_bytes = base64.b64decode(b64_payload, validate=True)
+                except Exception:
+                    return self.send_json({"error": "Invalid payment proof image encoding."}, 400)
+
+                if len(raw_bytes) > 5 * 1024 * 1024:
+                    return self.send_json({"error": "Payment proof image exceeds 5 MB limit."}, 400)
+
+                is_jpeg = raw_bytes.startswith(b"\xff\xd8\xff")
+                is_png = raw_bytes.startswith(b"\x89PNG\r\n\x1a\n")
+                is_webp = raw_bytes.startswith(b"RIFF") and raw_bytes[8:12] == b"WEBP"
+                if not (is_jpeg or is_png or is_webp):
+                    return self.send_json({"error": "Only JPG, PNG, or WEBP payment screenshots are allowed."}, 400)
+
+                proof_hash = hashlib.sha256(raw_bytes).hexdigest()
+                with service.get_connection() as conn:
+                    dup = conn.execute(
+                        "SELECT order_number FROM orders WHERE payment_proof_hash = ? LIMIT 1",
+                        (proof_hash,)
+                    ).fetchone()
+                if dup:
+                    return self.send_json({
+                        "error": f"Duplicate payment screenshot detected (already used on {dup['order_number']}). Please upload a new confirmation screenshot."
+                    }, 400)
+
+                ext = ".png" if is_png else (".webp" if is_webp else ".jpg")
+                proof_dir = os.path.join(FRONTEND_DIR, "uploads", "proofs")
+                os.makedirs(proof_dir, exist_ok=True)
+                fname = f"proof_{uuid.uuid4().hex[:12]}{ext}"
+                proof_disk_path = os.path.join(proof_dir, fname)
+                with open(proof_disk_path, "wb") as pf:
+                    pf.write(raw_bytes)
+                proof_url = f"/frontend/uploads/proofs/{fname}"
 
             try:
                 res = service.place_order(
@@ -783,8 +854,29 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     order_origin=data.get("order_origin", "mavunqo"),
                     customer_notes=notes_val,
                     payment_method=data.get("payment_method", "cash"),
-                    driver_tip=float(data.get("driver_tip", 0.0) or 0.0)
+                    driver_tip=float(data.get("driver_tip", 0.0) or 0.0),
+                    payment_proof_url=proof_url,
+                    payment_proof_hash=proof_hash
                 )
+
+                # Send non-blocking email alert for Zelle / Bank Transfer orders
+                if res.get("payment_method") in ("zelle", "transfer"):
+                    import threading
+                    from .payment_monitor import send_payment_alert_email
+                    alert_payload = {
+                        "order_number": res.get("order_number"),
+                        "payment_method": res.get("payment_method"),
+                        "total": res.get("total"),
+                        "business_name": res.get("business_name"),
+                        "customer_name": cust_dict.get("name", ""),
+                        "customer_phone": cust_dict.get("phone", ""),
+                    }
+                    threading.Thread(
+                        target=send_payment_alert_email,
+                        args=(alert_payload, proof_disk_path),
+                        daemon=True
+                    ).start()
+
                 return self.send_json(res, 201)
             except Exception as e:
                 return self.send_json({"error": str(e)}, 400)

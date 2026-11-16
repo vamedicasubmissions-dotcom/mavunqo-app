@@ -71,6 +71,7 @@
         <span id="rainModeBadge" style="display: none; background: #0284c7; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">🌧️ RAIN MODE ACTIVE (+RD$50 Hazard)</span>
       </div>
       <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <button class="btn btn-outline-white btn-sm" onclick="checkBankInbox();" style="border-radius: 6px; font-size: 0.8rem;">📧 Check Bank Inbox</button>
         <button id="btnToggleRain" class="btn btn-outline-white btn-sm" onclick="toggleRainMode();" style="border-radius: 6px; font-size: 0.8rem;">🌧️ Toggle Rain Mode</button>
         <button class="btn btn-outline-white btn-sm" onclick="window.mavunqoAudio && window.mavunqoAudio.playDriverPing();" style="border-radius: 6px; font-size: 0.8rem;">🔊 Test Driver Ping</button>
         <button id="btnSilenceDriverAlarm" class="btn btn-sm" onclick="silenceDriverAlarm();" style="display: none; background: #ef4444; color: #fff; font-weight: 850; border-radius: 6px; font-size: 0.82rem; border: none;">⏹️ Silence</button>
@@ -236,6 +237,12 @@
                     : `<span style="color: #0369a1; background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">🏦 PREPAID (Transferencia) • Collect $0</span>`
                   )
               }
+              ${o.payment_method !== 'cash' ? (
+                o.payment_verified
+                  ? `<span style="margin-left: 6px; color: #15803d; font-size: 0.78rem; font-weight: 800;">✅ Verified</span>`
+                  : `<span style="margin-left: 6px; color: #dc2626; font-size: 0.78rem; font-weight: 800;">⏳ Unverified</span> <button class="btn btn-sm" onclick="verifyOrderPayment('${o.id}')" style="padding: 2px 6px; font-size: 0.72rem; background: #16a34a; color: #fff; border: none; border-radius: 4px;">Verify</button>`
+              ) : ''}
+              ${o.payment_proof_url ? `<a href="${o.payment_proof_url}" target="_blank" style="margin-left: 6px; font-size: 0.78rem; color: #2563eb; text-decoration: underline;">🖼️ View Proof</a>` : ''}
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -248,6 +255,54 @@
           </div>
         </div>
       `).join("");
+    }
+
+    async function verifyOrderPayment(orderId) {
+      try {
+        const res = await fetch("/api/dispatcher/verify-payment", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ order_id: orderId, source: "dispatcher_manual" })
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          alert(`✅ Payment verified for ${d.order_number}`);
+          loadQueue();
+        } else {
+          alert(d.error || "Failed to verify payment.");
+        }
+      } catch (e) {
+        alert("Network error verifying payment.");
+      }
+    }
+
+    async function checkBankInbox() {
+      try {
+        const res = await fetch("/api/dispatcher/check-bank-emails", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const d = await res.json();
+        if (!d.configured) {
+          alert("📧 Bank Email Monitor Setup:\n\n" + (d.message || "Configure MAVUNQO_IMAP_USER and MAVUNQO_IMAP_PASS in Render environment variables."));
+          return;
+        }
+        if (d.error) {
+          alert("Error checking bank inbox: " + d.error);
+          return;
+        }
+        const deps = d.deposits || [];
+        if (deps.length === 0) {
+          alert("📧 Inbox checked: No recent Zelle or Dominican bank deposit alerts found.");
+        } else {
+          const summary = deps.slice(0, 6).map(x => `• ${x.subject} (USD: ${x.usd_amounts.join(', ') || '-'} | DOP: ${x.dop_amounts.join(', ') || '-'})`).join("\n");
+          alert(`📧 Recent Bank Deposit Emails Found (${deps.length}):\n\n${summary}`);
+        }
+      } catch (e) {
+        alert("Network error checking bank inbox.");
+      }
     }
 
     async function assignDriver(orderId) {

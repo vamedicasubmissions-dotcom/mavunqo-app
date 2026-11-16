@@ -477,5 +477,61 @@ class TestPhase2MerchantRequests(unittest.TestCase):
         self.assertEqual(st_ok, 200)
         self.assertTrue(res_ok["success"])
 
+        # 7. Keep-alive /ping endpoint
+        st_p, res_p = invoke("GET", "/ping")
+        self.assertEqual(st_p, 200)
+        self.assertEqual(res_p["status"], "ok")
+
+        # 8. Payment proof upload + dispatcher verify-payment + bank email monitor check
+        sample_png_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        st_proof, res_proof = invoke("POST", "/api/orders", body={
+            "business_id": biz_id,
+            "customer": {"name": "Zelle Proof Customer", "phone": "8095553344"},
+            "fulfillment_type": "delivery",
+            "payment_method": "zelle",
+            "payment_proof_image": sample_png_b64,
+            "delivery_address": "Perla Marina Villa 8",
+            "items": [{"menu_item_id": item["id"], "quantity": 1}]
+        })
+        self.assertEqual(st_proof, 201)
+        self.assertTrue(res_proof["payment_proof_url"].startswith("/frontend/uploads/proofs/"))
+
+        st_vp, res_vp = invoke("POST", "/api/dispatcher/verify-payment", headers=headers, body={
+            "order_id": res_proof["order_id"],
+            "source": "bank_email_monitor"
+        })
+        self.assertEqual(st_vp, 200)
+        self.assertTrue(res_vp["payment_verified"])
+
+        st_chk, res_chk = invoke("GET", "/api/dispatcher/check-bank-emails", headers=headers)
+        self.assertEqual(st_chk, 200)
+        self.assertIn("deposits", res_chk)
+
+        # 9. Guardrail: Duplicate payment screenshot hash must be blocked
+        st_dup, res_dup = invoke("POST", "/api/orders", body={
+            "business_id": biz_id,
+            "customer": {"name": "Repeat Screenshot Scammer", "phone": "8095550000"},
+            "fulfillment_type": "delivery",
+            "payment_method": "zelle",
+            "payment_proof_image": sample_png_b64,
+            "delivery_address": "Perla Marina Villa 9",
+            "items": [{"menu_item_id": item["id"], "quantity": 1}]
+        })
+        self.assertEqual(st_dup, 400)
+        self.assertIn("Duplicate payment screenshot", res_dup["error"])
+
+        # 10. Guardrail: Non-image payload rejected
+        st_bad_img, res_bad_img = invoke("POST", "/api/orders", body={
+            "business_id": biz_id,
+            "customer": {"name": "Invalid File Tester", "phone": "8095550001"},
+            "fulfillment_type": "delivery",
+            "payment_method": "zelle",
+            "payment_proof_image": "data:text/plain;base64,SGVsbG8gd29ybGQhIFRoaXMgaXMgbm90IGFuIGltYWdl",
+            "delivery_address": "Perla Marina Villa 10",
+            "items": [{"menu_item_id": item["id"], "quantity": 1}]
+        })
+        self.assertEqual(st_bad_img, 400)
+        self.assertIn("Only JPG, PNG, or WEBP", res_bad_img["error"])
+
 if __name__ == "__main__":
     unittest.main()

@@ -187,6 +187,10 @@ CREATE TABLE IF NOT EXISTS orders (
     total REAL NOT NULL,
     currency TEXT DEFAULT 'DOP',
     payment_method TEXT NOT NULL CHECK(payment_method IN ('cash', 'card', 'transfer', 'zelle', 'cash_or_card')) DEFAULT 'cash',
+    payment_proof_url TEXT,
+    payment_proof_hash TEXT,
+    payment_verified BOOLEAN DEFAULT 0,
+    payment_verified_source TEXT,
     cash_due REAL,
     cash_received REAL,
     cash_reconciled BOOLEAN DEFAULT 0,
@@ -585,11 +589,18 @@ def run_migrations(conn):
     # Check orders columns
     cur.execute("PRAGMA table_info(orders)")
     order_cols = {row[1] for row in cur.fetchall()}
-    if "driver_tip" not in order_cols:
-        try:
-            cur.execute("ALTER TABLE orders ADD COLUMN driver_tip REAL DEFAULT 0.0")
-        except Exception:
-            pass
+    for col_name, col_def in [
+        ("driver_tip", "REAL DEFAULT 0.0"),
+        ("payment_proof_url", "TEXT"),
+        ("payment_proof_hash", "TEXT"),
+        ("payment_verified", "BOOLEAN DEFAULT 0"),
+        ("payment_verified_source", "TEXT")
+    ]:
+        if col_name not in order_cols:
+            try:
+                cur.execute(f"ALTER TABLE orders ADD COLUMN {col_name} {col_def}")
+            except Exception:
+                pass
 
     # Check drivers columns
     cur.execute("PRAGMA table_info(drivers)")
