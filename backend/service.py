@@ -697,7 +697,7 @@ class MavunqoService:
     def place_order(self, business_id: str, customer_data: dict, items: list,
                     fulfillment_type: str = "pickup", delivery_address: str = "",
                     order_origin: str = "mavunqo", customer_notes: str = "",
-                    payment_method: str = "cash"):
+                    payment_method: str = "cash", driver_tip: float = 0.0):
         customer_name = (customer_data.get("name") or "").strip()
         customer_phone = (customer_data.get("phone") or "").strip()
         customer_email = (customer_data.get("email") or "").strip()
@@ -797,21 +797,27 @@ class MavunqoService:
             if not processed_items:
                 raise ValueError("No valid items in order.")
 
-            delivery_fee = 100.0 if fulfillment_type == "delivery" else 0.0
-            total = round(subtotal + delivery_fee, 2)
+            cap_row = conn.execute(
+                "SELECT rain_mode_active FROM delivery_capacity_settings WHERE location_id = 'loc_sosua'"
+            ).fetchone()
+            rain_mode_active = bool(cap_row["rain_mode_active"]) if cap_row else False
+
+            delivery_fee = (150.0 if rain_mode_active else 100.0) if fulfillment_type == "delivery" else 0.0
+            tip_amount = round(max(0.0, float(driver_tip or 0.0)), 2) if fulfillment_type == "delivery" else 0.0
+            total = round(subtotal + delivery_fee + tip_amount, 2)
 
             # Insert order
             conn.execute(
                 """INSERT INTO orders (
                     id, order_number, business_id, customer_name, customer_phone, customer_email,
                     order_origin, fulfillment_type, delivery_address, customer_notes,
-                    status, subtotal, delivery_fee, total, currency, payment_method,
+                    status, subtotal, delivery_fee, driver_tip, total, currency, payment_method,
                     cash_due, status_token, status_token_expires_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, 'DOP', ?, ?, ?, ?)""",
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, 'DOP', ?, ?, ?, ?)""",
                 (
                     order_id, order_num, business_id, customer_name, customer_phone, customer_email,
                     order_origin, fulfillment_type, delivery_address, customer_notes,
-                    subtotal, delivery_fee, total, payment_method,
+                    subtotal, delivery_fee, tip_amount, total, payment_method,
                     total if payment_method == 'cash' else 0.0,
                     status_token, expires_at.isoformat()
                 )
@@ -1499,6 +1505,7 @@ class MavunqoService:
             ).fetchone()
             
             is_paused_manual = bool(settings["is_delivery_paused"]) if settings else False
+            rain_mode_active = bool(settings["rain_mode_active"]) if settings and "rain_mode_active" in settings.keys() else False
             override_active = bool(settings["override_active"]) if settings else False
             max_per_driver = settings["max_orders_per_driver"] if settings else 2
 
@@ -1547,8 +1554,41 @@ class MavunqoService:
                 "active_delivery_orders": active_deliveries,
                 "total_delivery_capacity": total_capacity,
                 "reason": status_reason,
-                "override_active": override_active
+                "override_active": override_active,
+                "rain_mode_active": rain_mode_active,
+                "delivery_fee": 150.0 if rain_mode_active else 100.0
             }
+
+    def set_rain_mode(self, user_id: str, location_id: str, rain_mode_active: bool):
+        with self.get_connection() as conn:
+            disp_user = conn.execute("SELECT id, role FROM users WHERE id = ?", (user_id,)).fetchone()
+            if not disp_user or disp_user["role"] not in ("admin", "manager", "staff"):
+                raise PermissionError("Access denied: Mavunqo dispatcher role required.")
+
+            existing = conn.execute(
+                "SELECT location_id FROM delivery_capacity_settings WHERE location_id = ?",
+                (location_id,)
+            ).fetchone()
+            if existing:
+                conn.execute(
+                    """UPDATE delivery_capacity_settings
+                       SET rain_mode_active = ?, updated_at = CURRENT_TIMESTAMP
+                       WHERE location_id = ?""",
+                    (1 if rain_mode_active else 0, location_id)
+                )
+            else:
+                conn.execute(
+                    """INSERT INTO delivery_capacity_settings (location_id, rain_mode_active)
+                       VALUES (?, ?)""",
+                    (location_id, 1 if rain_mode_active else 0)
+                )
+            conn.commit()
+        return {
+            "success": True,
+            "location_id": location_id,
+            "rain_mode_active": bool(rain_mode_active),
+            "delivery_fee": 150.0 if rain_mode_active else 100.0
+        }
 
     def dispatch_driver_on_ready(self, order_id: str):
         """
@@ -2223,7 +2263,7 @@ class MavunqoService:
         with self.get_connection() as conn:
             rows = conn.execute("""
                 SELECT o.id as order_id, o.order_number, o.customer_name, o.customer_phone, o.total, o.currency,
-                       o.cash_due, o.status as order_status, d.status as dispatch_status,
+                       o.payment_method, o.driver_tip, o.cash_due, o.status as order_status, d.status as dispatch_status,
                        b.trading_name as business_name, b.pickup_pin_lat, b.pickup_pin_lng, b.pickup_pin_note, b.address as business_address,
                        o.delivery_address, r.destination_lat, r.destination_lng, r.destination_entrance_note
                 FROM delivery_dispatches d
@@ -2265,8 +2305,25 @@ class MavunqoService:
                 jobs.append(j)
             return jobs
 
-    def record_driver_cash_collection(self, order_id: str, driver_id: str, amount_collected: float, notes: str = None):
+    def verify_driver_pin(self, driver_id: str, pin_code: str):
         with self.get_connection() as conn:
+            driver = conn.execute(
+                "SELECT id, full_name, phone, pin_code FROM drivers WHERE id = ?",
+                (driver_id,)
+            ).fetchone()
+            if not driver:
+                raise ValueError("Driver not found.")
+            expected_pin = driver["pin_code"] or "1234"
+            if str(pin_code or "").strip() != str(expected_pin):
+                raise PermissionError("Invalid driver PIN.")
+            return {"success": True, "driver_id": driver["id"], "full_name": driver["full_name"], "phone": driver["phone"]}
+
+    def record_driver_cash_collection(self, order_id: str, driver_id: str, amount_collected: float, notes: str = None, pin_code: str = None):
+        with self.get_connection() as conn:
+            if pin_code is not None:
+                driver = conn.execute("SELECT pin_code FROM drivers WHERE id = ?", (driver_id,)).fetchone()
+                if not driver or str(pin_code).strip() != str(driver["pin_code"] or "1234"):
+                    raise PermissionError("Invalid driver PIN.")
             order = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
             if not order:
                 raise ValueError("Order not found.")

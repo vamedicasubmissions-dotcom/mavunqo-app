@@ -142,15 +142,64 @@
 
   <script>
     let currentDriverId = localStorage.getItem("mavunqo_driver_id") || "drv_sosua_2";
+    let currentDriverPin = localStorage.getItem("mavunqo_driver_pin_" + currentDriverId) || "";
 
-    function switchDriver() {
-      currentDriverId = document.getElementById("driverSelect").value;
+    async function ensureDriverPin(driverId) {
+      let pin = localStorage.getItem("mavunqo_driver_pin_" + driverId);
+      if (!pin) {
+        pin = prompt("Ingresa tu PIN de 4 dígitos para acceder a este repartidor (Demo PIN: 1234):");
+        if (pin === null) return null;
+      }
+      try {
+        const res = await fetch("/api/driver/verify-pin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ driver_id: driverId, pin_code: pin })
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          localStorage.setItem("mavunqo_driver_pin_" + driverId, pin);
+          document.getElementById("driverName").textContent = d.full_name;
+          document.getElementById("driverPhone").textContent = d.phone || "+1 (809) Moto Fleet";
+          return pin;
+        } else {
+          localStorage.removeItem("mavunqo_driver_pin_" + driverId);
+          alert(d.error || "PIN incorrecto.");
+          return null;
+        }
+      } catch (e) {
+        alert("Error verificando PIN del repartidor.");
+        return null;
+      }
+    }
+
+    async function switchDriver() {
+      const nextId = document.getElementById("driverSelect").value;
+      const pin = await ensureDriverPin(nextId);
+      if (!pin) {
+        document.getElementById("driverSelect").value = currentDriverId;
+        return;
+      }
+      currentDriverId = nextId;
+      currentDriverPin = pin;
       localStorage.setItem("mavunqo_driver_id", currentDriverId);
       loadJobs();
     }
 
     async function loadJobs() {
       document.getElementById("driverSelect").value = currentDriverId;
+      if (!currentDriverPin) {
+        const pin = await ensureDriverPin(currentDriverId);
+        if (!pin) {
+          document.getElementById("jobsList").innerHTML = `
+            <div style="text-align: center; background: #1e293b; border: 1px dashed #334155; padding: 2rem 1.5rem; border-radius: 12px;">
+              <strong style="display: block; margin-bottom: 0.75rem;">🔒 Acceso Protegido por PIN</strong>
+              <button onclick="loadJobs()" class="btn-collect" style="margin-top: 0;">Ingresar PIN de Repartidor</button>
+            </div>`;
+          return;
+        }
+        currentDriverPin = pin;
+      }
       try {
         const res = await fetch(`/api/driver/jobs?driver_id=${currentDriverId}`);
         if (!res.ok) throw new Error("Error loading jobs");
@@ -192,6 +241,7 @@
                 <div style="font-size: 1.15rem; font-weight: 850; color: ${isPrepaid ? '#38bdf8' : '#22c55e'};">
                   ${isPrepaid ? 'PRE-PAGADO (RD$ 0)' : 'RD$ ' + parseFloat(collectAmount).toFixed(2)}
                 </div>
+                ${(j.driver_tip && parseFloat(j.driver_tip) > 0) ? `<div style="font-size: 0.78rem; color: #facc15; font-weight: 700;">🌟 Incluye Propina: RD$ ${parseFloat(j.driver_tip).toFixed(2)}</div>` : ''}
               </div>
             </div>
 
@@ -241,6 +291,7 @@
           body: JSON.stringify({
             order_id: orderId,
             driver_id: currentDriverId,
+            pin_code: currentDriverPin,
             amount_collected: collected,
             notes: "Entregado y cobrado en puerta"
           })

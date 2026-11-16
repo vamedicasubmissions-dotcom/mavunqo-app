@@ -462,7 +462,7 @@
 
     let knownDispatchOrderIds = new Set();
     let isInitialDispatchLoad = true;
-    let isRainMode = localStorage.getItem("mavunqo_rain_mode") === "true";
+    let isRainMode = false;
 
     function updateRainModeUI() {
       const badge = document.getElementById("rainModeBadge");
@@ -480,13 +480,43 @@
       }
     }
 
-    function toggleRainMode() {
-      isRainMode = !isRainMode;
-      localStorage.setItem("mavunqo_rain_mode", isRainMode ? "true" : "false");
-      updateRainModeUI();
-      alert(isRainMode 
-        ? "🌧️ RAIN MODE ACTIVATED:\n+RD$ 50 hazard fee applied to all deliveries.\nStorefront delivery estimates adjusted to 50-60 min." 
-        : "☀️ RAIN MODE DEACTIVATED:\nNormal delivery fees and 30-min estimates restored.");
+    async function loadRainModeStatus() {
+      try {
+        const res = await fetch("/api/delivery/capacity?location=loc_sosua");
+        if (res.ok) {
+          const d = await res.json();
+          isRainMode = Boolean(d.rain_mode_active);
+          updateRainModeUI();
+        }
+      } catch (e) {
+        console.error("Error loading rain mode status:", e);
+      }
+    }
+
+    async function toggleRainMode() {
+      const nextState = !isRainMode;
+      try {
+        const res = await fetch("/api/dispatcher/rain-mode", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ location_id: "loc_sosua", rain_mode_active: nextState })
+        });
+        const d = await res.json();
+        if (res.ok && d.success) {
+          isRainMode = Boolean(d.rain_mode_active);
+          updateRainModeUI();
+          alert(isRainMode 
+            ? "🌧️ RAIN MODE ACTIVATED LIVE:\n+RD$ 50 hazard fee applied to all storefront deliveries.\nStorefront delivery estimates adjusted to 50-60 min." 
+            : "☀️ RAIN MODE DEACTIVATED LIVE:\nNormal delivery fees (RD$ 100) and 30-min estimates restored.");
+        } else {
+          alert(d.error || "Failed to update Rain Mode. Please ensure you are signed in as dispatcher.");
+        }
+      } catch (e) {
+        alert("Network error toggling Rain Mode.");
+      }
     }
 
     function silenceDriverAlarm() {
@@ -497,7 +527,7 @@
     }
 
     window.onload = () => { 
-      updateRainModeUI();
+      loadRainModeStatus();
       loadQueue(); 
       loadMerchantSettlements();
       setInterval(loadQueue, 6000); 

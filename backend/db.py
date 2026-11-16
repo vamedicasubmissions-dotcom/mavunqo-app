@@ -183,6 +183,7 @@ CREATE TABLE IF NOT EXISTS orders (
     status TEXT NOT NULL CHECK(status IN ('pending', 'accepted', 'in_kitchen', 'ready', 'completed', 'cancelled', 'declined')) DEFAULT 'pending',
     subtotal REAL NOT NULL,
     delivery_fee REAL DEFAULT 0.0,
+    driver_tip REAL DEFAULT 0.0,
     total REAL NOT NULL,
     currency TEXT DEFAULT 'DOP',
     payment_method TEXT NOT NULL CHECK(payment_method IN ('cash', 'card', 'transfer', 'zelle', 'cash_or_card')) DEFAULT 'cash',
@@ -294,6 +295,7 @@ CREATE TABLE IF NOT EXISTS drivers (
     vehicle_type TEXT NOT NULL DEFAULT 'motorcycle',
     status TEXT NOT NULL CHECK(status IN ('online', 'on_delivery', 'offline')) DEFAULT 'online',
     max_concurrent_orders INTEGER NOT NULL DEFAULT 2,
+    pin_code TEXT DEFAULT '1234',
     location_id TEXT NOT NULL REFERENCES locations(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -314,6 +316,7 @@ CREATE TABLE IF NOT EXISTS delivery_dispatches (
 CREATE TABLE IF NOT EXISTS delivery_capacity_settings (
     location_id TEXT PRIMARY KEY REFERENCES locations(id) ON DELETE CASCADE,
     is_delivery_paused BOOLEAN DEFAULT 0,
+    rain_mode_active BOOLEAN DEFAULT 0,
     pause_reason TEXT,
     max_orders_per_driver INTEGER NOT NULL DEFAULT 2,
     override_active BOOLEAN DEFAULT 0,
@@ -569,7 +572,8 @@ def run_migrations(conn):
         ("pickup_pin_lat", "REAL"),
         ("pickup_pin_lng", "REAL"),
         ("pickup_pin_note", "TEXT"),
-        ("pilot_delivery_enabled", "BOOLEAN DEFAULT 0")
+        ("pilot_delivery_enabled", "BOOLEAN DEFAULT 0"),
+        ("power_backup_type", "TEXT DEFAULT 'none'")
     ]
     for col_name, col_def in new_business_cols:
         if col_name not in existing_cols:
@@ -577,6 +581,33 @@ def run_migrations(conn):
                 cur.execute(f"ALTER TABLE businesses ADD COLUMN {col_name} {col_def}")
             except Exception as e:
                 pass
+
+    # Check orders columns
+    cur.execute("PRAGMA table_info(orders)")
+    order_cols = {row[1] for row in cur.fetchall()}
+    if "driver_tip" not in order_cols:
+        try:
+            cur.execute("ALTER TABLE orders ADD COLUMN driver_tip REAL DEFAULT 0.0")
+        except Exception:
+            pass
+
+    # Check drivers columns
+    cur.execute("PRAGMA table_info(drivers)")
+    driver_cols = {row[1] for row in cur.fetchall()}
+    if "pin_code" not in driver_cols:
+        try:
+            cur.execute("ALTER TABLE drivers ADD COLUMN pin_code TEXT DEFAULT '1234'")
+        except Exception:
+            pass
+
+    # Check delivery_capacity_settings columns
+    cur.execute("PRAGMA table_info(delivery_capacity_settings)")
+    cap_cols = {row[1] for row in cur.fetchall()}
+    if "rain_mode_active" not in cap_cols:
+        try:
+            cur.execute("ALTER TABLE delivery_capacity_settings ADD COLUMN rain_mode_active BOOLEAN DEFAULT 0")
+        except Exception:
+            pass
 
     # Check locations columns
     cur.execute("PRAGMA table_info(locations)")

@@ -412,5 +412,70 @@ class TestPhase2MerchantRequests(unittest.TestCase):
         self.assertEqual(o_stat2["payment_method"], "transfer")
         self.assertEqual(o_stat2["cash_due"], 0.0)
 
+    def test_08_driver_tip_rain_mode_and_pin(self):
+        # 1. Admin login for Rain Mode toggle
+        st_l, res_l = invoke("POST", "/api/auth/login", body={
+            "email": "admin@mavunqo.com",
+            "password": "AdminPass2026!"
+        })
+        self.assertEqual(st_l, 200)
+        headers = {"Authorization": f"Bearer {res_l['token']}"}
+
+        # 2. Enable Rain Mode via API
+        st_rm, res_rm = invoke("POST", "/api/dispatcher/rain-mode", headers=headers, body={
+            "location_id": "loc_sosua",
+            "rain_mode_active": True
+        })
+        self.assertEqual(st_rm, 200)
+        self.assertTrue(res_rm["rain_mode_active"])
+        self.assertEqual(res_rm["delivery_fee"], 150.0)
+
+        # 3. Verify capacity endpoint reflects Rain Mode
+        st_cap, res_cap = invoke("GET", "/api/delivery/capacity?location=loc_sosua")
+        self.assertEqual(st_cap, 200)
+        self.assertTrue(res_cap["rain_mode_active"])
+        self.assertEqual(res_cap["delivery_fee"], 150.0)
+
+        # 4. Place delivery order with RD$ 100 tip during Rain Mode
+        st_m, m_data = invoke("GET", "/api/restaurants/el-batey-bistro/menu")
+        self.assertEqual(st_m, 200)
+        biz_id = m_data["business_id"]
+        item = m_data["categories"][0]["items"][0]
+
+        st_o, res_o = invoke("POST", "/api/orders", body={
+            "business_id": biz_id,
+            "customer": {"name": "Tip Tester", "phone": "8095559900"},
+            "fulfillment_type": "delivery",
+            "payment_method": "zelle",
+            "driver_tip": 100.0,
+            "delivery_address": "Casa Linda Villa 14",
+            "items": [{"menu_item_id": item["id"], "quantity": 1}]
+        })
+        self.assertEqual(st_o, 201)
+        expected_total = round(float(item["price"]) + 150.0 + 100.0, 2)
+        self.assertEqual(res_o["total"], expected_total)
+
+        o_tok = res_o["status_url"].split("token=")[1]
+        st_os, o_stat = invoke("GET", f"/api/orders/status?token={o_tok}")
+        self.assertEqual(st_os, 200)
+        self.assertEqual(o_stat["delivery_fee"], 150.0)
+        self.assertEqual(o_stat["driver_tip"], 100.0)
+        self.assertEqual(o_stat["payment_method"], "zelle")
+
+        # 5. Turn Rain Mode back off
+        st_rm2, res_rm2 = invoke("POST", "/api/dispatcher/rain-mode", headers=headers, body={
+            "location_id": "loc_sosua",
+            "rain_mode_active": False
+        })
+        self.assertEqual(st_rm2, 200)
+        self.assertFalse(res_rm2["rain_mode_active"])
+
+        # 6. Driver PIN verification
+        st_bad, _ = invoke("POST", "/api/driver/verify-pin", body={"driver_id": "drv_sosua_2", "pin_code": "0000"})
+        self.assertEqual(st_bad, 403)
+        st_ok, res_ok = invoke("POST", "/api/driver/verify-pin", body={"driver_id": "drv_sosua_2", "pin_code": "1234"})
+        self.assertEqual(st_ok, 200)
+        self.assertTrue(res_ok["success"])
+
 if __name__ == "__main__":
     unittest.main()

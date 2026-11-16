@@ -615,6 +615,19 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 return self.send_json({"error": str(e)}, 400)
 
+        if path == "/api/driver/verify-pin":
+            data = self.read_json_body()
+            try:
+                res = service.verify_driver_pin(
+                    driver_id=data.get("driver_id", ""),
+                    pin_code=data.get("pin_code", "")
+                )
+                return self.send_json(res)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
         if path == "/api/driver/collect-cash":
             data = self.read_json_body()
             try:
@@ -622,7 +635,25 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     order_id=data.get("order_id", ""),
                     driver_id=data.get("driver_id", ""),
                     amount_collected=float(data.get("amount_collected", 0)),
-                    notes=data.get("notes")
+                    notes=data.get("notes"),
+                    pin_code=data.get("pin_code")
+                )
+                return self.send_json(res)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/dispatcher/rain-mode":
+            user = self.get_auth_user()
+            if not user or user.get("role") not in ("admin", "manager", "staff"):
+                return self.send_json({"error": "Forbidden: Dispatcher role required"}, 403)
+            data = self.read_json_body()
+            try:
+                res = service.set_rain_mode(
+                    user_id=user["uid"],
+                    location_id=data.get("location_id", "loc_sosua"),
+                    rain_mode_active=bool(data.get("rain_mode_active", False))
                 )
                 return self.send_json(res)
             except Exception as e:
@@ -751,7 +782,8 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     delivery_address=data.get("delivery_address", ""),
                     order_origin=data.get("order_origin", "mavunqo"),
                     customer_notes=notes_val,
-                    payment_method=data.get("payment_method", "cash")
+                    payment_method=data.get("payment_method", "cash"),
+                    driver_tip=float(data.get("driver_tip", 0.0) or 0.0)
                 )
                 return self.send_json(res, 201)
             except Exception as e:

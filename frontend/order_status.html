@@ -101,6 +101,10 @@
             <span>Delivery Fee:</span>
             <span id="orderDeliveryFee"></span>
           </div>
+          <div id="driverTipRow" style="display: none; justify-content: space-between; margin-bottom: 0.4rem; color: #15803d; font-weight: 600;">
+            <span>Courier Driver Tip (100% to driver):</span>
+            <span id="orderDriverTip"></span>
+          </div>
           <div style="display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 850; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border);">
             <span id="orderTotalLabel">Total:</span>
             <span id="orderTotal"></span>
@@ -269,6 +273,13 @@
 
       document.getElementById('orderSubtotal').textContent = `${o.subtotal.toFixed(2)} ${o.currency}`;
       document.getElementById('orderDeliveryFee').textContent = `${(o.delivery_fee || 0).toFixed(2)} ${o.currency}`;
+      const tipRow = document.getElementById('driverTipRow');
+      if (tipRow && o.driver_tip && o.driver_tip > 0) {
+        tipRow.style.display = 'flex';
+        document.getElementById('orderDriverTip').textContent = `${o.driver_tip.toFixed(2)} ${o.currency}`;
+      } else if (tipRow) {
+        tipRow.style.display = 'none';
+      }
       document.getElementById('orderTotal').textContent = `${o.total.toFixed(2)} ${o.currency}`;
 
       const pmBadge = document.getElementById('paymentMethodBadge');

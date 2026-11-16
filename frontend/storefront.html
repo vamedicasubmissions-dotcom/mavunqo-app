@@ -1106,6 +1106,14 @@
       const delRadio = document.querySelector('input[name="checkoutFulfillment"][value="delivery"]');
       const pickRadio = document.querySelector('input[name="checkoutFulfillment"][value="pickup"]');
 
+      const feeLabel = document.getElementById("deliveryFeeLabel");
+      const activeFee = getActiveDeliveryFee();
+      if (feeLabel) {
+        feeLabel.textContent = (deliveryCapacity && deliveryCapacity.rain_mode_active)
+          ? `+${activeFee} DOP (incl. Rain Hazard)`
+          : `+${activeFee} DOP delivery fee`;
+      }
+
       if (deliveryCapacity && !deliveryCapacity.delivery_available) {
         banner.style.display = 'block';
         banner.style.background = '#fef3c7';
@@ -1113,6 +1121,12 @@
         banner.innerHTML = `⚠️ <strong>Delivery Capacity Full:</strong> ${deliveryCapacity.reason}. Pickup orders are open!`;
         delRadio.disabled = true;
         pickRadio.checked = true;
+      } else if (deliveryCapacity && deliveryCapacity.rain_mode_active) {
+        banner.style.display = 'block';
+        banner.style.background = '#e0f2fe';
+        banner.style.color = '#0369a1';
+        banner.innerHTML = `🌧️ <strong>Rain Mode Active:</strong> Est. delivery 50–60 min (+50 DOP driver hazard pay included).`;
+        delRadio.disabled = false;
       } else {
         banner.style.display = 'none';
         delRadio.disabled = false;
@@ -1237,18 +1251,22 @@
       if (wrapZelle) wrapZelle.style.borderColor = (payMethod === 'zelle') ? 'var(--primary, #0284c7)' : 'var(--border)';
       if (wrapZelle) wrapZelle.style.background = (payMethod === 'zelle') ? '#fefce8' : '#fff';
 
-      // Address visibility
+      const tipBox = document.getElementById("tipSelectorBox");
+
+      // Address & Tip visibility
       if (mode === 'delivery') {
         addrRow.style.display = 'block';
         addrInput.required = true;
+        if (tipBox) tipBox.style.display = 'block';
       } else {
         addrRow.style.display = 'none';
         addrInput.required = false;
+        if (tipBox) tipBox.style.display = 'none';
       }
 
       // Update button text and dynamic instruction box
       const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-      const deliveryFee = (mode === 'delivery') ? 100.0 : 0.0;
+      const deliveryFee = (mode === 'delivery') ? getActiveDeliveryFee() : 0.0;
       const totalDop = subtotal + deliveryFee + (mode === 'delivery' ? currentDriverTip : 0.0);
       const totalUsd = (totalDop / 60.0).toFixed(2);
 
@@ -1282,6 +1300,12 @@
 
     let currentDriverTip = 0.0;
 
+    function getActiveDeliveryFee() {
+      return (deliveryCapacity && typeof deliveryCapacity.delivery_fee === 'number')
+        ? deliveryCapacity.delivery_fee
+        : 100.0;
+    }
+
     function setDriverTip(amount, btn) {
       currentDriverTip = parseFloat(amount) || 0.0;
       document.querySelectorAll('.tip-btn').forEach(b => {
@@ -1301,10 +1325,11 @@
     function calculateCheckoutTotal() {
       const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
       const mode = document.querySelector('input[name="checkoutFulfillment"]:checked')?.value || 'delivery';
-      const deliveryFee = (mode === 'delivery') ? 100.0 : 0.0;
-      const total = subtotal + deliveryFee + currentDriverTip;
+      const deliveryFee = (mode === 'delivery') ? getActiveDeliveryFee() : 0.0;
+      const tipAmount = (mode === 'delivery') ? currentDriverTip : 0.0;
+      const total = subtotal + deliveryFee + tipAmount;
       const totalUsd = (total / 60.0).toFixed(2);
-      const tipText = currentDriverTip > 0 ? ` (incl. RD$ ${currentDriverTip.toFixed(0)} tip)` : '';
+      const tipText = tipAmount > 0 ? ` (incl. RD$ ${tipAmount.toFixed(0)} tip)` : '';
       document.getElementById("checkoutTotalText").textContent = `${total.toFixed(2)} DOP${tipText} (~$${totalUsd} USD)`;
     }
 
@@ -1328,6 +1353,7 @@
         customer_phone: phone,
         fulfillment_type: mode,
         payment_method: payMethod,
+        driver_tip: (mode === 'delivery') ? currentDriverTip : 0.0,
         delivery_address: address,
         delivery_pin_lat: parseFloat(document.getElementById("orderPinLat").value) || null,
         delivery_pin_lng: parseFloat(document.getElementById("orderPinLng").value) || null,
