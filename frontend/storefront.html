@@ -435,6 +435,10 @@
 
         <!-- Customer Inputs -->
         <form id="orderForm" onsubmit="submitGuestOrder(event);">
+          <div id="repeatCustomerNotice" style="display: none; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; font-size: 0.8rem; color: #166534; display: flex; justify-content: space-between; align-items: center;">
+            <span>✨ <strong>Welcome back!</strong> Details auto-filled.</span>
+            <button type="button" onclick="clearSavedCustomerDetails();" style="background: none; border: none; color: #0369a1; text-decoration: underline; font-size: 0.75rem; cursor: pointer;">Clear</button>
+          </div>
           <div style="margin-bottom: 0.75rem;">
             <label style="font-size: 0.85rem; font-weight: 700;">Your Name</label>
             <input type="text" id="orderCustName" class="input-field" placeholder="e.g. Alex M." required style="margin-top: 0.25rem;">
@@ -1101,6 +1105,62 @@
       renderCartItems();
       toggleFulfillmentMode();
       setupCheckoutMap();
+      loadSavedCustomerDetails();
+    }
+
+    function loadSavedCustomerDetails() {
+      try {
+        const savedRaw = localStorage.getItem("mavunqo_customer_profile");
+        if (!savedRaw) return;
+        const profile = JSON.parse(savedRaw);
+        if (!profile) return;
+
+        let filled = false;
+        if (profile.name) {
+          const nameInput = document.getElementById("orderCustName");
+          if (nameInput && !nameInput.value) { nameInput.value = profile.name; filled = true; }
+        }
+        if (profile.phone) {
+          const phoneInput = document.getElementById("orderCustPhone");
+          if (phoneInput && !phoneInput.value) { phoneInput.value = profile.phone; filled = true; }
+        }
+        if (profile.address) {
+          const addrInput = document.getElementById("orderDeliveryAddress");
+          if (addrInput && !addrInput.value) { addrInput.value = profile.address; filled = true; }
+        }
+        if (profile.pinLat && profile.pinLng) {
+          const latInput = document.getElementById("orderPinLat");
+          const lngInput = document.getElementById("orderPinLng");
+          if (latInput) latInput.value = profile.pinLat;
+          if (lngInput) lngInput.value = profile.pinLng;
+        }
+        if (profile.paymentMethod) {
+          const pmRadio = document.querySelector(`input[name="checkoutPaymentMethod"][value="${profile.paymentMethod}"]`);
+          if (pmRadio) {
+            pmRadio.checked = true;
+            updatePaymentMethodUI();
+          }
+        }
+
+        const notice = document.getElementById("repeatCustomerNotice");
+        if (notice && filled) {
+          notice.style.display = "flex";
+        }
+      } catch (e) {
+        // Ignore storage parse errors
+      }
+    }
+
+    function clearSavedCustomerDetails() {
+      localStorage.removeItem("mavunqo_customer_profile");
+      const nameInput = document.getElementById("orderCustName");
+      const phoneInput = document.getElementById("orderCustPhone");
+      const addrInput = document.getElementById("orderDeliveryAddress");
+      const notice = document.getElementById("repeatCustomerNotice");
+      if (nameInput) nameInput.value = "";
+      if (phoneInput) phoneInput.value = "";
+      if (addrInput) addrInput.value = "";
+      if (notice) notice.style.display = "none";
     }
 
     function closeCheckoutModal() {
@@ -1248,6 +1308,20 @@
         });
         const data = await res.json();
         if (res.ok && data.success) {
+          // Save customer profile for 1-tap reordering
+          try {
+            localStorage.setItem("mavunqo_customer_profile", JSON.stringify({
+              name: name,
+              phone: phone,
+              address: address,
+              pinLat: parseFloat(document.getElementById("orderPinLat").value) || null,
+              pinLng: parseFloat(document.getElementById("orderPinLng").value) || null,
+              paymentMethod: payMethod
+            }));
+          } catch (e) {
+            // Ignore storage errors
+          }
+
           // Clear cart
           cart = [];
           updateCartBar();
