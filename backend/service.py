@@ -698,7 +698,8 @@ class MavunqoService:
                     fulfillment_type: str = "pickup", delivery_address: str = "",
                     order_origin: str = "mavunqo", customer_notes: str = "",
                     payment_method: str = "cash", driver_tip: float = 0.0,
-                    payment_proof_url: str = None, payment_proof_hash: str = None):
+                    payment_proof_url: str = None, payment_proof_hash: str = None,
+                    delivery_pin_lat: float = None, delivery_pin_lng: float = None):
         customer_name = (customer_data.get("name") or "").strip()
         customer_phone = (customer_data.get("phone") or "").strip()
         customer_email = (customer_data.get("email") or "").strip()
@@ -811,13 +812,13 @@ class MavunqoService:
             conn.execute(
                 """INSERT INTO orders (
                     id, order_number, business_id, customer_name, customer_phone, customer_email,
-                    order_origin, fulfillment_type, delivery_address, customer_notes,
+                    order_origin, fulfillment_type, delivery_address, delivery_pin_lat, delivery_pin_lng, customer_notes,
                     status, subtotal, delivery_fee, driver_tip, total, currency, payment_method,
                     payment_proof_url, payment_proof_hash, cash_due, status_token, status_token_expires_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, 'DOP', ?, ?, ?, ?, ?, ?)""",
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, 'DOP', ?, ?, ?, ?, ?, ?)""",
                 (
                     order_id, order_num, business_id, customer_name, customer_phone, customer_email,
-                    order_origin, fulfillment_type, delivery_address, customer_notes,
+                    order_origin, fulfillment_type, delivery_address, delivery_pin_lat, delivery_pin_lng, customer_notes,
                     subtotal, delivery_fee, tip_amount, total, payment_method,
                     payment_proof_url, payment_proof_hash,
                     total if payment_method == 'cash' else 0.0,
@@ -2287,7 +2288,10 @@ class MavunqoService:
                 SELECT o.id as order_id, o.order_number, o.customer_name, o.customer_phone, o.total, o.currency,
                        o.payment_method, o.driver_tip, o.cash_due, o.status as order_status, d.status as dispatch_status,
                        b.trading_name as business_name, b.pickup_pin_lat, b.pickup_pin_lng, b.pickup_pin_note, b.address as business_address,
-                       o.delivery_address, r.destination_lat, r.destination_lng, r.destination_entrance_note
+                       o.delivery_address,
+                       COALESCE(o.delivery_pin_lat, r.destination_lat) as destination_lat,
+                       COALESCE(o.delivery_pin_lng, r.destination_lng) as destination_lng,
+                       r.destination_entrance_note
                 FROM delivery_dispatches d
                 JOIN orders o ON d.order_id = o.id
                 JOIN businesses b ON o.business_id = b.id

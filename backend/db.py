@@ -179,6 +179,8 @@ CREATE TABLE IF NOT EXISTS orders (
     order_origin TEXT NOT NULL CHECK(order_origin IN ('mavunqo', 'merchant')) DEFAULT 'mavunqo',
     fulfillment_type TEXT NOT NULL CHECK(fulfillment_type IN ('pickup', 'delivery')) DEFAULT 'pickup',
     delivery_address TEXT,
+    delivery_pin_lat REAL,
+    delivery_pin_lng REAL,
     customer_notes TEXT,
     status TEXT NOT NULL CHECK(status IN ('pending', 'accepted', 'in_kitchen', 'ready', 'completed', 'cancelled', 'declined')) DEFAULT 'pending',
     subtotal REAL NOT NULL,
@@ -590,6 +592,8 @@ def run_migrations(conn):
     cur.execute("PRAGMA table_info(orders)")
     order_cols = {row[1] for row in cur.fetchall()}
     for col_name, col_def in [
+        ("delivery_pin_lat", "REAL"),
+        ("delivery_pin_lng", "REAL"),
         ("driver_tip", "REAL DEFAULT 0.0"),
         ("payment_proof_url", "TEXT"),
         ("payment_proof_hash", "TEXT"),
@@ -623,6 +627,8 @@ def run_migrations(conn):
                     order_origin TEXT NOT NULL CHECK(order_origin IN ('mavunqo', 'merchant')) DEFAULT 'mavunqo',
                     fulfillment_type TEXT NOT NULL CHECK(fulfillment_type IN ('pickup', 'delivery')) DEFAULT 'pickup',
                     delivery_address TEXT,
+                    delivery_pin_lat REAL,
+                    delivery_pin_lng REAL,
                     customer_notes TEXT,
                     status TEXT NOT NULL CHECK(status IN ('pending', 'accepted', 'in_kitchen', 'ready', 'completed', 'cancelled', 'declined')) DEFAULT 'pending',
                     subtotal REAL NOT NULL,

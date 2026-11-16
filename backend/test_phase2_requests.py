@@ -511,10 +511,24 @@ class TestPhase2MerchantRequests(unittest.TestCase):
             "payment_method": "zelle",
             "payment_proof_image": sample_png_b64,
             "delivery_address": "Perla Marina Villa 8",
+            "delivery_pin_lat": 19.76123,
+            "delivery_pin_lng": -70.48987,
             "items": [{"menu_item_id": item["id"], "quantity": 1}]
         })
         self.assertEqual(st_proof, 201)
         self.assertTrue(res_proof["payment_proof_url"].startswith("/frontend/uploads/proofs/"))
+
+        # Verify checkout pin coordinates flow straight to driver job GPS link
+        invoke("POST", "/api/dispatcher/assign", headers=headers, body={
+            "order_id": res_proof["order_id"],
+            "driver_id": "drv_sosua_2"
+        })
+        st_dj, dj_list = invoke("GET", "/api/driver/jobs?driver_id=drv_sosua_2")
+        self.assertEqual(st_dj, 200)
+        proof_job = next(j for j in dj_list if j["order_id"] == res_proof["order_id"])
+        self.assertAlmostEqual(proof_job["destination_lat"], 19.76123, places=4)
+        self.assertAlmostEqual(proof_job["destination_lng"], -70.48987, places=4)
+        self.assertEqual(proof_job["payment_method"], "zelle")
 
         st_vp, res_vp = invoke("POST", "/api/dispatcher/verify-payment", headers=headers, body={
             "order_id": res_proof["order_id"],

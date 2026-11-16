@@ -897,7 +897,9 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     payment_method=data.get("payment_method", "cash"),
                     driver_tip=float(data.get("driver_tip", 0.0) or 0.0),
                     payment_proof_url=proof_url,
-                    payment_proof_hash=proof_hash
+                    payment_proof_hash=proof_hash,
+                    delivery_pin_lat=float(data["delivery_pin_lat"]) if data.get("delivery_pin_lat") is not None else None,
+                    delivery_pin_lng=float(data["delivery_pin_lng"]) if data.get("delivery_pin_lng") is not None else None
                 )
 
                 # Send non-blocking email alert for Zelle / Bank Transfer / Wise orders
