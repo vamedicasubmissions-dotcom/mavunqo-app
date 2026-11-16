@@ -411,6 +411,9 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/dispatcher":
             return self.serve_file(os.path.join(FRONTEND_DIR, "dispatcher.html"), "text/html")
 
+        if path == "/driver" or path == "/driver/app":
+            return self.serve_file(os.path.join(FRONTEND_DIR, "driver.html"), "text/html")
+
         if path == "/orders":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "orders.html"))
 
