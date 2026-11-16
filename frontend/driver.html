@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MAVUNQO — Panel de Delivery / Repartidor</title>
+  <title>MAVUNQO — Courier Driver App</title>
   <link rel="stylesheet" href="/frontend/style.css?v=20261115_v7">
   <style>
     body {
@@ -106,18 +106,24 @@
     <div style="display: flex; align-items: center; gap: 8px;">
       <span style="font-size: 1.3rem;">🛵</span>
       <div>
-        <strong style="font-size: 1.05rem; display: block; color: #fff;" id="driverName">Repartidor MAVUNQO</strong>
+        <strong style="font-size: 1.05rem; display: block; color: #fff;" id="driverName">MAVUNQO Driver</strong>
         <span style="font-size: 0.75rem; color: #94a3b8;" id="driverPhone">+1 (809) Moto Fleet</span>
       </div>
     </div>
-    <span class="driver-status-pill" id="driverStatusBadge">ONLINE</span>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <select id="langSelect" onchange="changeDriverLang()" style="background: #0f172a; color: #f8fafc; border: 1px solid #475569; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">
+        <option value="es">🇩🇴 ES</option>
+        <option value="fr">🇫🇷 FR</option>
+      </select>
+      <span class="driver-status-pill" id="driverStatusBadge">ONLINE</span>
+    </div>
   </header>
 
   <main class="container">
 
     <!-- Driver Selector -->
     <div style="background: #1e293b; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
-      <span style="font-size: 0.85rem; color: #94a3b8;">Cambiar Conductor:</span>
+      <span id="lblSwitchDriver" style="font-size: 0.85rem; color: #94a3b8;">Cambiar Conductor:</span>
       <select id="driverSelect" onchange="switchDriver()" style="background: #0f172a; color: #fff; border: 1px solid #475569; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem;">
         <option value="drv_sosua_1">Carlos Rosario (Moto 1)</option>
         <option value="drv_sosua_2" selected>Manuel Rodriguez (Moto 2)</option>
@@ -128,13 +134,13 @@
 
     <!-- Active Deliveries Queue -->
     <h3 style="font-size: 1.1rem; font-weight: 850; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 8px;">
-      <span>📦 Entregas Asignadas</span>
+      <span id="lblAssignedDeliveries">📦 Entregas Asignadas</span>
       <span id="jobsCountBadge" style="background: #3b82f6; font-size: 0.75rem; padding: 2px 8px; border-radius: 999px;">0</span>
     </h3>
 
     <div id="jobsList">
       <div style="text-align: center; padding: 3rem 1rem; color: #64748B;">
-        Buscando entregas asignadas...
+        Checking for assigned deliveries...
       </div>
     </div>
 
@@ -143,11 +149,146 @@
   <script>
     let currentDriverId = localStorage.getItem("mavunqo_driver_id") || "drv_sosua_2";
     let currentDriverPin = localStorage.getItem("mavunqo_driver_pin_" + currentDriverId) || "";
+    let driverLang = localStorage.getItem("mavunqo_driver_lang") || "es";
+    if (!["es", "fr"].includes(driverLang)) driverLang = "es";
+    let lastJobs = [];
+
+    const DRIVER_I18N = {
+      es: {
+        switchDriver: "Cambiar Conductor:",
+        assigned: "📦 Entregas Asignadas",
+        pinPrompt: "Ingresa tu PIN de 4 dígitos para acceder (PIN Demo: 1234):",
+        pinBad: "PIN incorrecto.",
+        pinLocked: "🔒 Acceso Protegido por PIN",
+        pinBtn: "Ingresar PIN de Repartidor",
+        noJobsTitle: "No tienes entregas asignadas en este momento",
+        noJobsSub: "La central te asignará pedidos automáticamente en cuanto entren.",
+        statusLbl: "Estado:",
+        collectLbl: "A Cobrar:",
+        prepaid: "PRE-PAGADO (RD$ 0)",
+        tipLbl: "🌟 Incluye Propina:",
+        step1: "Paso 1: Recoger en Restaurante",
+        pickupNote: "Punto de retiro:",
+        frontCounter: "Mostrador principal",
+        gpsRest: "🗺️ Abrir GPS al Restaurante (Google Maps) ↗",
+        step2: "Paso 2: Entregar al Cliente",
+        addrLbl: "📍 Dirección:",
+        gpsCust: "🗺️ Abrir GPS al Cliente (Google Maps) ↗",
+        btnPrepaid: "✓ Confirmar Entrega Realizada",
+        btnCashPrefix: "💵 Cobrar RD$",
+        btnCashSuffix: "y Completar",
+        cashPrompt: "Monto en efectivo recibido del cliente:",
+        doneOk: "✓ ¡Entrega completada exitosamente!",
+        doneErr: "Error al registrar la entrega."
+      },
+      en: {
+        switchDriver: "Switch Driver:",
+        assigned: "📦 Assigned Deliveries",
+        pinPrompt: "Enter your 4-digit Driver PIN (Demo PIN: 1234):",
+        pinBad: "Incorrect PIN.",
+        pinLocked: "🔒 PIN Protected Access",
+        pinBtn: "Enter Driver PIN",
+        noJobsTitle: "No assigned deliveries right now",
+        noJobsSub: "Dispatch will assign orders to you automatically as they come in.",
+        statusLbl: "Status:",
+        collectLbl: "Collect at Door:",
+        prepaid: "PREPAID (RD$ 0)",
+        tipLbl: "🌟 Includes Tip:",
+        step1: "Step 1: Pick Up at Restaurant",
+        pickupNote: "Pickup note:",
+        frontCounter: "Front counter",
+        gpsRest: "🗺️ Open GPS to Restaurant (Google Maps) ↗",
+        step2: "Step 2: Deliver to Customer",
+        addrLbl: "📍 Address:",
+        gpsCust: "🗺️ Open GPS to Customer (Google Maps) ↗",
+        btnPrepaid: "✓ Confirm Delivery Completed",
+        btnCashPrefix: "💵 Collect RD$",
+        btnCashSuffix: "& Complete",
+        cashPrompt: "Cash amount received from customer:",
+        doneOk: "✓ Delivery completed successfully!",
+        doneErr: "Error recording delivery."
+      },
+      ht: {
+        switchDriver: "Chanje Chofè:",
+        assigned: "📦 Livrezon Ou Yo",
+        pinPrompt: "Antre kòd PIN 4 chif ou a (PIN Demo: 1234):",
+        pinBad: "PIN pa bon.",
+        pinLocked: "🔒 Aksè Pwoteje ak PIN",
+        pinBtn: "Antre PIN Chofè",
+        noJobsTitle: "Ou pa gen okenn livrezon kounye a",
+        noJobsSub: "Santral la ap voye kòmand yo ba ou otomatikman lè yo antre.",
+        statusLbl: "Estati:",
+        collectLbl: "Pou Kolekte:",
+        prepaid: "DEJA PEYE (RD$ 0)",
+        tipLbl: "🌟 Gen Tip Ladann:",
+        step1: "Etap 1: Pran Kòmand nan Restoran",
+        pickupNote: "Kote pou pran l:",
+        frontCounter: "Kontwa devan",
+        gpsRest: "🗺️ Louvri GPS pou Restoran (Google Maps) ↗",
+        step2: "Etap 2: Livre bay Kliyan an",
+        addrLbl: "📍 Adrès:",
+        gpsCust: "🗺️ Louvri GPS pou Kliyan an (Google Maps) ↗",
+        btnPrepaid: "✓ Konfime Livrezon Fèt",
+        btnCashPrefix: "💵 Kolekte RD$",
+        btnCashSuffix: "epi Fini",
+        cashPrompt: "Konbyen kòb kach ou resevwa nan men kliyan an:",
+        doneOk: "✓ Livrezon fini avèk siksè!",
+        doneErr: "Erè pandan anrejistreman livrezon an."
+      },
+      fr: {
+        switchDriver: "Changer de Livreur:",
+        assigned: "📦 Livraisons Assignées",
+        pinPrompt: "Entrez votre code PIN à 4 chiffres (PIN Démo: 1234):",
+        pinBad: "Code PIN incorrect.",
+        pinLocked: "🔒 Accès Protégé par PIN",
+        pinBtn: "Entrer le PIN Livreur",
+        noJobsTitle: "Aucune livraison assignée pour le moment",
+        noJobsSub: "Le dispatch vous assignera les commandes automatiquement dès leur arrivée.",
+        statusLbl: "Statut:",
+        collectLbl: "À Encaisser:",
+        prepaid: "PRÉPAYÉ (RD$ 0)",
+        tipLbl: "🌟 Pourboire Inclus:",
+        step1: "Étape 1: Récupérer au Restaurant",
+        pickupNote: "Point de retrait:",
+        frontCounter: "Comptoir principal",
+        gpsRest: "🗺️ Ouvrir GPS vers Restaurant (Google Maps) ↗",
+        step2: "Étape 2: Livrer au Client",
+        addrLbl: "📍 Adresse:",
+        gpsCust: "🗺️ Ouvrir GPS vers Client (Google Maps) ↗",
+        btnPrepaid: "✓ Confirmer la Livraison",
+        btnCashPrefix: "💵 Encaisser RD$",
+        btnCashSuffix: "et Terminer",
+        cashPrompt: "Montant en espèces reçu du client:",
+        doneOk: "✓ Livraison terminée avec succès!",
+        doneErr: "Erreur lors de l'enregistrement de la livraison."
+      }
+    };
+
+    function t(key) {
+      return (DRIVER_I18N[driverLang] || DRIVER_I18N.es)[key] || key;
+    }
+
+    function applyDriverLanguage() {
+      document.getElementById("lblSwitchDriver").textContent = t("switchDriver");
+      document.getElementById("lblAssignedDeliveries").textContent = t("assigned");
+      const sel = document.getElementById("langSelect");
+      if (sel) sel.value = driverLang;
+      if (currentDriverPin) {
+        renderJobs(lastJobs);
+      }
+    }
+
+    function changeDriverLang() {
+      const sel = document.getElementById("langSelect");
+      driverLang = sel ? sel.value : "es";
+      localStorage.setItem("mavunqo_driver_lang", driverLang);
+      applyDriverLanguage();
+    }
 
     async function ensureDriverPin(driverId) {
       let pin = localStorage.getItem("mavunqo_driver_pin_" + driverId);
       if (!pin) {
-        pin = prompt("Ingresa tu PIN de 4 dígitos para acceder a este repartidor (Demo PIN: 1234):");
+        pin = prompt(t("pinPrompt"));
         if (pin === null) return null;
       }
       try {
@@ -164,11 +305,11 @@
           return pin;
         } else {
           localStorage.removeItem("mavunqo_driver_pin_" + driverId);
-          alert(d.error || "PIN incorrecto.");
+          alert(d.error || t("pinBad"));
           return null;
         }
       } catch (e) {
-        alert("Error verificando PIN del repartidor.");
+        alert("Error verifying driver PIN.");
         return null;
       }
     }
@@ -188,13 +329,17 @@
 
     async function loadJobs() {
       document.getElementById("driverSelect").value = currentDriverId;
+      document.getElementById("lblSwitchDriver").textContent = t("switchDriver");
+      document.getElementById("lblAssignedDeliveries").textContent = t("assigned");
+      const langSel = document.getElementById("langSelect");
+      if (langSel) langSel.value = driverLang;
       if (!currentDriverPin) {
         const pin = await ensureDriverPin(currentDriverId);
         if (!pin) {
           document.getElementById("jobsList").innerHTML = `
             <div style="text-align: center; background: #1e293b; border: 1px dashed #334155; padding: 2rem 1.5rem; border-radius: 12px;">
-              <strong style="display: block; margin-bottom: 0.75rem;">🔒 Acceso Protegido por PIN</strong>
-              <button onclick="loadJobs()" class="btn-collect" style="margin-top: 0;">Ingresar PIN de Repartidor</button>
+              <strong style="display: block; margin-bottom: 0.75rem;">${t("pinLocked")}</strong>
+              <button onclick="loadJobs()" class="btn-collect" style="margin-top: 0;">${t("pinBtn")}</button>
             </div>`;
           return;
         }
@@ -204,9 +349,10 @@
         const res = await fetch(`/api/driver/jobs?driver_id=${currentDriverId}`);
         if (!res.ok) throw new Error("Error loading jobs");
         const jobs = await res.json();
-        renderJobs(jobs);
+        lastJobs = jobs || [];
+        renderJobs(lastJobs);
       } catch (e) {
-        document.getElementById("jobsList").innerHTML = `<div style="text-align: center; color: #ef4444; padding: 2rem;">Error conectando con la central de despacho.</div>`;
+        document.getElementById("jobsList").innerHTML = `<div style="text-align: center; color: #ef4444; padding: 2rem;">Error connecting to Dispatch.</div>`;
       }
     }
 
@@ -218,8 +364,8 @@
         container.innerHTML = `
           <div style="text-align: center; background: #1e293b; border: 1px dashed #334155; padding: 3rem 1.5rem; border-radius: 12px;">
             <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">🏖️</span>
-            <strong style="font-size: 1.1rem; display: block;">No tienes entregas asignadas en este momento</strong>
-            <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.25rem;">La central te asignará pedidos automáticamente en cuanto entren.</p>
+            <strong style="font-size: 1.1rem; display: block;">${t("noJobsTitle")}</strong>
+            <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.25rem;">${t("noJobsSub")}</p>
           </div>
         `;
         return;
@@ -234,42 +380,42 @@
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
               <div>
                 <strong style="font-size: 1.1rem; color: #fff;">${j.order_number}</strong>
-                <span style="display: block; font-size: 0.8rem; color: #94a3b8;">Estado: ${(j.dispatch_status || 'En camino').toUpperCase()}</span>
+                <span style="display: block; font-size: 0.8rem; color: #94a3b8;">${t("statusLbl")} ${(j.dispatch_status || 'Dispatched').toUpperCase()}</span>
               </div>
               <div style="text-align: right;">
-                <span style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;">A Cobrar:</span>
+                <span style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;">${t("collectLbl")}</span>
                 <div style="font-size: 1.15rem; font-weight: 850; color: ${isPrepaid ? '#38bdf8' : '#22c55e'};">
-                  ${isPrepaid ? 'PRE-PAGADO (RD$ 0)' : 'RD$ ' + parseFloat(collectAmount).toFixed(2)}
+                  ${isPrepaid ? t("prepaid") : 'RD$ ' + parseFloat(collectAmount).toFixed(2)}
                 </div>
-                ${(j.driver_tip && parseFloat(j.driver_tip) > 0) ? `<div style="font-size: 0.78rem; color: #facc15; font-weight: 700;">🌟 Incluye Propina: RD$ ${parseFloat(j.driver_tip).toFixed(2)}</div>` : ''}
+                ${(j.driver_tip && parseFloat(j.driver_tip) > 0) ? `<div style="font-size: 0.78rem; color: #facc15; font-weight: 700;">${t("tipLbl")} RD$ ${parseFloat(j.driver_tip).toFixed(2)}</div>` : ''}
               </div>
             </div>
 
             <!-- Stop 1: Restaurant Pickup -->
             <div style="background: #0f172a; padding: 0.85rem; border-radius: 8px; margin-bottom: 0.75rem; border: 1px solid #334155;">
-              <span class="step-pill step-pickup">Paso 1: Recoger en Restaurante</span>
+              <span class="step-pill step-pickup">${t("step1")}</span>
               <div style="font-weight: 800; font-size: 1rem; color: #fff;">${j.business_name}</div>
               <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 2px;">📍 ${j.business_address || 'Sosúa'}</div>
-              <div style="font-size: 0.8rem; color: #f59e0b; margin-top: 4px;">Punto de retiro: ${j.pickup_pin_note || 'Mostrador principal'}</div>
+              <div style="font-size: 0.8rem; color: #f59e0b; margin-top: 4px;">${t("pickupNote")} ${j.pickup_pin_note || t("frontCounter")}</div>
               <a href="https://www.google.com/maps/dir/?api=1&destination=${j.pickup_pin_lat || 19.755},${j.pickup_pin_lng || -70.515}" target="_blank" class="btn-maps">
-                🗺️ Abrir GPS al Restaurante (Google Maps) ↗
+                ${t("gpsRest")}
               </a>
             </div>
 
             <!-- Stop 2: Customer Delivery -->
             <div style="background: #0f172a; padding: 0.85rem; border-radius: 8px; margin-bottom: 0.75rem; border: 1px solid #334155;">
-              <span class="step-pill step-dropoff">Paso 2: Entregar al Cliente</span>
+              <span class="step-pill step-dropoff">${t("step2")}</span>
               <div style="font-weight: 800; font-size: 1rem; color: #fff;">${j.customer_name}</div>
               <div style="font-size: 0.85rem; color: #38bdf8; font-weight: 700; margin-top: 2px;">📞 ${j.customer_phone}</div>
-              <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 2px;">📍 Dirección: ${j.delivery_address}</div>
+              <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 2px;">${t("addrLbl")} ${j.delivery_address}</div>
               <a href="https://www.google.com/maps/dir/?api=1&destination=${j.destination_lat || 19.758},${j.destination_lng || -70.510}" target="_blank" class="btn-maps" style="background: #059669;">
-                🗺️ Abrir GPS al Cliente (Google Maps) ↗
+                ${t("gpsCust")}
               </a>
             </div>
 
             <!-- Complete & Collect Cash Button -->
             <button class="btn-collect" onclick="completeDelivery('${j.order_id}', ${collectAmount})">
-              ${isPrepaid ? '✓ Confirmar Entrega Realizada' : '💵 Cobrar RD$ ' + parseFloat(collectAmount).toFixed(2) + ' y Completar'}
+              ${isPrepaid ? t("btnPrepaid") : `${t("btnCashPrefix")} ${parseFloat(collectAmount).toFixed(2)} ${t("btnCashSuffix")}`}
             </button>
           </div>
         `;
@@ -279,7 +425,7 @@
     async function completeDelivery(orderId, expectedCash) {
       let collected = expectedCash;
       if (expectedCash > 0) {
-        const input = prompt(`Monto en efectivo recibido del cliente:`, expectedCash.toFixed(2));
+        const input = prompt(t("cashPrompt"), expectedCash.toFixed(2));
         if (input === null) return;
         collected = parseFloat(input) || 0;
       }
@@ -293,18 +439,18 @@
             driver_id: currentDriverId,
             pin_code: currentDriverPin,
             amount_collected: collected,
-            notes: "Entregado y cobrado en puerta"
+            notes: "Delivered and collected at door"
           })
         });
         const d = await res.json();
         if (res.ok && d.success) {
-          alert("✓ ¡Entrega completada exitosamente!");
+          alert(t("doneOk"));
           loadJobs();
         } else {
-          alert(d.error || "Error al registrar la entrega.");
+          alert(d.error || t("doneErr"));
         }
       } catch (e) {
-        alert("Error de red.");
+        alert("Network error.");
       }
     }
 
