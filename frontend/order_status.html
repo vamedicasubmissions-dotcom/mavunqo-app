@@ -64,9 +64,16 @@
         </div>
 
         <div id="deliveryAddressBox" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
-          <strong style="display: block; color: var(--teal-primary);">🛵 Delivery Destination:</strong>
-          <span id="deliveryAddress" style="color: var(--text-secondary); font-weight: 600;"></span>
-          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Our dispatch driver will bring the package directly to your pin/villa entrance.</div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <strong style="display: block; color: var(--teal-primary);">🛵 Delivery Destination:</strong>
+              <span id="deliveryAddress" style="color: var(--text-secondary); font-weight: 600;"></span>
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Our dispatch driver will bring the package directly to your pin/villa entrance.</div>
+            </div>
+            <a id="btnShareGpsWhatsapp" href="#" target="_blank" class="btn btn-sm" style="background: #25D366; color: #fff; font-weight: 750; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; padding: 6px 12px; border-radius: 6px; margin-top: 4px;">
+              <span>📍 Send WhatsApp GPS Pin</span>
+            </a>
+          </div>
         </div>
 
         <div id="pickupLocationBox" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); background: #f8fafc; border-radius: 8px; padding: 0.85rem;">
@@ -218,6 +225,12 @@
         document.getElementById('deliveryAddressBox').style.display = 'block';
         document.getElementById('deliveryAddress').textContent = o.delivery_address;
         document.getElementById('pickupLocationBox').style.display = 'none';
+
+        const gpsBtn = document.getElementById('btnShareGpsWhatsapp');
+        if (gpsBtn) {
+          const text = encodeURIComponent(`Hola MAVUNQO! Aquí está mi ubicación GPS exacta para el pedido ${o.order_number} (${o.delivery_address}):`);
+          gpsBtn.href = `https://wa.me/18095550199?text=${text}`;
+        }
       } else if (o.fulfillment_type === 'pickup') {
         document.getElementById('deliveryAddressBox').style.display = 'none';
         const pBox = document.getElementById('pickupLocationBox');

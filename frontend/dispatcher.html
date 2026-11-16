@@ -68,8 +68,10 @@
       <div style="display: flex; align-items: center; gap: 0.75rem;">
         <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #22c55e;"></span>
         <span style="font-size: 0.9rem; font-weight: 700;">🛵 Driver Dispatch Live Radar Active</span>
+        <span id="rainModeBadge" style="display: none; background: #0284c7; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">🌧️ RAIN MODE ACTIVE (+RD$50 Hazard)</span>
       </div>
-      <div style="display: flex; gap: 0.5rem;">
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <button id="btnToggleRain" class="btn btn-outline-white btn-sm" onclick="toggleRainMode();" style="border-radius: 6px; font-size: 0.8rem;">🌧️ Toggle Rain Mode</button>
         <button class="btn btn-outline-white btn-sm" onclick="window.mavunqoAudio && window.mavunqoAudio.playDriverPing();" style="border-radius: 6px; font-size: 0.8rem;">🔊 Test Driver Ping</button>
         <button id="btnSilenceDriverAlarm" class="btn btn-sm" onclick="silenceDriverAlarm();" style="display: none; background: #ef4444; color: #fff; font-weight: 850; border-radius: 6px; font-size: 0.82rem; border: none;">⏹️ Silence</button>
       </div>
@@ -460,6 +462,32 @@
 
     let knownDispatchOrderIds = new Set();
     let isInitialDispatchLoad = true;
+    let isRainMode = localStorage.getItem("mavunqo_rain_mode") === "true";
+
+    function updateRainModeUI() {
+      const badge = document.getElementById("rainModeBadge");
+      const btn = document.getElementById("btnToggleRain");
+      if (badge && btn) {
+        if (isRainMode) {
+          badge.style.display = "inline-block";
+          btn.style.background = "#0284c7";
+          btn.style.color = "#fff";
+        } else {
+          badge.style.display = "none";
+          btn.style.background = "transparent";
+          btn.style.color = "#fff";
+        }
+      }
+    }
+
+    function toggleRainMode() {
+      isRainMode = !isRainMode;
+      localStorage.setItem("mavunqo_rain_mode", isRainMode ? "true" : "false");
+      updateRainModeUI();
+      alert(isRainMode 
+        ? "🌧️ RAIN MODE ACTIVATED:\n+RD$ 50 hazard fee applied to all deliveries.\nStorefront delivery estimates adjusted to 50-60 min." 
+        : "☀️ RAIN MODE DEACTIVATED:\nNormal delivery fees and 30-min estimates restored.");
+    }
 
     function silenceDriverAlarm() {
       if (window.mavunqoAudio) {
@@ -469,6 +497,7 @@
     }
 
     window.onload = () => { 
+      updateRainModeUI();
       loadQueue(); 
       loadMerchantSettlements();
       setInterval(loadQueue, 6000); 

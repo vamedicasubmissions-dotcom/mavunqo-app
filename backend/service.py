@@ -2177,6 +2177,24 @@ class MavunqoService:
             if not driver:
                 raise ValueError("Driver not found.")
 
+            # Strict Mid-Shift Cash Cap Check (RD$ 3,000 maximum unreconciled cash in hand)
+            unsettled_cash = conn.execute("""
+                SELECT COALESCE(SUM(amount_collected), 0.0) as unreconciled_total
+                FROM cash_collections cc
+                JOIN orders o ON cc.order_id = o.id
+                WHERE cc.driver_id = ? AND (o.cash_reconciled = 0 OR o.cash_reconciled IS NULL)
+            """, (driver_id,)).fetchone()
+            
+            current_float = float(unsettled_cash["unreconciled_total"]) if unsettled_cash else 0.0
+            MAX_DRIVER_CASH_FLOAT = 3000.0  # RD$ 3,000 DOP cap
+            
+            if current_float >= MAX_DRIVER_CASH_FLOAT:
+                raise ValueError(
+                    f"Driver cash limit reached! Driver {driver['full_name']} currently holds "
+                    f"RD$ {current_float:.2f} in unreconciled cash (Cap is RD$ {MAX_DRIVER_CASH_FLOAT:.2f}). "
+                    f"A cash drop or settlement at Central Dispatch is required before assigning new jobs."
+                )
+
             order = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
             if not order:
                 raise ValueError("Order not found.")
