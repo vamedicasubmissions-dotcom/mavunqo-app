@@ -32,6 +32,19 @@ CREATE TABLE IF NOT EXISTS platform_settings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS promo_preferences (
+    phone TEXT PRIMARY KEY,
+    customer_name TEXT,
+    promo_opt_in BOOLEAN DEFAULT 1,
+    promo_longterm_opt_in BOOLEAN DEFAULT 0,
+    last_location_id TEXT REFERENCES locations(id),
+    in_service_area BOOLEAN DEFAULT 1,
+    booked_for_at TIMESTAMP,
+    last_source_type TEXT DEFAULT 'order',
+    last_order_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS locations (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
@@ -199,6 +212,8 @@ CREATE TABLE IF NOT EXISTS orders (
     payment_proof_hash TEXT,
     payment_verified BOOLEAN DEFAULT 0,
     payment_verified_source TEXT,
+    promo_opt_in BOOLEAN DEFAULT 1,
+    promo_longterm_opt_in BOOLEAN DEFAULT 0,
     cash_due REAL,
     cash_received REAL,
     cash_reconciled BOOLEAN DEFAULT 0,
@@ -605,11 +620,28 @@ def run_migrations(conn):
         ("payment_proof_url", "TEXT"),
         ("payment_proof_hash", "TEXT"),
         ("payment_verified", "BOOLEAN DEFAULT 0"),
-        ("payment_verified_source", "TEXT")
+        ("payment_verified_source", "TEXT"),
+        ("promo_opt_in", "BOOLEAN DEFAULT 1"),
+        ("promo_longterm_opt_in", "BOOLEAN DEFAULT 0")
     ]:
         if col_name not in order_cols:
             try:
                 cur.execute(f"ALTER TABLE orders ADD COLUMN {col_name} {col_def}")
+            except Exception:
+                pass
+
+    # Check promo_preferences columns
+    cur.execute("PRAGMA table_info(promo_preferences)")
+    promo_cols = {row[1] for row in cur.fetchall()}
+    for col_name, col_def in [
+        ("last_location_id", "TEXT REFERENCES locations(id)"),
+        ("in_service_area", "BOOLEAN DEFAULT 1"),
+        ("booked_for_at", "TIMESTAMP"),
+        ("last_source_type", "TEXT DEFAULT 'order'")
+    ]:
+        if col_name not in promo_cols:
+            try:
+                cur.execute(f"ALTER TABLE promo_preferences ADD COLUMN {col_name} {col_def}")
             except Exception:
                 pass
 
@@ -648,6 +680,8 @@ def run_migrations(conn):
                     payment_proof_hash TEXT,
                     payment_verified BOOLEAN DEFAULT 0,
                     payment_verified_source TEXT,
+                    promo_opt_in BOOLEAN DEFAULT 1,
+                    promo_longterm_opt_in BOOLEAN DEFAULT 0,
                     cash_due REAL,
                     cash_received REAL,
                     cash_reconciled BOOLEAN DEFAULT 0,

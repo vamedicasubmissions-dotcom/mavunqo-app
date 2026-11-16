@@ -154,6 +154,20 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return self.send_json({"error": "Forbidden: Admin access only"}, 403)
             return self.send_json(service.get_platform_settings())
 
+        if path == "/api/admin/promo-audience":
+            user = self.get_auth_user()
+            if not user or user.get("role") != "admin":
+                return self.send_json({"error": "Forbidden: Admin access only"}, 403)
+            days = int(query.get("days", ["14"])[0] or 14)
+            biz_id = (query.get("business_id", [None])[0] or "").strip() or None
+            loc_id = (query.get("location_id", [None])[0] or "").strip() or None
+            try:
+                return self.send_json(service.get_promo_audience(
+                    user["uid"], window_days=days, business_id=biz_id, location_id=loc_id
+                ))
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
         # Owner Routes
         if path == "/api/owner/businesses":
             user = self.get_auth_user()
@@ -905,7 +919,9 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     payment_proof_url=proof_url,
                     payment_proof_hash=proof_hash,
                     delivery_pin_lat=float(data["delivery_pin_lat"]) if data.get("delivery_pin_lat") is not None else None,
-                    delivery_pin_lng=float(data["delivery_pin_lng"]) if data.get("delivery_pin_lng") is not None else None
+                    delivery_pin_lng=float(data["delivery_pin_lng"]) if data.get("delivery_pin_lng") is not None else None,
+                    promo_opt_in=bool(data.get("promo_opt_in", True)),
+                    promo_longterm_opt_in=bool(data.get("promo_longterm_opt_in", False))
                 )
 
                 # Send non-blocking email alert for Zelle / Bank Transfer / Wise orders
@@ -927,6 +943,31 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     ).start()
 
                 return self.send_json(res, 201)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/orders/promo-preference":
+            data = self.read_json_body()
+            try:
+                res = service.update_promo_preference_by_token(
+                    status_token=data.get("token", ""),
+                    promo_opt_in=bool(data.get("promo_opt_in", False)),
+                    promo_longterm_opt_in=bool(data.get("promo_longterm_opt_in", False))
+                )
+                return self.send_json(res)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/promo/location-checkin":
+            data = self.read_json_body()
+            try:
+                res = service.update_promo_location_checkin(
+                    phone=data.get("phone"),
+                    status_token=data.get("token"),
+                    location_id=data.get("location_id"),
+                    in_service_area=bool(data.get("in_service_area", True))
+                )
+                return self.send_json(res)
             except Exception as e:
                 return self.send_json({"error": str(e)}, 400)
 

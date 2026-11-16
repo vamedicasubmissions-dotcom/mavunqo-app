@@ -593,5 +593,92 @@ class TestPhase2MerchantRequests(unittest.TestCase):
         # Reset business override back to default
         invoke("POST", f"/api/admin/businesses/{biz_id}/commission", headers=headers, body={"custom_commission_rate": None})
 
+        # 12. 1-2 Week Promo Audience & Customer Opt-Out / Long-Term Opt-In
+        st_pa, res_pa = invoke("GET", "/api/admin/promo-audience?days=14", headers=headers)
+        self.assertEqual(st_pa, 200)
+        self.assertGreaterEqual(res_pa["active_in_town_count"], 1)
+
+        co_tok = res_co["status_url"].split("token=")[1]
+        st_opt_out, res_opt_out = invoke("POST", "/api/orders/promo-preference", body={
+            "token": co_tok,
+            "promo_opt_in": False,
+            "promo_longterm_opt_in": False
+        })
+        self.assertEqual(st_opt_out, 200)
+        self.assertFalse(res_opt_out["promo_opt_in"])
+
+        # 13. Business Reach & Location Check-In (Local Restaurant vs. All-Town Tour Guide)
+        # Re-opt-in customer in Cabarete via location checkin
+        st_opt_in, _ = invoke("POST", "/api/orders/promo-preference", body={
+            "token": co_tok,
+            "promo_opt_in": True,
+            "promo_longterm_opt_in": False
+        })
+        self.assertEqual(st_opt_in, 200)
+        st_ci, res_ci = invoke("POST", "/api/promo/location-checkin", body={
+            "token": co_tok,
+            "location_id": "loc_cabarete",
+            "in_service_area": True
+        })
+        self.assertEqual(st_ci, 200)
+        self.assertEqual(res_ci["last_location_id"], "loc_cabarete")
+
+        # Local restaurant/business (serves_entire_area=0) should NOT see Cabarete customer
+        with service.get_connection() as conn:
+            local_biz = conn.execute(
+                "SELECT id FROM businesses WHERE serves_entire_area = 0 AND primary_location_id != 'loc_cabarete' AND status = 'approved' LIMIT 1"
+            ).fetchone()
+        if local_biz:
+            st_loc, res_loc = invoke("GET", f"/api/admin/promo-audience?days=14&business_id={local_biz['id']}", headers=headers)
+            self.assertEqual(st_loc, 200)
+            self.assertEqual(res_loc["reach_mode"], "local_coverage")
+            cab_phones = [c["phone"] for c in res_loc["active_in_town"]]
+            self.assertNotIn("8095551212", cab_phones)
+
+        # Tour/regional business with serves_entire_area=1 SHOULD see Cabarete customer
+        with service.get_connection() as conn:
+            tour_biz = conn.execute(
+                "SELECT id FROM businesses WHERE serves_entire_area = 1 AND status = 'approved' LIMIT 1"
+            ).fetchone()
+        if tour_biz:
+            st_tour, res_tour = invoke("GET", f"/api/admin/promo-audience?days=14&business_id={tour_biz['id']}", headers=headers)
+            self.assertEqual(st_tour, 200)
+            self.assertEqual(res_tour["reach_mode"], "serves_entire_area")
+            self.assertIn("8095551212", [c["phone"] for c in res_tour["active_in_town"]])
+
+        # Customer leaves service area -> automatically paused from promo audience
+        st_away, _ = invoke("POST", "/api/promo/location-checkin", body={
+            "token": co_tok,
+            "in_service_area": False
+        })
+        self.assertEqual(st_away, 200)
+        st_after_away, res_after_away = invoke("GET", "/api/admin/promo-audience?days=14", headers=headers)
+        self.assertEqual(st_after_away, 200)
+        self.assertNotIn("8095551212", [c["phone"] for c in res_after_away["active_in_town"]])
+
+        # 14. Hotel / Bike Excursion Booking feeds Promo Audience with booked_for_at
+        with service.get_connection() as conn:
+            req_biz = conn.execute(
+                "SELECT id FROM businesses WHERE requests_enabled = 1 AND status = 'approved' LIMIT 1"
+            ).fetchone()
+        if req_biz:
+            from datetime import datetime, timezone
+            bk_time = datetime.now(timezone.utc).isoformat()
+            st_bk, _ = invoke("POST", "/api/requests", body={
+                "business_id": req_biz["id"],
+                "customer": {"name": "Villa & Excursion Guest", "phone": "+18095557711"},
+                "request_text": "2-hour bike excursion pickup at villa",
+                "action_type": "request_appointment",
+                "service_mode": "pickup",
+                "requested_time": bk_time
+            })
+            self.assertEqual(st_bk, 201)
+            st_bk_pa, res_bk_pa = invoke("GET", "/api/admin/promo-audience?days=14", headers=headers)
+            self.assertEqual(st_bk_pa, 200)
+            matched = [c for c in res_bk_pa["active_in_town"] if c["phone"] == "+18095557711"]
+            self.assertEqual(len(matched), 1)
+            self.assertEqual(matched[0]["last_source_type"], "booking")
+            self.assertIsNotNone(matched[0]["booked_for_at"])
+
 if __name__ == "__main__":
     unittest.main()

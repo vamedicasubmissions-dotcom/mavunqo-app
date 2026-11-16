@@ -179,7 +179,11 @@
         btnCashSuffix: "y Completar",
         cashPrompt: "Monto en efectivo recibido del cliente:",
         doneOk: "✓ ¡Entrega completada exitosamente!",
-        doneErr: "Error al registrar la entrega."
+        doneErr: "Error al registrar la entrega.",
+        guideTitle: "📋 Guía de Manejo en Moto:",
+        guide1: "• Separa bebidas frías de comida caliente (usa el divisor).",
+        guide2: "• Mantén cajas planas (no inclines pizza ni sopas).",
+        guide3: "• Verifica sello MAVUNQO, cubiertos y servilletas."
       },
       en: {
         switchDriver: "Switch Driver:",
@@ -206,7 +210,11 @@
         btnCashSuffix: "& Complete",
         cashPrompt: "Cash amount received from customer:",
         doneOk: "✓ Delivery completed successfully!",
-        doneErr: "Error recording delivery."
+        doneErr: "Error recording delivery.",
+        guideTitle: "📋 Moto Handling Rules:",
+        guide1: "• Separate cold drinks from hot food (use divider).",
+        guide2: "• Keep boxes flat (never tilt pizza or soups).",
+        guide3: "• Verify MAVUNQO seal, utensils & napkins."
       },
       ht: {
         switchDriver: "Chanje Chofè:",
@@ -260,7 +268,11 @@
         btnCashSuffix: "et Terminer",
         cashPrompt: "Montant en espèces reçu du client:",
         doneOk: "✓ Livraison terminée avec succès!",
-        doneErr: "Erreur lors de l'enregistrement de la livraison."
+        doneErr: "Erreur lors de l'enregistrement de la livraison.",
+        guideTitle: "📋 Règles de Transport Moto:",
+        guide1: "• Séparez boissons froides et plats chauds (séparateur).",
+        guide2: "• Gardez les boîtes à plat (ne pas incliner pizzas/soupes).",
+        guide3: "• Vérifiez le sceau MAVUNQO, couverts et serviettes."
       }
     };
 
@@ -411,6 +423,14 @@
               <a href="https://www.google.com/maps/dir/?api=1&destination=${j.destination_lat || 19.758},${j.destination_lng || -70.510}" target="_blank" class="btn-maps" style="background: #059669;">
                 ${t("gpsCust")}
               </a>
+            </div>
+
+            <!-- Handling & Packing Checklist -->
+            <div style="background: #172554; border: 1px solid #1d4ed8; padding: 0.75rem 0.85rem; border-radius: 8px; margin-bottom: 0.75rem; font-size: 0.8rem; color: #dbeafe; line-height: 1.45;">
+              <strong style="display: block; color: #93c5fd; margin-bottom: 2px;">${t("guideTitle")}</strong>
+              <div>${t("guide1")}</div>
+              <div>${t("guide2")}</div>
+              <div>${t("guide3")}</div>
             </div>
 
             <!-- Complete & Collect Cash Button -->

@@ -114,6 +114,19 @@
         </div>
       </div>
 
+      <!-- 1-2 Week Promo & Opt-In / Opt-Out Controls -->
+      <div class="uber-sidebar-panel" style="margin-bottom: 1.5rem; background: #f8fafc;">
+        <div style="font-weight: 800; font-size: 0.92rem; margin-bottom: 0.3rem;">🔔 Local Specials & WhatsApp Promos</div>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.65rem;">
+          We only send local restaurant, tour, and villa specials for 1–2 weeks while you're in town. Choose your preference anytime:
+        </p>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button type="button" onclick="setPromoPref(true, true)" class="btn btn-sm btn-primary" style="font-size: 0.78rem;">🌴 Opt-In for Later Weeks</button>
+          <button type="button" onclick="setPromoPref(false, false)" class="btn btn-sm btn-outline" style="font-size: 0.78rem;">🔕 Opt-Out of Promos</button>
+        </div>
+        <div id="promoPrefStatus" style="font-size: 0.78rem; margin-top: 0.45rem; font-weight: 700;"></div>
+      </div>
+
       <!-- Masked Private Live Chat (No Phone Numbers Exchanged) -->
       <div class="uber-sidebar-panel" style="border: 1px solid var(--primary); background: #ffffff;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
@@ -301,7 +314,29 @@
 // Direct contacts bypassed in favor of Masked In-App Chat
     }
 
-        let chatInterval = null;
+        async function setPromoPref(optIn, longtermOptIn) {
+      const token = new URLSearchParams(window.location.search).get('token');
+      const statusEl = document.getElementById('promoPrefStatus');
+      if (!token) return;
+      try {
+        const res = await fetch('/api/orders/promo-preference', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, promo_opt_in: optIn, promo_longterm_opt_in: longtermOptIn })
+        });
+        if (res.ok) {
+          statusEl.style.color = optIn ? '#15803d' : '#64748b';
+          statusEl.textContent = optIn
+            ? '✓ Opted in! You will receive future Sosúa/Cabarete specials & deals.'
+            : '✓ Opted out. You will not receive promotional WhatsApp messages.';
+        }
+      } catch (e) {
+        statusEl.style.color = '#dc2626';
+        statusEl.textContent = 'Error updating preference.';
+      }
+    }
+
+    let chatInterval = null;
 
     async function loadChatMessages() {
       const urlParams = new URLSearchParams(window.location.search);

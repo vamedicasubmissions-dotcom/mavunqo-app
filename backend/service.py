@@ -699,7 +699,8 @@ class MavunqoService:
                     order_origin: str = "mavunqo", customer_notes: str = "",
                     payment_method: str = "cash", driver_tip: float = 0.0,
                     payment_proof_url: str = None, payment_proof_hash: str = None,
-                    delivery_pin_lat: float = None, delivery_pin_lng: float = None):
+                    delivery_pin_lat: float = None, delivery_pin_lng: float = None,
+                    promo_opt_in: bool = True, promo_longterm_opt_in: bool = False):
         customer_name = (customer_data.get("name") or "").strip()
         customer_phone = (customer_data.get("phone") or "").strip()
         customer_email = (customer_data.get("email") or "").strip()
@@ -740,7 +741,7 @@ class MavunqoService:
 
         with self.get_connection() as conn:
             biz = conn.execute(
-                "SELECT id, trading_name, status, custom_commission_rate FROM businesses WHERE id = ? AND status = 'approved'",
+                "SELECT id, trading_name, status, primary_location_id, custom_commission_rate FROM businesses WHERE id = ? AND status = 'approved'",
                 (business_id,)
             ).fetchone()
             if not biz:
@@ -816,16 +817,33 @@ class MavunqoService:
                     id, order_number, business_id, customer_name, customer_phone, customer_email,
                     order_origin, fulfillment_type, delivery_address, delivery_pin_lat, delivery_pin_lng, customer_notes,
                     status, subtotal, delivery_fee, driver_tip, total, currency, payment_method,
-                    payment_proof_url, payment_proof_hash, cash_due, status_token, status_token_expires_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, 'DOP', ?, ?, ?, ?, ?, ?)""",
+                    payment_proof_url, payment_proof_hash, promo_opt_in, promo_longterm_opt_in,
+                    cash_due, status_token, status_token_expires_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, 'DOP', ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     order_id, order_num, business_id, customer_name, customer_phone, customer_email,
                     order_origin, fulfillment_type, delivery_address, delivery_pin_lat, delivery_pin_lng, customer_notes,
                     subtotal, delivery_fee, tip_amount, total, payment_method,
                     payment_proof_url, payment_proof_hash,
+                    1 if promo_opt_in else 0,
+                    1 if promo_longterm_opt_in else 0,
                     total if payment_method == 'cash' else 0.0,
                     status_token, expires_at.isoformat()
                 )
+            )
+
+            conn.execute(
+                """INSERT INTO promo_preferences (phone, customer_name, promo_opt_in, promo_longterm_opt_in, last_location_id, in_service_area, last_order_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                   ON CONFLICT(phone) DO UPDATE SET
+                     customer_name = excluded.customer_name,
+                     promo_opt_in = excluded.promo_opt_in,
+                     promo_longterm_opt_in = CASE WHEN excluded.promo_longterm_opt_in = 1 THEN 1 ELSE promo_preferences.promo_longterm_opt_in END,
+                     last_location_id = COALESCE(excluded.last_location_id, promo_preferences.last_location_id),
+                     in_service_area = 1,
+                     last_order_at = CURRENT_TIMESTAMP,
+                     updated_at = CURRENT_TIMESTAMP""",
+                (customer_phone, customer_name, 1 if promo_opt_in else 0, 1 if promo_longterm_opt_in else 0, biz["primary_location_id"])
             )
 
             # Insert order items
@@ -1974,6 +1992,31 @@ class MavunqoService:
                 )
             )
 
+            promo_opt_in = bool(payload.get("promo_opt_in", True))
+            promo_longterm_opt_in = bool(payload.get("promo_longterm_opt_in", False))
+            conn.execute(
+                """INSERT INTO promo_preferences (
+                       phone, customer_name, promo_opt_in, promo_longterm_opt_in,
+                       last_location_id, in_service_area, booked_for_at, last_source_type,
+                       last_order_at, updated_at
+                   )
+                   VALUES (?, ?, ?, ?, ?, 1, ?, 'booking', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                   ON CONFLICT(phone) DO UPDATE SET
+                     customer_name = excluded.customer_name,
+                     promo_opt_in = excluded.promo_opt_in,
+                     promo_longterm_opt_in = CASE WHEN excluded.promo_longterm_opt_in = 1 THEN 1 ELSE promo_preferences.promo_longterm_opt_in END,
+                     last_location_id = COALESCE(excluded.last_location_id, promo_preferences.last_location_id),
+                     in_service_area = 1,
+                     booked_for_at = COALESCE(excluded.booked_for_at, promo_preferences.booked_for_at),
+                     last_source_type = 'booking',
+                     last_order_at = CURRENT_TIMESTAMP,
+                     updated_at = CURRENT_TIMESTAMP""",
+                (
+                    cust_phone, cust_name, 1 if promo_opt_in else 0, 1 if promo_longterm_opt_in else 0,
+                    biz["primary_location_id"], req_time_dt.isoformat() if req_time_dt else None
+                )
+            )
+
             # Send test notification if merchant has opted into WhatsApp alerts
             notification_sent = False
             if biz["whatsapp_alerts_consent"] and biz["whatsapp_alerts_phone"]:
@@ -2518,6 +2561,157 @@ class MavunqoService:
             )
             conn.commit()
         return {"success": True, "business_id": business_id, "trading_name": biz["trading_name"], "custom_commission_rate": rate_val}
+
+    def update_promo_preference_by_token(self, status_token: str, promo_opt_in: bool, promo_longterm_opt_in: bool = False):
+        with self.get_connection() as conn:
+            order = conn.execute(
+                "SELECT id, customer_name, customer_phone FROM orders WHERE status_token = ?",
+                (status_token,)
+            ).fetchone()
+            if not order:
+                raise ValueError("Invalid order token.")
+            conn.execute(
+                """UPDATE orders
+                   SET promo_opt_in = ?, promo_longterm_opt_in = ?, updated_at = CURRENT_TIMESTAMP
+                   WHERE id = ?""",
+                (1 if promo_opt_in else 0, 1 if promo_longterm_opt_in else 0, order["id"])
+            )
+            conn.execute(
+                """INSERT INTO promo_preferences (phone, customer_name, promo_opt_in, promo_longterm_opt_in, updated_at)
+                   VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                   ON CONFLICT(phone) DO UPDATE SET
+                     promo_opt_in = excluded.promo_opt_in,
+                     promo_longterm_opt_in = excluded.promo_longterm_opt_in,
+                     updated_at = CURRENT_TIMESTAMP""",
+                (order["customer_phone"], order["customer_name"], 1 if promo_opt_in else 0, 1 if promo_longterm_opt_in else 0)
+            )
+            conn.commit()
+        return {
+            "success": True,
+            "promo_opt_in": bool(promo_opt_in),
+            "promo_longterm_opt_in": bool(promo_longterm_opt_in)
+        }
+
+    def update_promo_location_checkin(self, phone: str = None, status_token: str = None,
+                                      location_id: str = None, in_service_area: bool = True):
+        with self.get_connection() as conn:
+            target_phone = (phone or "").strip()
+            if not target_phone and status_token:
+                ord_row = conn.execute(
+                    "SELECT customer_phone FROM orders WHERE status_token = ?",
+                    (status_token,)
+                ).fetchone()
+                if ord_row:
+                    target_phone = ord_row["customer_phone"]
+            if not target_phone:
+                raise ValueError("Phone or valid order token is required.")
+
+            row = conn.execute(
+                "SELECT phone, promo_opt_in FROM promo_preferences WHERE phone = ?",
+                (target_phone,)
+            ).fetchone()
+            if not row:
+                conn.execute(
+                    """INSERT INTO promo_preferences (phone, promo_opt_in, promo_longterm_opt_in, last_location_id, in_service_area, last_order_at, updated_at)
+                       VALUES (?, 1, 0, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)""",
+                    (target_phone, location_id, 1 if in_service_area else 0)
+                )
+            else:
+                conn.execute(
+                    """UPDATE promo_preferences
+                       SET last_location_id = COALESCE(?, last_location_id),
+                           in_service_area = ?,
+                           last_order_at = CASE WHEN ? = 1 AND promo_opt_in = 1 THEN CURRENT_TIMESTAMP ELSE last_order_at END,
+                           updated_at = CURRENT_TIMESTAMP
+                       WHERE phone = ?""",
+                    (location_id, 1 if in_service_area else 0, 1 if in_service_area else 0, target_phone)
+                )
+            conn.commit()
+        return {
+            "success": True,
+            "phone": target_phone,
+            "last_location_id": location_id,
+            "in_service_area": bool(in_service_area),
+        }
+
+    def get_promo_audience(self, admin_id: str, window_days: int = 14,
+                           business_id: str = None, location_id: str = None):
+        with self.get_connection() as conn:
+            u = conn.execute("SELECT role FROM users WHERE id = ?", (admin_id,)).fetchone()
+            if not u or u["role"] != "admin":
+                raise PermissionError("Admin role required.")
+
+            reach_mode = "all_areas"
+            covered_locations = None  # None means all areas
+
+            if business_id:
+                biz = conn.execute(
+                    "SELECT id, trading_name, primary_location_id, serves_entire_area FROM businesses WHERE id = ?",
+                    (business_id,)
+                ).fetchone()
+                if not biz:
+                    raise ValueError("Business not found.")
+                if biz["serves_entire_area"]:
+                    reach_mode = "serves_entire_area"
+                    covered_locations = None
+                else:
+                    reach_mode = "local_coverage"
+                    area_rows = conn.execute(
+                        "SELECT location_id FROM business_service_areas WHERE business_id = ?",
+                        (business_id,)
+                    ).fetchall()
+                    locs = {biz["primary_location_id"]}
+                    for ar in area_rows:
+                        locs.add(ar["location_id"])
+                    covered_locations = sorted(locs)
+            elif location_id:
+                reach_mode = "location_filter"
+                covered_locations = [location_id]
+
+            loc_clause = ""
+            loc_params = []
+            if covered_locations is not None:
+                placeholders = ",".join("?" for _ in covered_locations)
+                loc_clause = f" AND last_location_id IN ({placeholders})"
+                loc_params = list(covered_locations)
+
+            win_arg = f"-{int(window_days)} days"
+            active_in_town = conn.execute(
+                f"""SELECT phone, customer_name, promo_opt_in, promo_longterm_opt_in,
+                           last_location_id, in_service_area, booked_for_at, last_source_type, last_order_at
+                    FROM promo_preferences
+                    WHERE promo_opt_in = 1
+                      AND COALESCE(in_service_area, 1) = 1
+                      AND (
+                        datetime(last_order_at) >= datetime('now', ?)
+                        OR (
+                          booked_for_at IS NOT NULL
+                          AND datetime(booked_for_at) BETWEEN datetime('now', ?) AND datetime('now', '+2 days')
+                        )
+                      ){loc_clause}
+                    ORDER BY last_order_at DESC""",
+                [win_arg, win_arg] + loc_params
+            ).fetchall()
+            longterm_list = conn.execute(
+                f"""SELECT phone, customer_name, promo_opt_in, promo_longterm_opt_in,
+                           last_location_id, in_service_area, booked_for_at, last_source_type, last_order_at
+                    FROM promo_preferences
+                    WHERE promo_opt_in = 1
+                      AND COALESCE(in_service_area, 1) = 1
+                      AND promo_longterm_opt_in = 1{loc_clause}
+                    ORDER BY last_order_at DESC""",
+                loc_params
+            ).fetchall()
+        return {
+            "window_days": int(window_days),
+            "business_id": business_id,
+            "reach_mode": reach_mode,
+            "covered_locations": covered_locations,
+            "active_in_town_count": len(active_in_town),
+            "active_in_town": [dict(r) for r in active_in_town],
+            "longterm_count": len(longterm_list),
+            "longterm": [dict(r) for r in longterm_list],
+        }
 
     def get_merchant_clearinghouse_settlements(self):
         """

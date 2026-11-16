@@ -357,146 +357,160 @@
       </div>
 
       <div style="padding: 1.25rem; overflow-y: auto; flex: 1;">
-        <!-- Capacity Alert -->
-        <div id="checkoutCapacityBanner" style="display: none; padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.82rem; margin-bottom: 1rem;"></div>
-
-        <!-- Selected Items Review -->
-        <div style="margin-bottom: 1.25rem;">
-          <h4 style="font-size: 0.9rem; font-weight: 800; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem;">Your Order Items</h4>
-          <div id="cartItemsList" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
-          <div style="display: flex; justify-content: space-between; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); font-size: 1.1rem; font-weight: 850;">
-            <span>Estimated Total (Cash):</span>
-            <span id="checkoutTotalText">0.00 DOP</span>
-          </div>
-        </div>
-
-        <!-- Fulfillment Selector -->
-        <div style="margin-bottom: 1.25rem;">
-          <label style="font-size: 0.88rem; font-weight: 750; display: block; margin-bottom: 0.4rem;">Fulfillment Method</label>
-          <div style="display: flex; gap: 0.5rem;">
-            <label style="flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" id="optDeliveryWrap">
-              <input type="radio" name="checkoutFulfillment" value="delivery" checked onchange="toggleFulfillmentMode();">
-              <div>
-                <strong style="display: block; font-size: 0.9rem;">🏍️ Delivery</strong>
-                <span style="font-size: 0.75rem; color: var(--text-secondary);" id="deliveryFeeLabel">+100 DOP delivery fee</span>
-              </div>
-            </label>
-            <label style="flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" id="optPickupWrap">
-              <input type="radio" name="checkoutFulfillment" value="pickup" onchange="toggleFulfillmentMode();">
-              <div>
-                <strong style="display: block; font-size: 0.9rem;">🥡 Pickup</strong>
-                <span style="font-size: 0.75rem; color: var(--text-secondary);">Pick up at counter</span>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <!-- Zero-Chargeback Payment Method Selector -->
-        <div style="margin-bottom: 1.25rem;">
-          <label style="font-size: 0.88rem; font-weight: 750; display: block; margin-bottom: 0.4rem;">Payment Method</label>
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <label style="border: 2px solid var(--primary, #0284c7); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #f0fdf4;" id="optPayCashWrap">
-              <div style="display: flex; align-items: center; gap: 0.6rem;">
-                <input type="radio" name="checkoutPaymentMethod" value="cash" checked onchange="updatePaymentMethodUI();">
-                <div>
-                  <strong style="display: block; font-size: 0.9rem;">💵 Cash on Delivery (Efectivo)</strong>
-                  <span style="font-size: 0.75rem; color: var(--text-secondary);">Pay driver directly with paper pesos (DOP)</span>
-                </div>
-              </div>
-              <span style="font-size: 0.75rem; background: #dcfce7; color: #15803d; font-weight: 800; padding: 2px 6px; border-radius: 4px;">Standard (80%)</span>
-            </label>
-
-            <label style="border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #fff;" id="optPayTransferWrap">
-              <div style="display: flex; align-items: center; gap: 0.6rem;">
-                <input type="radio" name="checkoutPaymentMethod" value="transfer" onchange="updatePaymentMethodUI();">
-                <div>
-                  <strong style="display: block; font-size: 0.9rem;">🏦 Dominican Bank Transfer (Transferencia)</strong>
-                  <span style="font-size: 0.75rem; color: var(--text-secondary);">Banreservas, Banco Popular, or BHD</span>
-                </div>
-              </div>
-              <span style="font-size: 0.75rem; background: #e0f2fe; color: #0369a1; font-weight: 800; padding: 2px 6px; border-radius: 4px;">Instant (0% Fee)</span>
-            </label>
-
-            <label style="border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #fff;" id="optPayZelleWrap">
-              <div style="display: flex; align-items: center; gap: 0.6rem;">
-                <input type="radio" name="checkoutPaymentMethod" value="zelle" onchange="updatePaymentMethodUI();">
-                <div>
-                  <strong style="display: block; font-size: 0.9rem;">⚡ Zelle (USD Instant Transfer)</strong>
-                  <span style="font-size: 0.75rem; color: var(--text-secondary);">For US Bank Accounts • Zero chargeback risk</span>
-                </div>
-              </div>
-              <span style="font-size: 0.75rem; background: #fef3c7; color: #b45309; font-weight: 800; padding: 2px 6px; border-radius: 4px;">USD Accepted</span>
-            </label>
-
-            <label style="border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #fff;" id="optPayWiseWrap">
-              <div style="display: flex; align-items: center; gap: 0.6rem;">
-                <input type="radio" name="checkoutPaymentMethod" value="wise" onchange="updatePaymentMethodUI();">
-                <div>
-                  <strong style="display: block; font-size: 0.9rem;">🌍 Wise (Europe / Canada Instant)</strong>
-                  <span style="font-size: 0.75rem; color: var(--text-secondary);">Pay via Wise in EUR, CAD, GBP, or USD • 0% chargeback</span>
-                </div>
-              </div>
-              <span style="font-size: 0.75rem; background: #ecfccb; color: #3f6212; font-weight: 800; padding: 2px 6px; border-radius: 4px;">EU / CA</span>
-            </label>
-          </div>
-
-          <!-- Dynamic Payment Instruction Box -->
-          <div id="paymentInstructionsBox" style="display: none; margin-top: 0.6rem; padding: 0.75rem 0.9rem; border-radius: 8px; font-size: 0.82rem; line-height: 1.45; border: 1px solid #cbd5e1; background: #f8fafc;">
-          </div>
-        </div>
-
-        <!-- 1-Tap Driver Tip Selector -->
-        <div id="tipSelectorBox" style="margin-bottom: 1.25rem; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 0.85rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <label style="font-size: 0.88rem; font-weight: 750; margin: 0; display: flex; align-items: center; gap: 4px;">
-              <span>🛵</span> <span>Courier Driver Tip</span>
-            </label>
-            <span style="font-size: 0.75rem; color: #15803d; font-weight: 750;">100% goes to driver</span>
-          </div>
-          <div style="display: flex; gap: 0.4rem;" id="tipBtnGroup">
-            <button type="button" class="btn btn-sm btn-outline tip-btn active" onclick="setDriverTip(0, this);" style="flex: 1; font-weight: 700; font-size: 0.8rem; background: #0284c7; color: #fff; border-color: #0284c7;">RD$ 0</button>
-            <button type="button" class="btn btn-sm btn-outline tip-btn" onclick="setDriverTip(50, this);" style="flex: 1; font-weight: 700; font-size: 0.8rem;">+50</button>
-            <button type="button" class="btn btn-sm btn-outline tip-btn" onclick="setDriverTip(100, this);" style="flex: 1; font-weight: 700; font-size: 0.8rem;">+100</button>
-            <button type="button" class="btn btn-sm btn-outline tip-btn" onclick="setDriverTip(200, this);" style="flex: 1; font-weight: 700; font-size: 0.8rem;">+200</button>
-          </div>
-        </div>
-
-        <!-- Customer Inputs -->
         <form id="orderForm" onsubmit="submitGuestOrder(event);">
-          <div id="repeatCustomerNotice" style="display: none; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; font-size: 0.8rem; color: #166534; display: flex; justify-content: space-between; align-items: center;">
-            <span>✨ <strong>Welcome back!</strong> Details auto-filled.</span>
-            <button type="button" onclick="clearSavedCustomerDetails();" style="background: none; border: none; color: #0369a1; text-decoration: underline; font-size: 0.75rem; cursor: pointer;">Clear</button>
-          </div>
-          <div style="margin-bottom: 0.75rem;">
-            <label style="font-size: 0.85rem; font-weight: 700;">Your Name</label>
-            <input type="text" id="orderCustName" class="input-field" placeholder="e.g. Alex M." required style="margin-top: 0.25rem;">
-          </div>
-          <div style="margin-bottom: 0.75rem;">
-            <label style="font-size: 0.85rem; font-weight: 700;">WhatsApp / Phone Number</label>
-            <input type="tel" id="orderCustPhone" class="input-field" placeholder="e.g. +1-809-555-0199" required style="margin-top: 0.25rem;">
-          </div>
-          <div id="orderDeliveryAddressRow" style="margin-bottom: 0.75rem;">
-            <label style="font-size: 0.85rem; font-weight: 700;">Delivery Address / Villa / Gate #</label>
-            <input type="text" id="orderDeliveryAddress" class="input-field" placeholder="e.g. Sosua Ocean Village Villa 402, Gate 4B" required style="margin-top: 0.25rem;">
-            
-            <!-- Interactive Delivery Map Pin -->
-            <div style="margin-top: 0.5rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #f8fafc;">
-              <div style="padding: 0.5rem 0.75rem; display: flex; justify-content: space-between; align-items: center; background: #e2e8f0; font-size: 0.8rem; font-weight: 750;">
-                <span>📍 Pin Drop Location (Drag pin or tap map)</span>
-                <span id="checkoutMapStatus" style="color: var(--teal-primary); font-size: 0.75rem;">Detecting location...</span>
-              </div>
-              <div id="checkoutLeafletMap" style="height: 180px; width: 100%;"></div>
-              <div style="padding: 0.4rem 0.75rem; font-size: 0.75rem; color: var(--text-secondary); display: flex; justify-content: space-between;">
-                <span id="checkoutCoordsDisplay">Lat: 19.7550, Lng: -70.5150</span>
-                <a href="javascript:void(0);" onclick="recenterCheckoutMap();" style="color: var(--teal-primary); font-weight: 700;">🎯 My Location</a>
-              </div>
-            </div>
-            <input type="hidden" id="orderPinLat" value="19.7550">
-            <input type="hidden" id="orderPinLng" value="-70.5150">
-          </div>
+          <!-- Capacity Alert -->
+          <div id="checkoutCapacityBanner" style="display: none; padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.82rem; margin-bottom: 1rem;"></div>
+
+          <!-- Selected Items Review -->
           <div style="margin-bottom: 1.25rem;">
-            <label style="font-size: 0.85rem; font-weight: 700;">Special Instructions / Notes (Optional)</label>
-            <input type="text" id="orderCustNotes" class="input-field" placeholder="e.g. Extra chimichurri, call when at gate" style="margin-top: 0.25rem;">
+            <h4 style="font-size: 0.9rem; font-weight: 800; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem;">Your Order Items</h4>
+            <div id="cartItemsList" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+            <div style="display: flex; justify-content: space-between; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); font-size: 1.1rem; font-weight: 850;">
+              <span>Estimated Total (Cash):</span>
+              <span id="checkoutTotalText">0.00 DOP</span>
+            </div>
+          </div>
+
+          <!-- Step 1: Fulfillment & Delivery Location -->
+          <div style="margin-bottom: 1.25rem;">
+            <label style="font-size: 0.88rem; font-weight: 750; display: block; margin-bottom: 0.4rem;">1. Fulfillment Method & Location</label>
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <label style="flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" id="optDeliveryWrap">
+                <input type="radio" name="checkoutFulfillment" value="delivery" checked onchange="toggleFulfillmentMode();">
+                <div>
+                  <strong style="display: block; font-size: 0.9rem;">🏍️ Delivery</strong>
+                  <span style="font-size: 0.75rem; color: var(--text-secondary);" id="deliveryFeeLabel">+100 DOP delivery fee</span>
+                </div>
+              </label>
+              <label style="flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" id="optPickupWrap">
+                <input type="radio" name="checkoutFulfillment" value="pickup" onchange="toggleFulfillmentMode();">
+                <div>
+                  <strong style="display: block; font-size: 0.9rem;">🥡 Pickup</strong>
+                  <span style="font-size: 0.75rem; color: var(--text-secondary);">Pick up at counter</span>
+                </div>
+              </label>
+            </div>
+
+            <div id="orderDeliveryAddressRow" style="margin-bottom: 0.25rem;">
+              <label style="font-size: 0.85rem; font-weight: 700;">Delivery Address / Villa / Gate #</label>
+              <input type="text" id="orderDeliveryAddress" class="input-field" placeholder="e.g. Sosua Ocean Village Villa 402, Gate 4B" required style="margin-top: 0.25rem;">
+              
+              <!-- Interactive Delivery Map Pin -->
+              <div style="margin-top: 0.5rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #f8fafc;">
+                <div style="padding: 0.5rem 0.75rem; display: flex; justify-content: space-between; align-items: center; background: #e2e8f0; font-size: 0.8rem; font-weight: 750;">
+                  <span>📍 Pin Drop Location (Drag pin or tap map)</span>
+                  <span id="checkoutMapStatus" style="color: var(--teal-primary); font-size: 0.75rem;">Detecting location...</span>
+                </div>
+                <div id="checkoutLeafletMap" style="height: 180px; width: 100%;"></div>
+                <div style="padding: 0.4rem 0.75rem; font-size: 0.75rem; color: var(--text-secondary); display: flex; justify-content: space-between;">
+                  <span id="checkoutCoordsDisplay">Lat: 19.7550, Lng: -70.5150</span>
+                  <a href="javascript:void(0);" onclick="recenterCheckoutMap();" style="color: var(--teal-primary); font-weight: 700;">🎯 My Location</a>
+                </div>
+              </div>
+              <input type="hidden" id="orderPinLat" value="19.7550">
+              <input type="hidden" id="orderPinLng" value="-70.5150">
+            </div>
+          </div>
+
+          <!-- Step 2: Customer Details & Notes -->
+          <div style="margin-bottom: 1.25rem;">
+            <label style="font-size: 0.88rem; font-weight: 750; display: block; margin-bottom: 0.4rem;">2. Contact Details & Notes</label>
+            <div id="repeatCustomerNotice" style="display: none; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; font-size: 0.8rem; color: #166534; display: flex; justify-content: space-between; align-items: center;">
+              <span>✨ <strong>Welcome back!</strong> Details auto-filled.</span>
+              <button type="button" onclick="clearSavedCustomerDetails();" style="background: none; border: none; color: #0369a1; text-decoration: underline; font-size: 0.75rem; cursor: pointer;">Clear</button>
+            </div>
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.85rem; font-weight: 700;">Your Name</label>
+              <input type="text" id="orderCustName" class="input-field" placeholder="e.g. Alex M." required style="margin-top: 0.25rem;">
+            </div>
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.85rem; font-weight: 700;">WhatsApp / Phone Number</label>
+              <input type="tel" id="orderCustPhone" class="input-field" placeholder="e.g. +1-809-555-0199" required style="margin-top: 0.25rem;">
+            </div>
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.85rem; font-weight: 700;">Special Instructions / Notes (Optional)</label>
+              <input type="text" id="orderCustNotes" class="input-field" placeholder="e.g. Extra chimichurri, call when at gate" style="margin-top: 0.25rem;">
+            </div>
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.8rem; font-size: 0.78rem; color: var(--text-secondary);">
+              <label style="display: flex; align-items: flex-start; gap: 0.45rem; cursor: pointer; margin-bottom: 0.35rem;">
+                <input type="checkbox" id="orderPromoOptIn" checked style="margin-top: 2px;">
+                <span><strong>🔔 Local Specials (1–2 Weeks):</strong> Send me restaurant, tour & villa specials on WhatsApp while I'm in town (auto-pauses after 2 weeks).</span>
+              </label>
+              <label style="display: flex; align-items: flex-start; gap: 0.45rem; cursor: pointer;">
+                <input type="checkbox" id="orderPromoLongterm" style="margin-top: 2px;">
+                <span><strong>🌴 Future Trips:</strong> Keep me opted in for later weeks & upcoming Sosúa/Cabarete deals.</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Step 3: Zero-Chargeback Payment Method & Driver Tip -->
+          <div style="margin-bottom: 1.25rem;">
+            <label style="font-size: 0.88rem; font-weight: 750; display: block; margin-bottom: 0.4rem;">3. Payment Method</label>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <label style="border: 2px solid var(--primary, #0284c7); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #f0fdf4;" id="optPayCashWrap">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                  <input type="radio" name="checkoutPaymentMethod" value="cash" checked onchange="updatePaymentMethodUI();">
+                  <div>
+                    <strong style="display: block; font-size: 0.9rem;">💵 Cash on Delivery (Efectivo)</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Pay driver directly with paper pesos (DOP)</span>
+                  </div>
+                </div>
+                <span style="font-size: 0.75rem; background: #dcfce7; color: #15803d; font-weight: 800; padding: 2px 6px; border-radius: 4px;">Standard (80%)</span>
+              </label>
+
+              <label style="border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #fff;" id="optPayTransferWrap">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                  <input type="radio" name="checkoutPaymentMethod" value="transfer" onchange="updatePaymentMethodUI();">
+                  <div>
+                    <strong style="display: block; font-size: 0.9rem;">🏦 Dominican Bank Transfer (Transferencia)</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Banreservas, Banco Popular, or BHD</span>
+                  </div>
+                </div>
+                <span style="font-size: 0.75rem; background: #e0f2fe; color: #0369a1; font-weight: 800; padding: 2px 6px; border-radius: 4px;">Instant (0% Fee)</span>
+              </label>
+
+              <label style="border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #fff;" id="optPayZelleWrap">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                  <input type="radio" name="checkoutPaymentMethod" value="zelle" onchange="updatePaymentMethodUI();">
+                  <div>
+                    <strong style="display: block; font-size: 0.9rem;">⚡ Zelle (USD Instant Transfer)</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">For US Bank Accounts • Zero chargeback risk</span>
+                  </div>
+                </div>
+                <span style="font-size: 0.75rem; background: #fef3c7; color: #b45309; font-weight: 800; padding: 2px 6px; border-radius: 4px;">USD Accepted</span>
+              </label>
+
+              <label style="border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #fff;" id="optPayWiseWrap">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                  <input type="radio" name="checkoutPaymentMethod" value="wise" onchange="updatePaymentMethodUI();">
+                  <div>
+                    <strong style="display: block; font-size: 0.9rem;">🌍 Wise (Europe / Canada Instant)</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Pay via Wise in EUR, CAD, GBP, or USD • 0% chargeback</span>
+                  </div>
+                </div>
+                <span style="font-size: 0.75rem; background: #ecfccb; color: #3f6212; font-weight: 800; padding: 2px 6px; border-radius: 4px;">EU / CA</span>
+              </label>
+            </div>
+
+            <!-- Dynamic Payment Instruction Box -->
+            <div id="paymentInstructionsBox" style="display: none; margin-top: 0.6rem; padding: 0.75rem 0.9rem; border-radius: 8px; font-size: 0.82rem; line-height: 1.45; border: 1px solid #cbd5e1; background: #f8fafc;">
+            </div>
+          </div>
+
+          <!-- 1-Tap Driver Tip Selector -->
+          <div id="tipSelectorBox" style="margin-bottom: 1.25rem; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 0.85rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <label style="font-size: 0.88rem; font-weight: 750; margin: 0; display: flex; align-items: center; gap: 4px;">
+                <span>🛵</span> <span>Courier Driver Tip</span>
+              </label>
+              <span style="font-size: 0.75rem; color: #15803d; font-weight: 750;">100% goes to driver</span>
+            </div>
+            <div style="display: flex; gap: 0.4rem;" id="tipBtnGroup">
+              <button type="button" class="btn btn-sm btn-outline tip-btn active" onclick="setDriverTip(0, this);" style="flex: 1; font-weight: 700; font-size: 0.8rem; background: #0284c7; color: #fff; border-color: #0284c7;">RD$ 0</button>
+              <button type="button" class="btn btn-sm btn-outline tip-btn" onclick="setDriverTip(50, this);" style="flex: 1; font-weight: 700; font-size: 0.8rem;">+50</button>
+              <button type="button" class="btn btn-sm btn-outline tip-btn" onclick="setDriverTip(100, this);" style="flex: 1; font-weight: 700; font-size: 0.8rem;">+100</button>
+              <button type="button" class="btn btn-sm btn-outline tip-btn" onclick="setDriverTip(200, this);" style="flex: 1; font-weight: 700; font-size: 0.8rem;">+200</button>
+            </div>
           </div>
 
           <div style="display: flex; gap: 0.75rem;">
@@ -519,14 +533,8 @@
       </div>
 
       <form id="stayBookingForm" onsubmit="submitStayBooking(event);" style="padding: 1.25rem; overflow-y: auto; flex: 1;">
-        <div style="margin-bottom: 0.75rem;">
-          <label style="font-size: 0.85rem; font-weight: 700;">Guest Name</label>
-          <input type="text" id="stayGuestName" class="input-field" placeholder="Full name" required style="margin-top: 0.25rem;">
-        </div>
-        <div style="margin-bottom: 0.75rem;">
-          <label style="font-size: 0.85rem; font-weight: 700;">WhatsApp / Contact Number</label>
-          <input type="tel" id="stayGuestContact" class="input-field" placeholder="+1-809-..." required style="margin-top: 0.25rem;">
-        </div>
+        <!-- Step 1: Dates & Stay Pricing First -->
+        <label style="font-size: 0.88rem; font-weight: 750; display: block; margin-bottom: 0.4rem;">1. Stay Dates & Rate Summary</label>
         <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
           <div style="flex: 1;">
             <label style="font-size: 0.85rem; font-weight: 700;">Check-In</label>
@@ -538,15 +546,26 @@
           </div>
         </div>
 
-        <div style="background: var(--bg-alt); padding: 0.75rem; border-radius: 8px; margin-bottom: 1.25rem; border: 1px solid var(--border);">
+        <div style="background: var(--bg-alt); padding: 0.75rem; border-radius: 8px; margin-bottom: 1.1rem; border: 1px solid var(--border);">
           <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
             <span>Nightly Rate:</span>
             <span id="stayNightlyRateText">$0.00</span>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 850; margin-top: 0.4rem; border-top: 1px dashed var(--border); padding-top: 0.4rem;">
-            <span>Total (Pay Cash on Arrival):</span>
+            <span>Total (Pay on Arrival / Verified Transfer):</span>
             <span id="stayTotalText">$0.00 USD</span>
           </div>
+        </div>
+
+        <!-- Step 2: Guest Details -->
+        <label style="font-size: 0.88rem; font-weight: 750; display: block; margin-bottom: 0.4rem;">2. Guest Contact Details</label>
+        <div style="margin-bottom: 0.75rem;">
+          <label style="font-size: 0.85rem; font-weight: 700;">Guest Name</label>
+          <input type="text" id="stayGuestName" class="input-field" placeholder="Full name" required style="margin-top: 0.25rem;">
+        </div>
+        <div style="margin-bottom: 1.1rem;">
+          <label style="font-size: 0.85rem; font-weight: 700;">WhatsApp / Contact Number</label>
+          <input type="tel" id="stayGuestContact" class="input-field" placeholder="+1-809-..." required style="margin-top: 0.25rem;">
         </div>
 
         <div style="display: flex; gap: 0.75rem;">
@@ -603,34 +622,10 @@
         <input type="hidden" id="reqAgreedPrice" value="">
         <input type="hidden" id="reqAgreedCurrency" value="DOP">
 
-        <!-- Service Mode Switch (In-shop vs Mobile vs Pickup) -->
+        <!-- Step 1: Service Mode & Location Pin First -->
         <div id="serviceModeSelectorGroup" style="margin-bottom: 1rem;">
-          <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">Fulfillment Option *</label>
+          <label style="font-size: 0.85rem; font-weight: 750; display: block; margin-bottom: 0.35rem;">1. Fulfillment Option & Location *</label>
           <div id="serviceModesContainer" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"></div>
-        </div>
-
-        <!-- Request description / details -->
-        <div style="margin-bottom: 0.85rem;">
-          <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">Request Description *</label>
-          <textarea id="reqDescInput" class="input-field" rows="3" placeholder="Describe the service, appointment, or items needed..." required></textarea>
-        </div>
-
-        <!-- Appointment / Pickup Date & Time -->
-        <div style="margin-bottom: 0.85rem;">
-          <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">Preferred Date & Time</label>
-          <input type="datetime-local" id="reqDateTimeInput" class="input-field">
-        </div>
-
-        <!-- Customer Identity -->
-        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.85rem;">
-          <div style="flex: 1;">
-            <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">Your Name *</label>
-            <input type="text" id="reqCustomerName" class="input-field" placeholder="Full name" required>
-          </div>
-          <div style="flex: 1;">
-            <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">WhatsApp / Phone *</label>
-            <input type="tel" id="reqCustomerPhone" class="input-field" placeholder="+1-809-..." required>
-          </div>
         </div>
 
         <!-- Confirmed Map Pin Section (Mandatory for Delivery & Mobile Visit) -->
@@ -659,8 +654,34 @@
           </div>
         </div>
 
+        <!-- Step 2: Service Details & Preferred Date/Time -->
+        <div style="margin-bottom: 0.85rem;">
+          <label style="font-size: 0.85rem; font-weight: 750; display: block; margin-bottom: 0.35rem;">2. Service / Booking Details *</label>
+          <textarea id="reqDescInput" class="input-field" rows="3" placeholder="Describe the service, appointment, or items needed..." required></textarea>
+        </div>
+
+        <div style="margin-bottom: 0.85rem;">
+          <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">Preferred Date & Time</label>
+          <input type="datetime-local" id="reqDateTimeInput" class="input-field">
+        </div>
+
+        <!-- Step 3: Customer Identity -->
+        <label style="font-size: 0.85rem; font-weight: 750; display: block; margin-bottom: 0.35rem;">3. Your Contact Info *</label>
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.85rem;">
+          <div style="flex: 1;">
+            <label style="font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 0.25rem;">Your Name *</label>
+            <input type="text" id="reqCustomerName" class="input-field" placeholder="Full name" required>
+          </div>
+          <div style="flex: 1;">
+            <label style="font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 0.25rem;">WhatsApp / Phone *</label>
+            <input type="tel" id="reqCustomerPhone" class="input-field" placeholder="+1-809-..." required>
+          </div>
+        </div>
+
+        <!-- Step 4: Payment & Confirmation Info -->
         <div style="background: rgba(17, 107, 98, 0.08); padding: 0.75rem; border-radius: 8px; margin-bottom: 1.25rem;">
-          <span style="font-size: 0.82rem; color: var(--teal-primary); font-weight: 750;">⏱️ Response Target: Under 15 min for food orders; 2 business hours for appointments.</span>
+          <div style="font-size: 0.82rem; color: var(--teal-primary); font-weight: 800; margin-bottom: 0.2rem;">💳 4. Payment on Confirmation</div>
+          <span id="reqResponseTargetText" style="font-size: 0.8rem; color: var(--text-secondary);">No upfront card charge. Pay via Cash, Bank Transfer, Zelle, or Wise once confirmed.</span>
         </div>
 
         <div style="display: flex; gap: 0.75rem;">
@@ -1441,6 +1462,8 @@
         delivery_address: address,
         delivery_pin_lat: parseFloat(document.getElementById("orderPinLat").value) || null,
         delivery_pin_lng: parseFloat(document.getElementById("orderPinLng").value) || null,
+        promo_opt_in: document.getElementById("orderPromoOptIn") ? document.getElementById("orderPromoOptIn").checked : true,
+        promo_longterm_opt_in: document.getElementById("orderPromoLongterm") ? document.getElementById("orderPromoLongterm").checked : false,
         customer_notes: notes,
         items: cart.map(i => ({ menu_item_id: i.item_id, quantity: i.qty }))
       };
@@ -1778,6 +1801,18 @@ A confirmation has been registered for front desk check-in.`);
       if (!currentBusiness) return;
       document.getElementById("universalModalTitle").textContent = actionLabel || (currentBusiness.request_action_label_en || "Submit Request");
       document.getElementById("universalModalSubtitle").textContent = currentBusiness.trading_name;
+
+      const respTargetEl = document.getElementById("reqResponseTargetText");
+      if (respTargetEl) {
+        const slug = currentBusiness.category_slug || "";
+        let targetNote = "Typically confirmed within 30 minutes during business hours.";
+        if (slug === "dining-food" || slug === "groceries-colmados" || slug === "pharmacy") {
+          targetNote = "Target confirmation: under 15 minutes.";
+        } else if (slug === "massage-wellness") {
+          targetNote = "Target confirmation: 15–30 minutes during business hours.";
+        }
+        respTargetEl.textContent = `No upfront card charge. Pay via Cash, Bank Transfer, Zelle, or Wise once confirmed. ${targetNote}`;
+      }
       
       const reqTextEl = document.getElementById("reqDescInput");
       if (prefilledText) {
