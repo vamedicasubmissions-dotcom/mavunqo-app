@@ -513,6 +513,12 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/admin":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "admin.html"))
 
+        if path == "/mockup":
+            return self.send_file_response(os.path.join(FRONTEND_DIR, "mockup.html"))
+
+        if path == "/production" or path == "/production-package":
+            return self.send_file_response(os.path.join(FRONTEND_DIR, "production_package.html"))
+
         # Assets or static files
         if path.startswith("/assets/") or path.startswith("/frontend/"):
             rel_path = path.lstrip("/")

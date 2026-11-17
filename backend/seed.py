@@ -21,12 +21,20 @@ def seed_database(db_path: str):
 
     # 1. Admin User
     admin_id = "user_admin"
+    env_admin_pw = os.environ.get("MAVUNQO_ADMIN_PASSWORD", "").strip()
+    admin_pw = env_admin_pw or "AdminPass2026!"
     cur.execute("SELECT id FROM users WHERE email = 'admin@mavunqo.com'")
-    if not cur.fetchone():
+    existing_admin = cur.fetchone()
+    if not existing_admin:
         cur.execute(
             """INSERT INTO users (id, email, password_hash, full_name, role)
                VALUES (?, ?, ?, ?, ?)""",
-            (admin_id, "admin@mavunqo.com", hash_password("AdminPass2026!"), "Mavunqo Admin", "admin")
+            (admin_id, "admin@mavunqo.com", hash_password(admin_pw), "Mavunqo Admin", "admin")
+        )
+    elif env_admin_pw:
+        cur.execute(
+            "UPDATE users SET password_hash = ? WHERE email = 'admin@mavunqo.com'",
+            (hash_password(env_admin_pw),)
         )
 
     # 2. Categories
