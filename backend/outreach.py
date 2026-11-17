@@ -9,7 +9,7 @@ import urllib.parse
 import re
 
 class MerchantOutreachEngine:
-    def __init__(self, platform_domain="https://mavunqo-app.onrender.com"):
+    def __init__(self, platform_domain="https://mavunqo.com"):
         self.platform_domain = platform_domain
 
     def clean_phone_number(self, phone: str):

@@ -7,6 +7,7 @@ MAVUNQO Payment Email Alert & Bank Inbox Monitor
 """
 
 import email
+import email.utils
 import imaplib
 import os
 import re
@@ -111,6 +112,34 @@ def _decode_header_str(raw_val: str) -> str:
     return "".join(out)
 
 
+TRUSTED_BANK_SENDER_DOMAINS = (
+    "zellepay.com",
+    "wise.com",
+    "transferwise.com",
+    "banreservas.com",
+    "popularenlinea.com",
+    "bhd.com.do",
+    "bancosantacruz.com.do",
+    "chase.com",
+    "bankofamerica.com",
+    "wellsfargo.com",
+    "citi.com",
+    "capitalone.com",
+)
+
+
+def _is_trusted_bank_sender(sender_header: str) -> bool:
+    _, addr = email.utils.parseaddr(sender_header or "")
+    addr = (addr or "").strip().lower()
+    if "@" not in addr:
+        return False
+    domain = addr.split("@", 1)[1]
+    extra = os.environ.get("MAVUNQO_TRUSTED_BANK_DOMAINS", "")
+    extra_domains = tuple(d.strip().lower() for d in extra.split(",") if d.strip())
+    allowed = TRUSTED_BANK_SENDER_DOMAINS + extra_domains
+    return any(domain == d or domain.endswith("." + d) for d in allowed)
+
+
 def check_inbox_for_bank_deposits(limit: int = 20) -> dict:
     """
     Scans the recent emails in the monitored inbox for bank deposit notifications
@@ -147,6 +176,10 @@ def check_inbox_for_bank_deposits(limit: int = 20) -> dict:
 
             # Skip our own outbound MAVUNQO alerts
             if "[MAVUNQO PAYMENT]" in subject:
+                continue
+
+            # Reject spoofed/untrusted senders outside known bank & payment domains
+            if not _is_trusted_bank_sender(sender):
                 continue
 
             combined = f"{subject} {sender}".lower()

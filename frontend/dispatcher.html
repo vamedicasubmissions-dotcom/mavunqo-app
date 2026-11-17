@@ -290,35 +290,52 @@
 
     let bankEmailMatches = {};
 
-    async function checkBankInbox() {
+    async function checkBankInbox(silent = false) {
       try {
         const res = await fetch("/api/dispatcher/check-bank-emails", {
           headers: { "Authorization": `Bearer ${token}` }
         });
         const d = await res.json();
         if (!d.configured) {
-          alert("📧 Bank Email Monitor Setup:\n\n" + (d.message || "Configure MAVUNQO_IMAP_USER and MAVUNQO_IMAP_PASS in Render environment variables."));
+          if (!silent) {
+            alert("📧 Bank Email Monitor Setup:\n\n" + (d.message || "Configure MAVUNQO_IMAP_USER and MAVUNQO_IMAP_PASS in Render environment variables."));
+          }
           return;
         }
         if (d.error) {
-          alert("Error checking bank inbox: " + d.error);
+          if (!silent) alert("Error checking bank inbox: " + d.error);
           return;
         }
         bankEmailMatches = d.order_matches || {};
         if (queueData) renderQueue(queueData);
 
-        const matchLines = Object.values(bankEmailMatches).map(m =>
-          m.matched
-            ? `👍 ${m.order_number} (${m.payment_method.toUpperCase()}): Bank email matched! [${m.matched_subject}]`
-            : `👎 ${m.order_number} (${m.payment_method.toUpperCase()}): No matching bank email yet`
-        );
-        const deps = d.deposits || [];
-        alert(
-          `📧 Bank Inbox Check Complete (${deps.length} bank alerts scanned)\n\n` +
-          (matchLines.length ? matchLines.join("\n") : "No unverified Zelle/Transfer orders pending.")
-        );
+        if (!silent) {
+          const matchLines = Object.values(bankEmailMatches).map(m =>
+            m.matched
+              ? `👍 ${m.order_number} (${m.payment_method.toUpperCase()}): Bank email matched! [${m.matched_subject}]`
+              : `👎 ${m.order_number} (${m.payment_method.toUpperCase()}): No matching bank email yet`
+          );
+          const deps = d.deposits || [];
+          alert(
+            `📧 Bank Inbox Check Complete (${deps.length} bank alerts scanned)\n\n` +
+            (matchLines.length ? matchLines.join("\n") : "No unverified Zelle/Transfer orders pending.")
+          );
+        }
       } catch (e) {
-        alert("Network error checking bank inbox.");
+        if (!silent) alert("Network error checking bank inbox.");
+      }
+    }
+
+    function autoCheckBankInboxIfNeeded() {
+      if (!queueData || !Array.isArray(queueData.orders)) return;
+      const hasPendingDigital = queueData.orders.some(o =>
+        ['zelle', 'transfer', 'wise'].includes((o.payment_method || '').toLowerCase()) &&
+        !o.payment_verified &&
+        o.status !== 'cancelled' &&
+        o.status !== 'declined'
+      );
+      if (hasPendingDigital) {
+        checkBankInbox(true);
       }
     }
 
@@ -604,6 +621,7 @@
       loadMerchantSettlements();
       setInterval(loadQueue, 6000); 
       setInterval(loadMerchantSettlements, 15000);
+      setInterval(autoCheckBankInboxIfNeeded, 45000);
     };
   </script>
   <script src="/frontend/pwa_nav.js"></script>
