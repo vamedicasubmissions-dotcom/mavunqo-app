@@ -115,8 +115,43 @@
     );
   }
 
+  function setupMobileLangDropdown() {
+    const sw = document.querySelector(".lang-switch");
+    if (!sw || sw.querySelector(".mvq-lang-select")) return;
+    const btns = Array.from(sw.querySelectorAll(".lang-btn"));
+    if (!btns.length) return;
+
+    const sel = document.createElement("select");
+    sel.className = "mvq-lang-select";
+    sel.setAttribute("aria-label", "Language");
+
+    btns.forEach(function (btn, idx) {
+      const opt = document.createElement("option");
+      const code = (btn.dataset && btn.dataset.lang) || btn.textContent.trim().toUpperCase();
+      opt.value = String(idx);
+      opt.textContent = "🌐 " + code;
+      if (btn.classList.contains("active")) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    sel.addEventListener("change", function () {
+      const targetBtn = btns[parseInt(sel.value, 10)];
+      if (targetBtn) targetBtn.click();
+    });
+
+    // Keep select synced if active button changes programmatically
+    btns.forEach(function (btn, idx) {
+      btn.addEventListener("click", function () {
+        sel.value = String(idx);
+      });
+    });
+
+    sw.appendChild(sel);
+  }
+
   function init() {
     injectButtons();
+    setupMobileLangDropdown();
     setupPullToRefresh();
   }
 

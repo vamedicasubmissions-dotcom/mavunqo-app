@@ -121,6 +121,9 @@ header.navbar {
   border-radius: var(--radius-pill);
   padding: 3px;
 }
+.mvq-lang-select {
+  display: none;
+}
 .lang-btn {
   border: none;
   background: none;
@@ -1247,6 +1250,25 @@ table.data-table td {
   .lang-btn {
     padding: 0.24rem 0.48rem !important;
     font-size: 0.74rem !important;
+  }
+  .lang-switch .lang-btn {
+    display: none !important;
+  }
+  .mvq-lang-select {
+    display: inline-block !important;
+    background: rgba(0, 0, 0, 0.24);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 9999px;
+    padding: 0.24rem 0.55rem;
+    font-size: 0.78rem !important;
+    font-weight: 800;
+    cursor: pointer;
+    outline: none;
+  }
+  .mvq-lang-select option {
+    color: #0f172a;
+    background: #ffffff;
   }
   #mvqNavRefreshBtn, #mvqNavBackBtn {
     padding: 0.22rem 0.5rem !important;
