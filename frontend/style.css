@@ -1227,4 +1227,53 @@ table.data-table td {
     gap: 0.25rem !important;
     align-items: flex-start !important;
   }
+
+  /* Cross-Device Android & Small-Phone Safeguards */
+  html, body {
+    overflow-x: clip !important;
+    max-width: 100% !important;
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
+  .nav-container {
+    gap: 0.4rem;
+    padding: 0.6rem 0.75rem !important;
+  }
+  .nav-actions {
+    gap: 0.35rem !important;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+  .lang-btn {
+    padding: 0.24rem 0.48rem !important;
+    font-size: 0.74rem !important;
+  }
+  #mvqNavRefreshBtn, #mvqNavBackBtn {
+    padding: 0.22rem 0.5rem !important;
+    font-size: 0.74rem !important;
+    white-space: nowrap;
+  }
+  input, select, textarea {
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+  [style*="position: fixed"] > div {
+    max-height: 90dvh !important;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-logo {
+    font-size: 1.15rem !important;
+  }
+  .input-field, input[type="date"], input[type="datetime-local"], input[type="tel"], input[type="text"], select, textarea {
+    font-size: 16px !important;
+  }
+  form [style*="display: flex"][style*="gap: 0.5rem"] {
+    flex-wrap: wrap !important;
+  }
+  form [style*="display: flex"][style*="gap: 0.5rem"] > div {
+    min-width: 140px !important;
+  }
 }
