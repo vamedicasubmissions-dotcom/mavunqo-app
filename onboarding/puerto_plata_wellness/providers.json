@@ -1,0 +1,258 @@
+{
+  "market": "Puerto Plata",
+  "location_id": "loc_puerto_plata",
+  "category_id": "cat_wellness_massage",
+  "notes": "Staging file for Puerto Plata massage & physical therapy providers. Ready to import into mavunqo.db / seed.py once both providers confirm final agreed prices and remaining details.",
+  "providers": [
+    {
+      "id": "staging_nelfa_lopez",
+      "status": "partial_info_received",
+      "full_name": "Nelfa López García",
+      "trading_name": "Nelfa López García — Masajes y Terapia Física",
+      "slug": "nelfa-lopez-terapia",
+      "certifications": [
+        "INFOTEP Certified Massage Therapist",
+        "INFOTEP Certified Physical Therapist"
+      ],
+      "whatsapp": "+18495282828",
+      "phone": "+18495282828",
+      "primary_location_id": "loc_puerto_plata",
+      "service_areas": ["loc_puerto_plata"],
+      "has_physical_location": false,
+      "service_modes_supported": ["mobile_visit"],
+      "hours_note": "Disponibilidad de 8 horas (exact start/end hours & days pending)",
+      "photos": {
+        "portrait_primary": "onboarding/puerto_plata_wellness/photos/nelfa_lopez_portrait.jpg",
+        "portrait_closeup": "onboarding/puerto_plata_wellness/photos/nelfa_lopez_closeup.jpg",
+        "workspace_or_kit": null
+      },
+      "pricing_agreement_status": "agreed_to_suggested_ranges_pending_alignment_with_partner",
+      "currency": "DOP",
+      "services_massage_mobile": [
+        {
+          "name_en": "Express / Targeted Massage (30 min)",
+          "name_es": "Masaje Express / Localizado (30 min)",
+          "price_range_dop": [1800, 2200],
+          "final_price_dop": null
+        },
+        {
+          "name_en": "Relaxing / Swedish Massage (60 min)",
+          "name_es": "Masaje Relajante / Sueco (60 min)",
+          "price_range_dop": [2500, 3300],
+          "final_price_dop": null
+        },
+        {
+          "name_en": "Relaxing / Swedish Massage (90 min)",
+          "name_es": "Masaje Relajante / Sueco (90 min)",
+          "price_range_dop": [3500, 4500],
+          "final_price_dop": null
+        },
+        {
+          "name_en": "Deep Tissue / Descontracturante (60 min)",
+          "name_es": "Masaje Descontracturante / Tejido Profundo (60 min)",
+          "price_range_dop": [3000, 3800],
+          "final_price_dop": null
+        },
+        {
+          "name_en": "Deep Tissue / Descontracturante (90 min)",
+          "name_es": "Masaje Descontracturante / Tejido Profundo (90 min)",
+          "price_range_dop": [4000, 5000],
+          "final_price_dop": null
+        },
+        {
+          "name_en": "Sports / Recovery Massage (60 min)",
+          "name_es": "Masaje Deportivo / Recuperación (60 min)",
+          "price_range_dop": [3200, 4000],
+          "final_price_dop": null
+        },
+        {
+          "name_en": "Lymphatic Drainage (60 min)",
+          "name_es": "Drenaje Linfático (60 min)",
+          "price_range_dop": [3000, 3800],
+          "final_price_dop": null
+        },
+        {
+          "name_en": "Couples Massage – 2 Therapists (60 min)",
+          "name_es": "Masaje en Pareja – 2 Terapeutas (60 min)",
+          "price_range_dop": [5000, 6500],
+          "final_price_dop": null
+        }
+      ],
+      "services_physical_therapy_mobile": [
+        {
+          "name_en": "Initial Assessment + First Session (60 min)",
+          "name_es": "Evaluación Inicial + Primera Sesión (60 min)",
+          "price_range_dop": [2800, 3800],
+          "final_price_dop": null
+        },
+        {
+          "name_en": "Standard Rehab / Physical Therapy Session (45–60 min)",
+          "name_es": "Sesión Estándar de Terapia Física / Rehabilitación (45–60 min)",
+          "price_range_dop": [2500, 3500],
+          "final_price_dop": null
+        },
+        {
+          "name_en": "Extended Manual Therapy + Exercise (75–90 min)",
+          "name_es": "Terapia Manual Extendida + Ejercicios (75–90 min)",
+          "price_range_dop": [3600, 4500],
+          "final_price_dop": null
+        },
+        {
+          "name_en": "Post-Op / Sports Injury Rehab (60 min)",
+          "name_es": "Rehabilitación Post-Operatoria / Lesiones Deportivas (60 min)",
+          "price_range_dop": [3000, 4000],
+          "final_price_dop": null
+        }
+      ],
+      "packages_and_addons": {
+        "pack_5_discount_pct": 10,
+        "pack_10_discount_pct": 15,
+        "travel_fee_range_dop": [500, 1000],
+        "addons_range_dop": [200, 500]
+      },
+      "equipment_needed_note": [
+        "Ultrasound (ultrasonido)",
+        "Hot and cold compresses (compresas frío y calor)",
+        "TENS unit",
+        "Vibrating machine and gel (máquina vibrante y gel)",
+        "Dark glasses / eye mask (lentes negros para no distraer al paciente)",
+        "Menthol relaxing spray (spray de mentol para relajar)",
+        "Cupping set (ventosas)"
+      ],
+      "pending_items": [
+        "Exact 8-hour schedule & working days",
+        "Confirm whether Sosúa / Cabarete are also covered",
+        "Confirm final agreed fixed prices with partner",
+        "Optional photo of portable table/kit"
+      ]
+    },
+    {
+      "id": "staging_clara_light_spa",
+      "status": "ready_pending_gps_pin_and_final_price_alignment",
+      "full_name": "Claribel Batista Ferreira",
+      "trading_name": "Clara Light Spa",
+      "slug": "clara-light-spa",
+      "certifications": [
+        "INFOTEP — Masajista Corporal (240 hrs, 2017)",
+        "INFOTEP — Masajista Terapéutico Corporal (170 hrs, 2021)",
+        "INFOTEP — Masajista en Tratamientos Reductores (40 hrs, 2021)",
+        "INFOTEP — Técnicas de Estética Facial y Corporal (340 hrs, 2025)"
+      ],
+      "whatsapp": "+18299584064",
+      "phone": "+18299584064",
+      "primary_location_id": "loc_puerto_plata",
+      "service_areas": ["loc_puerto_plata"],
+      "has_physical_location": true,
+      "address_clue": "Próximo al Puente Seco, Puerto Plata",
+      "gps_pin": null,
+      "service_modes_supported": ["in_shop", "mobile_visit"],
+      "hours": {
+        "monday_saturday": "9:00 AM - 7:00 PM",
+        "sunday": "Closed"
+      },
+      "photos": {
+        "portrait_primary": "onboarding/puerto_plata_wellness/photos/clara_light_spa/portrait_yellow_scrubs.jpg",
+        "portrait_alt": "onboarding/puerto_plata_wellness/photos/clara_light_spa/portrait_white_coat.jpg",
+        "exterior": "onboarding/puerto_plata_wellness/photos/clara_light_spa/exterior_storefront.jpg",
+        "logo_plaque": "onboarding/puerto_plata_wellness/photos/clara_light_spa/logo_wall_plaque.jpg",
+        "interior_reception": "onboarding/puerto_plata_wellness/photos/clara_light_spa/interior_reception.jpg",
+        "interior_room_1": "onboarding/puerto_plata_wellness/photos/clara_light_spa/interior_room_1.jpg",
+        "interior_room_2": "onboarding/puerto_plata_wellness/photos/clara_light_spa/interior_room_2.jpg",
+        "promo_flyer": "onboarding/puerto_plata_wellness/photos/clara_light_spa_flyer.jpg",
+        "certificates": [
+          "onboarding/puerto_plata_wellness/photos/clara_light_spa/cert_infotep_estetica_2025.jpg",
+          "onboarding/puerto_plata_wellness/photos/clara_light_spa/cert_infotep_terapeutico_2021.jpg",
+          "onboarding/puerto_plata_wellness/photos/clara_light_spa/cert_infotep_reductores_2021.jpg",
+          "onboarding/puerto_plata_wellness/photos/clara_light_spa/cert_infotep_corporal_2017.jpg"
+        ]
+      },
+      "currency": "DOP",
+      "services": [
+        {
+          "name_en": "Express / Targeted Massage (30 min – Back, Neck & Shoulders)",
+          "name_es": "Masaje Express / Localizado (30 min – Espalda, Cuello y Hombros)",
+          "on_site_dop": [1200, 1500],
+          "mobile_dop": [1800, 2200]
+        },
+        {
+          "name_en": "Relaxation / Swedish Massage (60 min)",
+          "name_es": "Masaje Relajante / Sueco (60 min)",
+          "on_site_dop": [1800, 2500],
+          "mobile_dop": [2500, 3300]
+        },
+        {
+          "name_en": "Relaxation / Swedish Massage (90 min)",
+          "name_es": "Masaje Relajante / Sueco (90 min)",
+          "on_site_dop": [2700, 3500],
+          "mobile_dop": [3500, 4500]
+        },
+        {
+          "name_en": "Deep Tissue / Muscle-Release Massage (60 min)",
+          "name_es": "Masaje Descontracturante / Tejido Profundo (60 min)",
+          "on_site_dop": [2200, 3000],
+          "mobile_dop": [3000, 3800]
+        },
+        {
+          "name_en": "Sports / Muscle-Release Massage (90 min)",
+          "name_es": "Masaje Deportivo / Descontracturante (90 min)",
+          "on_site_dop": [3200, 4000],
+          "mobile_dop": [4000, 5000]
+        },
+        {
+          "name_en": "Sports Recovery Massage (60 min)",
+          "name_es": "Masaje Deportivo / Recuperación (60 min)",
+          "on_site_dop": [2400, 3200],
+          "mobile_dop": null
+        },
+        {
+          "name_en": "Lymphatic Drainage (60 min)",
+          "name_es": "Drenaje Linfático (60 min)",
+          "on_site_dop": [2200, 3000],
+          "mobile_dop": [3000, 3800]
+        },
+        {
+          "name_en": "Couples Massage (60 min)",
+          "name_es": "Masaje en Pareja (60 min)",
+          "on_site_dop": [3800, 5000],
+          "mobile_dop": [5000, 6500]
+        },
+        {
+          "name_en": "4-Hand Massage (60 min)",
+          "name_es": "Masaje a 4 Manos (60 min)",
+          "on_site_dop": [4500, 6000],
+          "mobile_dop": [6000, 6500]
+        },
+        {
+          "name_en": "Hot Stone Massage (60 min)",
+          "name_es": "Masaje con Piedras Calientes (60 min)",
+          "on_site_dop": [3000, 3800],
+          "mobile_dop": [3800, 4500]
+        },
+        {
+          "name_en": "Pedicure & Manicure",
+          "name_es": "Pedicure y Manicure",
+          "on_site_dop": [1500, 2000],
+          "mobile_dop": [2000, 2800]
+        },
+        {
+          "name_en": "Basic Facial",
+          "name_es": "Facial Básico",
+          "on_site_dop": [2500, 3000],
+          "mobile_dop": [3000, 3800]
+        },
+        {
+          "name_en": "Hair Removal (Arms, Legs, Underarms)",
+          "name_es": "Depilación (Brazos, Piernas, Axilas)",
+          "on_site_dop": null,
+          "mobile_dop": null,
+          "pricing_note": "Quote based on hair density/area"
+        }
+      ],
+      "pending_items": [
+        "Exact WhatsApp GPS location pin (curbside in front of spa)",
+        "Confirm whether Nelfa and Claribel have aligned on shared mobile pricing (notice Sports 90 min mobile is 4000-5000 DOP and Sports Recovery 60 min is on-site only)",
+        "Confirm fixed single prices vs ranges for storefront display"
+      ]
+    }
+  ]
+}

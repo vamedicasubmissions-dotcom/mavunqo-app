@@ -619,23 +619,27 @@ def seed_database(db_path: str):
                 description_en, description_es, status, has_physical_location, address,
                 serves_entire_area, website_url, whatsapp, phone, public_email,
                 logo_url, cover_image_url,
-                hours_json, rnc_tax_id, rnc_status, approved_by, approved_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+                hours_json, rnc_tax_id, rnc_status, service_modes_supported, pickup_pin_note,
+                approved_by, approved_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
             (
                 b_clothe, cloth_owner, "Yaha Style RD", "Yaha Style RD - Yahaira Garcia",
                 "yaha-style-rd", "cat_fashion", "loc_sosua",
-                "Trendy women and men fashion, coastal beachwear, stylish linen dresses, casual outfits, swimsuits, and accessories in Sosúa.",
-                "Moda actual femenina y masculina, ropa playera, elegantes vestidos de lino, conjuntos casuales, trajes de baño y accesorios en Sosúa.",
-                "approved", 1, "Calle Pedro Clisante #28, El Batey, Sosúa",
+                "Online fashion boutique based in Puerto Plata with pickup in Puerto Plata & Sosúa (via the Puerto Plata–Sosúa transport parada, across from Texaco in Sosúa).",
+                "Boutique de moda online con base en Puerto Plata y puntos de retiro en Puerto Plata y Sosúa (en la parada de transporte Puerto Plata–Sosúa, frente a la Texaco en Sosúa).",
+                "approved", 0, "Online Boutique (Puerto Plata & Sosúa Pickup)",
                 1, None, "+18296414722", "+18296414722", "yahastylerd@gmail.com",
                 "/frontend/uploads/yahastyle/item_black_goldbutton_mini_dress.png",
                 "/frontend/uploads/yahastyle/item_rose_gold_velvet_choker_dress.jpg",
                 json.dumps({"monday_saturday": "9:30 AM - 8:00 PM", "sunday": "10:00 AM - 4:00 PM"}),
-                "131-44781-9", "verified", admin_id
+                "131-44781-9", "verified",
+                json.dumps(["pickup"]),
+                "Pickup only (items ship from Puerto Plata): Puerto Plata (Sosúa transport parada) or Sosúa (taxi stand across from the Texaco gas station).",
+                admin_id
             )
         )
         cur.execute("INSERT OR IGNORE INTO business_service_areas (business_id, location_id) VALUES (?, ?)", (b_clothe, "loc_sosua"))
-        cur.execute("INSERT OR IGNORE INTO business_service_areas (business_id, location_id) VALUES (?, ?)", (b_clothe, "loc_cabarete"))
+        cur.execute("INSERT OR IGNORE INTO business_service_areas (business_id, location_id) VALUES (?, ?)", (b_clothe, "loc_puerto_plata"))
 
     # Seed all boutique categories
     boutique_cats = [('ccat_swimwear', 'Swimwear & Boardshorts', 'Trajes de Baño y Bañadores', 1), ('ccat_linen_apparel', 'Linen Dresses & Beach Shirts', 'Vestidos de Lino y Camisas Playeras', 2), ('ccat_yaha_dresses', 'Chic Dresses & Evening Outfits', 'Vestidos Elegantes y de Noche', 1), ('ccat_yaha_casual', 'Casual Wear & Pants', 'Ropa Casual, Joggers y Tops', 2), ('ccat_yaha_denim', 'Denim, Jeans & Skirts', 'Jeans, Pantalones y Faldas Denim', 3), ('ccat_yaha_swim', 'Swimwear & One-Pieces', 'Trajes de Baño y Monokinis', 4), ('ccat_yaha_tops', 'Glitter Sets, Tanks & Tops', 'Conjuntos Brillantes y Tops Urbanos', 5)]
