@@ -52,7 +52,7 @@
     </div>
   </header>
 
-  <main class="container" style="padding-top: 2.5rem;">
+  <main id="adminMainContainer" class="container" style="padding-top: 2.5rem; display: none;">
     <div style="margin-bottom: 2rem;">
       <h1 style="font-size: 2.2rem; font-weight: 900; letter-spacing: -0.03em;">Platform Moderation & Overview</h1>
       <p style="color: var(--text-secondary); font-size: 1.05rem; margin-top: 0.35rem;">Review business applications, manage directory approvals, and monitor live North Coast search trends.</p>
@@ -112,23 +112,23 @@
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
         <div>
           <label style="font-size: 0.82rem; font-weight: 750; display: block; margin-bottom: 0.25rem;">Default Commission (%)</label>
-          <input type="number" step="0.5" min="0" max="50" id="setCommPct" class="input-field" placeholder="15">
+          <input type="number" step="0.5" min="0" max="50" id="setCommPct" class="input-field" placeholder="--">
         </div>
         <div>
           <label style="font-size: 0.82rem; font-weight: 750; display: block; margin-bottom: 0.25rem;">Base Delivery Fee (RD$)</label>
-          <input type="number" step="10" min="0" id="setDeliveryFee" class="input-field" placeholder="100">
+          <input type="number" step="10" min="0" id="setDeliveryFee" class="input-field" placeholder="--">
         </div>
         <div>
           <label style="font-size: 0.82rem; font-weight: 750; display: block; margin-bottom: 0.25rem;">Rain Hazard Fee (RD$)</label>
-          <input type="number" step="10" min="0" id="setRainFee" class="input-field" placeholder="50">
+          <input type="number" step="10" min="0" id="setRainFee" class="input-field" placeholder="--">
         </div>
         <div>
           <label style="font-size: 0.82rem; font-weight: 750; display: block; margin-bottom: 0.25rem;">Driver Cash Cap (RD$)</label>
-          <input type="number" step="100" min="500" id="setCashCap" class="input-field" placeholder="3000">
+          <input type="number" step="100" min="500" id="setCashCap" class="input-field" placeholder="--">
         </div>
         <div>
           <label style="font-size: 0.82rem; font-weight: 750; display: block; margin-bottom: 0.25rem;">DOP per $1 USD</label>
-          <input type="number" step="0.5" min="30" id="setFxRate" class="input-field" placeholder="60">
+          <input type="number" step="0.5" min="30" id="setFxRate" class="input-field" placeholder="--">
         </div>
       </div>
 
@@ -177,9 +177,10 @@
 
         if (statsRes.status === 401 || statsRes.status === 403) {
           alert("Unauthorized access. Admin privileges required.");
-          window.location.href = "/login";
+          window.location.replace("/login");
           return;
         }
+        document.getElementById("adminMainContainer").style.display = "block";
 
         const stats = await statsRes.json();
         const apps = await appsRes.json();
