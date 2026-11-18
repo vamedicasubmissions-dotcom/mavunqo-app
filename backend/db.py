@@ -45,6 +45,22 @@ CREATE TABLE IF NOT EXISTS promo_preferences (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS notification_queue (
+    id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,
+    ref_number TEXT NOT NULL,
+    business_id TEXT,
+    business_name TEXT,
+    merchant_email TEXT,
+    summary TEXT,
+    payload_json TEXT,
+    status TEXT NOT NULL CHECK(status IN ('pending', 'sent', 'failed')) DEFAULT 'pending',
+    attempts INTEGER DEFAULT 0,
+    last_error TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    sent_at TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS locations (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
@@ -601,7 +617,9 @@ def run_migrations(conn):
         ("pickup_pin_note", "TEXT"),
         ("pilot_delivery_enabled", "BOOLEAN DEFAULT 0"),
         ("power_backup_type", "TEXT DEFAULT 'none'"),
-        ("custom_commission_rate", "REAL")
+        ("custom_commission_rate", "REAL"),
+        ("alert_email", "TEXT"),
+        ("preferred_alert_channel", "TEXT DEFAULT 'email'")
     ]
     for col_name, col_def in new_business_cols:
         if col_name not in existing_cols:
@@ -622,13 +640,18 @@ def run_migrations(conn):
         ("payment_verified", "BOOLEAN DEFAULT 0"),
         ("payment_verified_source", "TEXT"),
         ("promo_opt_in", "BOOLEAN DEFAULT 1"),
-        ("promo_longterm_opt_in", "BOOLEAN DEFAULT 0")
+        ("promo_longterm_opt_in", "BOOLEAN DEFAULT 0"),
+        ("idempotency_key", "TEXT")
     ]:
         if col_name not in order_cols:
             try:
                 cur.execute(f"ALTER TABLE orders ADD COLUMN {col_name} {col_def}")
             except Exception:
                 pass
+    try:
+        cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_idempotency ON orders(idempotency_key) WHERE idempotency_key IS NOT NULL")
+    except Exception:
+        pass
 
     # Check promo_preferences columns
     cur.execute("PRAGMA table_info(promo_preferences)")
@@ -753,6 +776,9 @@ def init_db(db_path: str):
     os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON;")
+    conn.execute("PRAGMA busy_timeout = 5000;")
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
     conn.executescript(SCHEMA_SQL)
     run_migrations(conn)
     for k, v in [
@@ -770,4 +796,5 @@ def get_connection(db_path: str):
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
+    conn.execute("PRAGMA busy_timeout = 5000;")
     return conn

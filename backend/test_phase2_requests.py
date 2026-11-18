@@ -680,5 +680,46 @@ class TestPhase2MerchantRequests(unittest.TestCase):
             self.assertEqual(matched[0]["last_source_type"], "booking")
             self.assertIsNotNone(matched[0]["booked_for_at"])
 
+        # 15. Durable Idempotency Key, Notification Queue Recovery, Private alert_email & WAL
+        idem_payload = {
+            "business_id": biz_id,
+            "customer": {"name": "Idem Tester", "phone": "+18095559911"},
+            "fulfillment_type": "pickup",
+            "payment_method": "cash",
+            "idempotency_key": "idem_test_unique_001",
+            "items": [{"menu_item_id": item["id"], "quantity": 1}]
+        }
+        st_id1, res_id1 = invoke("POST", "/api/orders", body=idem_payload)
+        self.assertEqual(st_id1, 201)
+        st_id2, res_id2 = invoke("POST", "/api/orders", body=idem_payload)
+        self.assertEqual(st_id2, 201)
+        self.assertTrue(res_id2.get("duplicate_prevented"))
+        self.assertEqual(res_id1["order_id"], res_id2["order_id"])
+
+        from backend.payment_monitor import enqueue_merchant_alert, process_pending_notifications
+        from unittest.mock import patch
+        nid = enqueue_merchant_alert(service.db_path, {
+            "kind": "ORDER",
+            "ref_number": res_id1["order_number"],
+            "business_id": biz_id,
+            "business_name": "El Batey Bistro",
+            "merchant_email": "ops-private@elbatey.do",
+            "summary": "Recovery test"
+        })
+        with patch("backend.payment_monitor._attempt_alert_delivery", return_value={"email_sent": True, "webhook_sent": False, "error": None}):
+            rec = process_pending_notifications(service.db_path, limit=100)
+            self.assertGreaterEqual(rec["sent"], 1)
+
+        with service.get_connection() as conn:
+            jm = conn.execute("PRAGMA journal_mode").fetchone()[0]
+            self.assertEqual(jm.lower(), "wal")
+            qrow = conn.execute("SELECT status, attempts FROM notification_queue WHERE id = ?", (nid,)).fetchone()
+            self.assertEqual(qrow["status"], "sent")
+            self.assertEqual(qrow["attempts"], 1)
+            conn.execute("UPDATE businesses SET alert_email = 'urgent@elbatey.do' WHERE id = ?", (biz_id,))
+            conn.commit()
+            dest = conn.execute("SELECT COALESCE(NULLIF(alert_email, ''), NULLIF(public_email, '')) AS d FROM businesses WHERE id = ?", (biz_id,)).fetchone()
+            self.assertEqual(dest["d"], "urgent@elbatey.do")
+
 if __name__ == "__main__":
     unittest.main()

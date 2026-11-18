@@ -1147,6 +1147,9 @@
       modal.style.display = 'flex';
 
       // Capacity check banner
+      window.checkoutIdempotencyKey = (window.crypto && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : ('idem_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10));
       const banner = document.getElementById("checkoutCapacityBanner");
       const delRadio = document.querySelector('input[name="checkoutFulfillment"][value="delivery"]');
       const pickRadio = document.querySelector('input[name="checkoutFulfillment"][value="pickup"]');
@@ -1496,6 +1499,7 @@
         delivery_pin_lng: parseFloat(document.getElementById("orderPinLng").value) || null,
         promo_opt_in: document.getElementById("orderPromoOptIn") ? document.getElementById("orderPromoOptIn").checked : true,
         promo_longterm_opt_in: document.getElementById("orderPromoLongterm") ? document.getElementById("orderPromoLongterm").checked : false,
+        idempotency_key: window.checkoutIdempotencyKey || null,
         customer_notes: notes,
         items: cart.map(i => ({ menu_item_id: i.item_id, quantity: i.qty }))
       };

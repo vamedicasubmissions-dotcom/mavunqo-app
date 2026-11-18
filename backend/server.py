@@ -41,7 +41,9 @@ from .whatsapp_ordering_service import WhatsAppOrderingService
 from .tokens_and_attribution import build_merchant_qr_link, generate_attribution_signature
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, "mavunqo.db")
+DB_PATH = os.environ.get("MAVUNQO_DB_PATH", "").strip() or os.path.join(BASE_DIR, "mavunqo.db")
+if os.path.dirname(DB_PATH):
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 
 service = MavunqoService(DB_PATH)
@@ -605,6 +607,29 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             data = self.read_json_body()
             try:
                 res = service.create_merchant_request(data)
+                try:
+                    import threading
+                    from .payment_monitor import send_merchant_new_order_alert
+                    with service.get_connection() as conn:
+                        brow = conn.execute(
+                            "SELECT trading_name, COALESCE(NULLIF(alert_email, ''), NULLIF(public_email, '')) AS alert_dest FROM businesses WHERE id = ?",
+                            (data.get("business_id", ""),)
+                        ).fetchone()
+                    if brow:
+                        threading.Thread(
+                            target=send_merchant_new_order_alert,
+                            args=({
+                                "kind": "BOOKING",
+                                "ref_number": res.get("request_number"),
+                                "business_id": data.get("business_id", ""),
+                                "business_name": brow["trading_name"],
+                                "merchant_email": brow["alert_dest"],
+                                "summary": f"{data.get('service_mode', 'in_shop')} - {(data.get('request_text') or '')[:140]}",
+                            }, DB_PATH),
+                            daemon=True
+                        ).start()
+                except Exception:
+                    pass
                 return self.send_json(res, 201)
             except Exception as e:
                 return self.send_json({"error": str(e)}, 400)
@@ -927,11 +952,12 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     delivery_pin_lat=float(data["delivery_pin_lat"]) if data.get("delivery_pin_lat") is not None else None,
                     delivery_pin_lng=float(data["delivery_pin_lng"]) if data.get("delivery_pin_lng") is not None else None,
                     promo_opt_in=bool(data.get("promo_opt_in", True)),
-                    promo_longterm_opt_in=bool(data.get("promo_longterm_opt_in", False))
+                    promo_longterm_opt_in=bool(data.get("promo_longterm_opt_in", False)),
+                    idempotency_key=data.get("idempotency_key")
                 )
 
                 # Send non-blocking email alert for Zelle / Bank Transfer / Wise orders
-                if res.get("payment_method") in ("zelle", "transfer", "wise"):
+                if not res.get("duplicate_prevented") and res.get("payment_method") in ("zelle", "transfer", "wise"):
                     import threading
                     from .payment_monitor import send_payment_alert_email
                     alert_payload = {
@@ -947,6 +973,31 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                         args=(alert_payload, proof_disk_path),
                         daemon=True
                     ).start()
+
+                # Send non-blocking locked-phone alert to merchant for all new orders
+                if not res.get("duplicate_prevented"):
+                    try:
+                        import threading
+                        from .payment_monitor import send_merchant_new_order_alert
+                        with service.get_connection() as conn:
+                            brow = conn.execute(
+                                "SELECT COALESCE(NULLIF(alert_email, ''), NULLIF(public_email, '')) AS alert_dest FROM businesses WHERE id = ?",
+                                (res.get("business_id", ""),)
+                            ).fetchone()
+                        threading.Thread(
+                            target=send_merchant_new_order_alert,
+                            args=({
+                                "kind": "ORDER",
+                                "ref_number": res.get("order_number"),
+                                "business_id": res.get("business_id", ""),
+                                "business_name": res.get("business_name"),
+                                "merchant_email": brow["alert_dest"] if brow else None,
+                                "summary": f"{res.get('payment_method', 'cash').upper()} - RD$ {res.get('total', 0):.2f} ({data.get('fulfillment_type', 'pickup')})",
+                            }, DB_PATH),
+                            daemon=True
+                        ).start()
+                    except Exception:
+                        pass
 
                 return self.send_json(res, 201)
             except Exception as e:
@@ -1391,7 +1442,13 @@ def run_server(port=8080, db_path=None):
     server_address = ('0.0.0.0', port)
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     socketserver.ThreadingTCPServer.daemon_threads = True
-    httpd = socketserver.ThreadingTCPServer(server_address, MavunqoRequestHandler)
+    httpd = socketserver.TCPServer if False else socketserver.ThreadingTCPServer(server_address, MavunqoRequestHandler)
+    try:
+        import threading
+        from .payment_monitor import process_pending_notifications
+        threading.Thread(target=process_pending_notifications, args=(DB_PATH,), daemon=True).start()
+    except Exception:
+        pass
     print(f"Mavunqo server active on http://127.0.0.1:{port} and http://localhost:{port}", flush=True)
     try:
         httpd.serve_forever()

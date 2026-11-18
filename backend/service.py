@@ -700,7 +700,8 @@ class MavunqoService:
                     payment_method: str = "cash", driver_tip: float = 0.0,
                     payment_proof_url: str = None, payment_proof_hash: str = None,
                     delivery_pin_lat: float = None, delivery_pin_lng: float = None,
-                    promo_opt_in: bool = True, promo_longterm_opt_in: bool = False):
+                    promo_opt_in: bool = True, promo_longterm_opt_in: bool = False,
+                    idempotency_key: str = None):
         customer_name = (customer_data.get("name") or "").strip()
         customer_phone = (customer_data.get("phone") or "").strip()
         customer_email = (customer_data.get("email") or "").strip()
@@ -811,6 +812,50 @@ class MavunqoService:
             tip_amount = round(max(0.0, float(driver_tip or 0.0)), 2) if fulfillment_type == "delivery" else 0.0
             total = round(subtotal + delivery_fee + tip_amount, 2)
 
+            idem_key = (idempotency_key or "").strip() or None
+            dup = None
+            if idem_key:
+                dup = conn.execute(
+                    """SELECT id, order_number, status_token, total, subtotal, delivery_fee, driver_tip, payment_method, payment_proof_url, status
+                       FROM orders WHERE idempotency_key = ? LIMIT 1""",
+                    (idem_key,)
+                ).fetchone()
+            if not dup:
+                # 15-second double-tap / duplicate order guard fallback
+                dup = conn.execute(
+                    """SELECT id, order_number, status_token, total, subtotal, delivery_fee, driver_tip, payment_method, payment_proof_url, status
+                       FROM orders
+                       WHERE business_id = ?
+                         AND customer_phone = ?
+                         AND payment_method = ?
+                         AND fulfillment_type = ?
+                         AND COALESCE(payment_proof_hash, '') = COALESCE(?, '')
+                         AND ABS(total - ?) < 0.01
+                         AND datetime(created_at) >= datetime('now', '-15 seconds')
+                       ORDER BY created_at DESC LIMIT 1""",
+                    (business_id, customer_phone, payment_method, fulfillment_type, payment_proof_hash, total)
+                ).fetchone()
+            if dup:
+                return {
+                    "success": True,
+                    "duplicate_prevented": True,
+                    "order_id": dup["id"],
+                    "order_number": dup["order_number"],
+                    "business_id": business_id,
+                    "business_name": biz["trading_name"],
+                    "status": dup["status"],
+                    "status_token": dup["status_token"],
+                    "status_url": f"/order/status?token={dup['status_token']}",
+                    "subtotal": dup["subtotal"],
+                    "delivery_fee": dup["delivery_fee"],
+                    "driver_tip": dup["driver_tip"],
+                    "total": dup["total"],
+                    "currency": "DOP",
+                    "payment_method": dup["payment_method"],
+                    "payment_proof_url": dup["payment_proof_url"],
+                    "cash_due": dup["total"] if dup["payment_method"] == "cash" else 0.0,
+                }
+
             # Insert order
             conn.execute(
                 """INSERT INTO orders (
@@ -818,8 +863,8 @@ class MavunqoService:
                     order_origin, fulfillment_type, delivery_address, delivery_pin_lat, delivery_pin_lng, customer_notes,
                     status, subtotal, delivery_fee, driver_tip, total, currency, payment_method,
                     payment_proof_url, payment_proof_hash, promo_opt_in, promo_longterm_opt_in,
-                    cash_due, status_token, status_token_expires_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, 'DOP', ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    idempotency_key, cash_due, status_token, status_token_expires_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, 'DOP', ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     order_id, order_num, business_id, customer_name, customer_phone, customer_email,
                     order_origin, fulfillment_type, delivery_address, delivery_pin_lat, delivery_pin_lng, customer_notes,
@@ -827,6 +872,7 @@ class MavunqoService:
                     payment_proof_url, payment_proof_hash,
                     1 if promo_opt_in else 0,
                     1 if promo_longterm_opt_in else 0,
+                    idem_key,
                     total if payment_method == 'cash' else 0.0,
                     status_token, expires_at.isoformat()
                 )

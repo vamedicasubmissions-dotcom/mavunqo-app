@@ -1065,5 +1065,9 @@ def seed_database(db_path: str):
     print("Database successfully initialized and seeded with Sosúa pilot data!")
 
 if __name__ == "__main__":
-    db_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "mavunqo.db")
+    db_file = os.environ.get("MAVUNQO_DB_PATH", "").strip() or os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "mavunqo.db"
+    )
+    if os.path.dirname(db_file):
+        os.makedirs(os.path.dirname(db_file), exist_ok=True)
     seed_database(db_file)

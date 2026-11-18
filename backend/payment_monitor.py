@@ -218,3 +218,153 @@ def check_inbox_for_bank_deposits(limit: int = 20) -> dict:
         return {"configured": True, "deposits": deposits}
     except Exception as e:
         return {"configured": True, "deposits": [], "error": str(e)}
+
+
+def enqueue_merchant_alert(db_path: str, alert_info: dict) -> str:
+    """Persists a merchant alert in notification_queue before delivery."""
+    import json
+    import uuid
+    from .db import get_connection
+
+    nid = f"ntf_{uuid.uuid4().hex[:12]}"
+    with get_connection(db_path) as conn:
+        conn.execute(
+            """INSERT INTO notification_queue
+               (id, kind, ref_number, business_id, business_name, merchant_email, summary, payload_json, status, attempts)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0)""",
+            (
+                nid,
+                alert_info.get("kind", "ORDER"),
+                alert_info.get("ref_number", ""),
+                alert_info.get("business_id"),
+                alert_info.get("business_name", "Merchant"),
+                alert_info.get("merchant_email"),
+                alert_info.get("summary", ""),
+                json.dumps(alert_info),
+            ),
+        )
+        conn.commit()
+    return nid
+
+
+def _attempt_alert_delivery(alert_info: dict) -> dict:
+    import json
+    import urllib.request
+
+    results = {"email_sent": False, "webhook_sent": False, "error": None}
+    webhook_url = os.environ.get("MAVUNQO_MERCHANT_WEBHOOK_URL", "").strip()
+    if webhook_url:
+        try:
+            req = urllib.request.Request(
+                webhook_url,
+                data=json.dumps(alert_info).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=5):
+                results["webhook_sent"] = True
+        except Exception as e:
+            results["webhook_error"] = str(e)
+            results["error"] = str(e)
+
+    cfg = get_smtp_config()
+    to_email = (alert_info.get("merchant_email") or cfg["alert_email"] or "").strip()
+    if cfg["user"] and cfg["password"] and to_email:
+        try:
+            kind = alert_info.get("kind", "ORDER").upper()
+            ref_num = alert_info.get("ref_number", "")
+            biz_name = alert_info.get("business_name", "Merchant")
+            summary = alert_info.get("summary", "")
+            msg = EmailMessage()
+            msg["Subject"] = f"[MAVUNQO {kind}] {ref_num} - {biz_name}"
+            msg["From"] = cfg["user"]
+            msg["To"] = to_email
+            msg.set_content(
+                f"New {kind} on MAVUNQO\n"
+                f"Business: {biz_name}\n"
+                f"Reference: {ref_num}\n"
+                f"Details: {summary}\n\n"
+                f"Open your MAVUNQO Merchant Dashboard to accept or manage this request."
+            )
+            with smtplib.SMTP(cfg["host"], cfg["port"], timeout=12) as server:
+                server.starttls()
+                server.login(cfg["user"], cfg["password"])
+                server.send_message(msg)
+            results["email_sent"] = True
+        except Exception as e:
+            results["email_error"] = str(e)
+            results["error"] = str(e)
+    return results
+
+
+def deliver_queued_notification(db_path: str, notification_id: str, alert_info: dict) -> dict:
+    from .db import get_connection
+
+    res = _attempt_alert_delivery(alert_info)
+    delivered = bool(res["email_sent"] or res["webhook_sent"])
+    with get_connection(db_path) as conn:
+        if delivered:
+            conn.execute(
+                """UPDATE notification_queue
+                   SET status = 'sent', attempts = attempts + 1, last_error = NULL, sent_at = CURRENT_TIMESTAMP
+                   WHERE id = ?""",
+                (notification_id,),
+            )
+        else:
+            err = res.get("error") or "No active SMTP or webhook transport configured"
+            conn.execute(
+                """UPDATE notification_queue
+                   SET status = 'failed', attempts = attempts + 1, last_error = ?
+                   WHERE id = ?""",
+                (err, notification_id),
+            )
+        conn.commit()
+    res["notification_id"] = notification_id
+    res["status"] = "sent" if delivered else "failed"
+    return res
+
+
+def process_pending_notifications(db_path: str, limit: int = 20) -> dict:
+    """Retries pending or previously failed notifications after a restart or transient outage."""
+    import json
+    from .db import get_connection
+
+    processed = 0
+    sent = 0
+    with get_connection(db_path) as conn:
+        rows = conn.execute(
+            """SELECT id, payload_json, kind, ref_number, business_id, business_name, merchant_email, summary
+               FROM notification_queue
+               WHERE status IN ('pending', 'failed') AND attempts < 5
+               ORDER BY created_at ASC LIMIT ?""",
+            (int(limit),),
+        ).fetchall()
+
+    for r in rows:
+        processed += 1
+        try:
+            payload = json.loads(r["payload_json"]) if r["payload_json"] else {}
+        except Exception:
+            payload = {
+                "kind": r["kind"],
+                "ref_number": r["ref_number"],
+                "business_id": r["business_id"],
+                "business_name": r["business_name"],
+                "merchant_email": r["merchant_email"],
+                "summary": r["summary"],
+            }
+        out = deliver_queued_notification(db_path, r["id"], payload)
+        if out["status"] == "sent":
+            sent += 1
+    return {"processed": processed, "sent": sent}
+
+
+def send_merchant_new_order_alert(alert_info: dict, db_path: str = None) -> dict:
+    """
+    Sends a non-blocking locked-phone alert (email + optional webhook) to the merchant,
+    backed by notification_queue when db_path is provided.
+    """
+    if db_path:
+        nid = enqueue_merchant_alert(db_path, alert_info)
+        return deliver_queued_notification(db_path, nid, alert_info)
+    return _attempt_alert_delivery(alert_info)
