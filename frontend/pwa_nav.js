@@ -20,41 +20,39 @@
   }
 
   function injectButtons() {
-    const navActions = document.querySelector(".nav-actions");
-    if (navActions) {
-      if (!document.getElementById("mvqNavBackBtn") && window.location.pathname !== "/") {
-        const backBtn = document.createElement("button");
-        backBtn.id = "mvqNavBackBtn";
-        backBtn.type = "button";
-        backBtn.className = "btn btn-outline-white btn-sm";
-        backBtn.title = "Go Back";
-        backBtn.textContent = "←";
-        backBtn.style.cssText = "padding: 0.25rem 0.55rem; font-weight: 800;";
-        backBtn.onclick = triggerBack;
-        navActions.insertBefore(backBtn, navActions.firstChild);
-      }
-      if (!document.getElementById("mvqNavRefreshBtn")) {
-        const refBtn = document.createElement("button");
-        refBtn.id = "mvqNavRefreshBtn";
-        refBtn.type = "button";
-        refBtn.className = "btn btn-outline-white btn-sm";
-        refBtn.title = "Refresh Page";
-        refBtn.textContent = "↻ Refresh";
-        refBtn.style.cssText = "padding: 0.25rem 0.6rem; font-weight: 700;";
-        refBtn.onclick = triggerRefresh;
-        navActions.insertBefore(refBtn, navActions.firstChild);
-      }
-    } else if (!document.getElementById("mvqFloatingNav")) {
-      const wrap = document.createElement("div");
-      wrap.id = "mvqFloatingNav";
-      wrap.style.cssText =
-        "position:fixed;bottom:14px;left:14px;z-index:9990;display:flex;gap:6px;background:rgba(15,23,42,0.88);padding:5px 8px;border-radius:999px;box-shadow:0 4px 12px rgba(0,0,0,0.22);";
-      wrap.innerHTML =
-        '<button type="button" id="mvqFloatBack" style="background:none;border:none;color:#fff;font-weight:800;font-size:0.85rem;cursor:pointer;padding:2px 6px;">← Back</button>' +
-        '<button type="button" id="mvqFloatRef" style="background:none;border:none;color:#38bdf8;font-weight:800;font-size:0.85rem;cursor:pointer;padding:2px 6px;">↻ Refresh</button>';
-      document.body.appendChild(wrap);
-      document.getElementById("mvqFloatBack").onclick = triggerBack;
-      document.getElementById("mvqFloatRef").onclick = triggerRefresh;
+    if (document.getElementById("mvqQuickNavBar")) return;
+    const navbar = document.querySelector(".navbar");
+    const bar = document.createElement("div");
+    bar.id = "mvqQuickNavBar";
+    bar.style.cssText =
+      "display:flex;justify-content:center;align-items:center;gap:10px;padding:8px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;";
+
+    if (window.location.pathname !== "/") {
+      const backBtn = document.createElement("button");
+      backBtn.id = "mvqNavBackBtn";
+      backBtn.type = "button";
+      backBtn.className = "btn btn-outline btn-sm";
+      backBtn.title = "Go Back";
+      backBtn.textContent = "← Back";
+      backBtn.style.cssText = "padding:0.35rem 0.9rem;font-weight:700;border-radius:999px;";
+      backBtn.onclick = triggerBack;
+      bar.appendChild(backBtn);
+    }
+
+    const refBtn = document.createElement("button");
+    refBtn.id = "mvqNavRefreshBtn";
+    refBtn.type = "button";
+    refBtn.className = "btn btn-outline btn-sm";
+    refBtn.title = "Refresh Page";
+    refBtn.textContent = "↻ Refresh";
+    refBtn.style.cssText = "padding:0.35rem 0.9rem;font-weight:700;border-radius:999px;";
+    refBtn.onclick = triggerRefresh;
+    bar.appendChild(refBtn);
+
+    if (navbar && navbar.parentNode) {
+      navbar.parentNode.insertBefore(bar, navbar.nextSibling);
+    } else {
+      document.body.insertBefore(bar, document.body.firstChild);
     }
   }
 
