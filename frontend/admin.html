@@ -154,6 +154,15 @@
         </div>
       </div>
     </div>
+
+    <div class="card" style="margin-top: 24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">Security & Listing Health</h3>
+        <button class="btn btn-sm" onclick="loadSecurityAlerts()">Refresh</button>
+      </div>
+      <div id="securityHealthSummary" style="margin-bottom:12px; font-size:0.95rem;">Loading...</div>
+      <div id="securityAuditList" style="max-height:220px; overflow-y:auto; font-size:0.85rem; color:#444;"></div>
+    </div>
   </main>
 
   <footer class="footer">
@@ -167,6 +176,28 @@
     if (!token) {
       window.location.href = "/login";
     }
+
+    async function loadSecurityAlerts() {
+      const sumEl = document.getElementById("securityHealthSummary");
+      const listEl = document.getElementById("securityAuditList");
+      try {
+        const res = await fetch("/api/admin/security-alerts", {
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (!res.ok) throw new Error("Failed to load");
+        const data = await res.json();
+        const missing = data.missing_images_count || 0;
+        const excCount = (data.exceptional_access || []).length;
+        sumEl.innerHTML = `<strong>Missing Item Images:</strong> ${missing} &nbsp;|&nbsp; <strong>Exceptional Access Logs:</strong> ${excCount}`;
+        const rows = (data.recent_audits || []).map(a =>
+          `<div style="padding:4px 0; border-bottom:1px solid #eee;"><strong>${a.action}</strong> on ${a.target_type} (${a.target_id || ""}) — <span style="color:#888;">${a.created_at || ""}</span></div>`
+        );
+        listEl.innerHTML = rows.length ? rows.join("") : "<div>No recent audit events.</div>";
+      } catch (e) {
+        sumEl.textContent = "Unable to load security alerts.";
+      }
+    }
+    loadSecurityAlerts();
 
     async function loadAdminData() {
       try {

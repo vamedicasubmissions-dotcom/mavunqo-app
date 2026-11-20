@@ -156,6 +156,26 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return self.send_json({"error": "Forbidden: Admin access only"}, 403)
             return self.send_json(service.get_platform_settings())
 
+        if path == "/api/admin/security-alerts":
+            user = self.get_auth_user()
+            if not user or user.get("role") != "admin":
+                return self.send_json({"error": "Forbidden: Admin access only"}, 403)
+            with db.get_connection() as conn:
+                audits = [dict(r) for r in conn.execute(
+                    "SELECT id, actor_id, action, target_type, target_id, created_at FROM audit_events ORDER BY created_at DESC LIMIT 15"
+                ).fetchall()]
+                exc = [dict(r) for r in conn.execute(
+                    "SELECT id, actor_id, reason, target_type, target_id, created_at FROM exceptional_access_logs ORDER BY created_at DESC LIMIT 10"
+                ).fetchall()]
+                missing_imgs = conn.execute(
+                    "SELECT COUNT(*) FROM menu_items WHERE image_url IS NULL OR TRIM(image_url) = ''"
+                ).fetchone()[0]
+            return self.send_json({
+                "recent_audits": audits,
+                "exceptional_access": exc,
+                "missing_images_count": missing_imgs
+            })
+
         if path == "/api/admin/promo-audience":
             user = self.get_auth_user()
             if not user or user.get("role") != "admin":
