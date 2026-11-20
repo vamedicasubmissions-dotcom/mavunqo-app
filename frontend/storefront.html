@@ -859,7 +859,8 @@
         mapWrap.style.display = "none";
       }
       if (b.service_areas && b.service_areas.length > 0) {
-        document.getElementById("bizServiceAreas").textContent = `Serves: ${b.service_areas.map(a => a.name).join(", ")}`;
+        const servesLabel = (typeof currentLang !== "undefined" && currentLang === "es") ? "Atiende" : "Serves";
+        document.getElementById("bizServiceAreas").textContent = `${servesLabel}: ${b.service_areas.map(a => a.name).join(", ")}`;
       } else {
         document.getElementById("serviceAreasRow").style.display = "none";
       }
