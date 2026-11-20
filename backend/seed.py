@@ -625,15 +625,15 @@ def seed_database(db_path: str):
             (
                 b_clothe, cloth_owner, "Yaha Style RD", "Yaha Style RD - Yahaira Garcia",
                 "yaha-style-rd", "cat_fashion", "loc_sosua",
-                "Online fashion boutique based in Puerto Plata with pickup in Puerto Plata & Sosúa (via the Puerto Plata–Sosúa transport parada, across from Texaco in Sosúa).",
-                "Boutique de moda online con base en Puerto Plata y puntos de retiro en Puerto Plata y Sosúa (en la parada de transporte Puerto Plata–Sosúa, frente a la Texaco en Sosúa).",
-                "approved", 0, "Online Boutique (Puerto Plata & Sosúa Pickup)",
+                "Online clothing store delivering across Puerto Plata and Sosúa.",
+                "Tienda de ropa online con entregas en Puerto Plata y Sosúa.",
+                "approved", 0, "Online Clothing Store (Puerto Plata & Sosúa Delivery)",
                 1, None, "+18296414722", "+18296414722", "yahastylerd@gmail.com",
-                "'/frontend/uploads/yahastyle/yaha_01.jpg'",
-                "'/frontend/uploads/yahastyle/yaha_02.jpg'",
+                "/frontend/uploads/yahastyle/yaha_01.jpg",
+                "/frontend/uploads/yahastyle/yaha_02.jpg",
                 json.dumps({"monday_saturday": "9:30 AM - 8:00 PM", "sunday": "10:00 AM - 4:00 PM"}),
                 "131-44781-9", "verified",
-                json.dumps(["pickup"]),
+                json.dumps(["delivery"]),
                 "Pickup only (items ship from Puerto Plata): Puerto Plata (Sosúa transport parada) or Sosúa (taxi stand across from the Texaco gas station).",
                 admin_id
             )
