@@ -414,12 +414,12 @@
               </a>
             </div>
 
-            <!-- Stop 2: Customer Delivery -->
+            <!-- Stop 2: Customer Delivery (Privacy-Protected: Pin + Entrance Note Only) -->
             <div style="background: #0f172a; padding: 0.85rem; border-radius: 8px; margin-bottom: 0.75rem; border: 1px solid #334155;">
               <span class="step-pill step-dropoff">${t("step2")}</span>
-              <div style="font-weight: 800; font-size: 1rem; color: #fff;">${j.customer_name}</div>
-              <div style="font-size: 0.85rem; color: #38bdf8; font-weight: 700; margin-top: 2px;">📞 ${j.customer_phone}</div>
-              <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 2px;">${t("addrLbl")} ${j.delivery_address}</div>
+              <div style="font-weight: 800; font-size: 1rem; color: #fff;">${j.customer_display_name || j.customer_name}</div>
+              <div style="font-size: 0.8rem; color: #38bdf8; font-weight: 600; margin-top: 2px;">🔒 Contact routed via Mavunqo Dispatch</div>
+              <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 2px;">📍 ${j.entrance_note || 'Pin navigation only'}</div>
               <a href="https://www.google.com/maps/dir/?api=1&destination=${j.destination_lat || 19.758},${j.destination_lng || -70.510}" target="_blank" class="btn-maps" style="background: #059669;">
                 ${t("gpsCust")}
               </a>

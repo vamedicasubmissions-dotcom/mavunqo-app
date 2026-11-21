@@ -70,7 +70,7 @@ class TestMavunqoPhase1(unittest.TestCase):
         # Cabarete and Puerto Plata must be upcoming (expansion readiness)
         self.assertEqual(cabarete["status"], "upcoming")
         self.assertEqual(cabarete["is_launch_market"], 0)
-        self.assertEqual(puerto_plata["status"], "upcoming")
+        self.assertEqual(puerto_plata["status"], "active")
 
     # 3. Search supports service, category, location and keyword
     def test_search_combinations(self):

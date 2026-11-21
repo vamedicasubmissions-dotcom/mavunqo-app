@@ -808,7 +808,8 @@ class MavunqoService:
 
             base_del_fee = self._get_setting_float(conn, "delivery_fee_dop", 100.0)
             rain_fee = self._get_setting_float(conn, "rain_hazard_fee_dop", 50.0)
-            delivery_fee = (base_del_fee + (rain_fee if rain_mode_active else 0.0)) if fulfillment_type == "delivery" else 0.0
+            dist_fee = self._calculate_distance_delivery_fee(conn, business_id, delivery_pin_lat, delivery_pin_lng, base_del_fee)
+            delivery_fee = (dist_fee + (rain_fee if rain_mode_active else 0.0)) if fulfillment_type == "delivery" else 0.0
             tip_amount = round(max(0.0, float(driver_tip or 0.0)), 2) if fulfillment_type == "delivery" else 0.0
             total = round(subtotal + delivery_fee + tip_amount, 2)
 
@@ -2401,6 +2402,37 @@ class MavunqoService:
 
         return {"success": True, "order_id": order_id, "driver_id": driver_id, "status": "dispatched"}
 
+    def _calculate_distance_delivery_fee(self, conn, business_id: str, dest_lat, dest_lng, base_fee: float) -> float:
+        """Tiered distance-based delivery fee: <=3km flat base_fee (100 DOP), >3km adds 25 DOP/km."""
+        if dest_lat is None or dest_lng is None:
+            return base_fee
+        try:
+            d_lat = float(dest_lat)
+            d_lng = float(dest_lng)
+        except (TypeError, ValueError):
+            return base_fee
+        row = conn.execute(
+            "SELECT pickup_pin_lat, pickup_pin_lng, storefront_pin_lat, storefront_pin_lng FROM businesses WHERE id = ?",
+            (business_id,)
+        ).fetchone()
+        if not row:
+            return base_fee
+        p_lat = row["pickup_pin_lat"] or row["storefront_pin_lat"]
+        p_lng = row["pickup_pin_lng"] or row["storefront_pin_lng"]
+        if p_lat is None or p_lng is None:
+            return base_fee
+        import math
+        r_km = 6371.0
+        phi1, phi2 = math.radians(float(p_lat)), math.radians(d_lat)
+        dphi = math.radians(d_lat - float(p_lat))
+        dlambda = math.radians(d_lng - float(p_lng))
+        a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+        km = 2 * r_km * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        if km <= 3.0:
+            return base_fee
+        extra_km = math.ceil(km - 3.0)
+        return round(base_fee + (extra_km * 25.0), 2)
+
     def get_driver_active_jobs(self, driver_id: str):
         with self.get_connection() as conn:
             rows = conn.execute("""
@@ -2422,11 +2454,22 @@ class MavunqoService:
             jobs = []
             for r in rows:
                 j = dict(r)
-                # Build travel-ordered stops
+                # Build travel-ordered stops with customer PII redacted for driver privacy
                 p_lat = j.get("pickup_pin_lat") or 19.755
                 p_lng = j.get("pickup_pin_lng") or -70.515
                 d_lat = j.get("destination_lat") or 19.758
                 d_lng = j.get("destination_lng") or -70.510
+
+                raw_name = (j.get("customer_name") or "Customer").strip()
+                parts = raw_name.split()
+                display_name = f"{parts[0]} {parts[1][0]}." if len(parts) > 1 else raw_name
+                entrance_note = j.get("destination_entrance_note") or "Use Google Maps pin (contact via Mavunqo Dispatch)"
+
+                j["customer_display_name"] = display_name
+                j["customer_name"] = display_name
+                j["customer_phone"] = "Protected (Mavunqo Dispatch)"
+                j["delivery_address"] = entrance_note
+                j["entrance_note"] = entrance_note
 
                 j["stops"] = [
                     {
@@ -2439,10 +2482,10 @@ class MavunqoService:
                     },
                     {
                         "stop_type": "dropoff",
-                        "title": f"2. Deliver to {j['customer_name']}",
+                        "title": f"2. Deliver to {display_name}",
                         "lat": d_lat,
                         "lng": d_lng,
-                        "entrance_note": j.get("destination_entrance_note") or j.get("delivery_address") or "Customer door",
+                        "entrance_note": entrance_note,
                         "amount_due": f"{j['cash_due'] or j['total']} {j['currency']}",
                         "directions_url": f"https://www.google.com/maps/dir/?api=1&destination={d_lat},{d_lng}"
                     }
@@ -2924,6 +2967,85 @@ class MavunqoService:
             "commission_retained": round(commission_retained, 2),
             "net_payout_amount": round(net_payout, 2),
             "settled_at": now_utc
+        }
+
+    # --- WELLNESS APPOINTMENT & TRAVEL-BUFFER SCHEDULING ---
+    def get_wellness_travel_buffer_minutes(self, origin_location_id: str, dest_location_id: str, service_mode: str = "mobile_visit") -> int:
+        """Returns required turnaround + travel buffer in minutes between appointments."""
+        if service_mode == "in_shop":
+            return 15
+        if not origin_location_id or not dest_location_id or origin_location_id == dest_location_id:
+            return 30
+        pair = {origin_location_id, dest_location_id}
+        if pair == {"loc_puerto_plata", "loc_montellano"} or pair == {"loc_montellano", "loc_sosua"}:
+            return 45
+        return 60
+
+    def book_wellness_appointment(self, business_id: str, service_name: str, customer_name: str,
+                                  customer_phone: str, start_at: str, end_at: str,
+                                  location_id: str = "loc_puerto_plata", service_mode: str = "mobile_visit",
+                                  price: float = 0.0, service_id: str = None, notes: str = None):
+        """Books a wellness appointment while enforcing travel buffers and external availability blocks."""
+        from datetime import datetime, timedelta
+        start_dt = datetime.fromisoformat(start_at)
+        end_dt = datetime.fromisoformat(end_at)
+        if end_dt <= start_dt:
+            raise ValueError("Appointment end_at must be after start_at.")
+
+        with self.get_connection() as conn:
+            biz = conn.execute(
+                "SELECT id, primary_location_id, custom_commission_rate FROM businesses WHERE id = ? AND status = 'approved'",
+                (business_id,)
+            ).fetchone()
+            if not biz:
+                raise ValueError("Approved wellness business not found.")
+
+            buffer_min = self.get_wellness_travel_buffer_minutes(biz["primary_location_id"], location_id, service_mode)
+            padded_start = (start_dt - timedelta(minutes=buffer_min)).strftime("%Y-%m-%dT%H:%M")
+            padded_end = (end_dt + timedelta(minutes=buffer_min)).strftime("%Y-%m-%dT%H:%M")
+
+            conflict = conn.execute("""
+                SELECT id, start_at, end_at FROM appointments
+                WHERE business_id = ? AND status IN ('pending', 'confirmed')
+                  AND start_at < ? AND end_at > ?
+                LIMIT 1
+            """, (business_id, padded_end, padded_start)).fetchone()
+            if conflict:
+                raise ValueError("Selected time overlaps an existing booking or required travel buffer.")
+
+            blocked = conn.execute("""
+                SELECT id FROM provider_availability
+                WHERE business_id = ? AND block_start < ? AND block_end > ?
+                LIMIT 1
+            """, (business_id, end_at, start_at)).fetchone()
+            if blocked:
+                raise ValueError("Provider is unavailable during this time block.")
+
+            appt_id = f"appt_{uuid.uuid4().hex[:12]}"
+            appt_code = f"WL-{uuid.uuid4().hex[:6].upper()}"
+            comm_rate = float(biz["custom_commission_rate"] or 0.10)
+            conn.execute("""
+                INSERT INTO appointments (
+                    id, appointment_code, business_id, service_id, service_name, service_mode,
+                    location_id, customer_name, customer_phone, start_at, end_at,
+                    travel_buffer_min, price, currency, commission_rate, status, notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'DOP', ?, 'confirmed', ?)
+            """, (
+                appt_id, appt_code, business_id, service_id, service_name, service_mode,
+                location_id, customer_name, customer_phone, start_at, end_at,
+                buffer_min, float(price or 0.0), comm_rate, notes
+            ))
+            conn.commit()
+
+        return {
+            "id": appt_id,
+            "appointment_code": appt_code,
+            "business_id": business_id,
+            "start_at": start_at,
+            "end_at": end_at,
+            "travel_buffer_min": buffer_min,
+            "commission_rate": comm_rate,
+            "status": "confirmed"
         }
 
 

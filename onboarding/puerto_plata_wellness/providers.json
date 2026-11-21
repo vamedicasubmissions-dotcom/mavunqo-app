@@ -17,16 +17,32 @@
       "whatsapp": "+18495282828",
       "phone": "+18495282828",
       "primary_location_id": "loc_puerto_plata",
-      "service_areas": ["loc_puerto_plata"],
+      "service_areas": ["loc_puerto_plata", "loc_montellano", "loc_sosua"],
       "has_physical_location": false,
+      "dispatch_gps_pin": {
+        "lat": 19.781722,
+        "lng": -70.701944,
+        "dms": "19°46'54.2\"N 70°42'07.0\"W",
+        "private_internal_only": true
+      },
+      "approved_location_policy": "Mobile / client's home or vetted medical clinic facility only",
       "service_modes_supported": ["mobile_visit"],
-      "hours_note": "Disponibilidad de 8 horas (exact start/end hours & days pending)",
+      "hours": {
+        "daily_window": "8:00 AM - 4:00 PM",
+        "working_days": "Pending exact days (assumed Mon-Sat)"
+      },
+      "hours_note": "8:00 AM - 4:00 PM (exact days pending)",
       "photos": {
         "portrait_primary": "onboarding/puerto_plata_wellness/photos/nelfa_lopez_portrait.jpg",
         "portrait_closeup": "onboarding/puerto_plata_wellness/photos/nelfa_lopez_closeup.jpg",
         "workspace_or_kit": null
       },
-      "pricing_agreement_status": "agreed_to_suggested_ranges_pending_alignment_with_partner",
+      "pricing_agreement_status": "confirmed_mobile_tiers_with_claribel",
+      "confirmed_mobile_tiers_dop": {
+        "60_min": [3000, 3800],
+        "90_min": [4000, 5000],
+        "note": "Confirmed aligned with Claribel: 60 min mobile is 3,000–3,800 DOP and 90 min mobile is 4,000–5,000 DOP"
+      },
       "currency": "DOP",
       "services_massage_mobile": [
         {
@@ -120,10 +136,8 @@
         "Cupping set (ventosas)"
       ],
       "pending_items": [
-        "Exact 8-hour schedule & working days",
-        "Confirm whether Sosúa / Cabarete are also covered",
-        "Confirm final agreed fixed prices with partner",
-        "Optional photo of portable table/kit"
+        "Confirm working days (e.g. Mon-Sat)",
+        "Optional photo of portable table/kit (coordinating with Clara tomorrow)"
       ]
     },
     {
@@ -141,11 +155,16 @@
       "whatsapp": "+18299584064",
       "phone": "+18299584064",
       "primary_location_id": "loc_puerto_plata",
-      "service_areas": ["loc_puerto_plata"],
-      "has_physical_location": true,
-      "address_clue": "Próximo al Puente Seco, Puerto Plata",
-      "gps_pin": null,
-      "service_modes_supported": ["in_shop", "mobile_visit"],
+      "service_areas": ["loc_puerto_plata", "loc_montellano", "loc_sosua"],
+      "has_physical_location": false,
+      "studio_approval_status": "conditional_pending_final_inspection",
+      "studio_approval_note": "Start mobile/at-home (or vetted medical clinic); unlock in_shop and showcase the studio once setup is finished and passes cleanliness/readiness inspection",
+      "gps_pin_internal_only": {
+        "lat": 19.787583,
+        "lng": -70.692389,
+        "dms": "19°47'15.3\"N 70°41'32.6\"W"
+      },
+      "service_modes_supported": ["mobile_visit"],
       "hours": {
         "monday_saturday": "9:00 AM - 7:00 PM",
         "sunday": "Closed"
@@ -248,11 +267,16 @@
           "pricing_note": "Quote based on hair density/area"
         }
       ],
-      "pending_items": [
-        "Exact WhatsApp GPS location pin (curbside in front of spa)",
-        "Confirm whether Nelfa and Claribel have aligned on shared mobile pricing (notice Sports 90 min mobile is 4000-5000 DOP and Sports Recovery 60 min is on-site only)",
-        "Confirm fixed single prices vs ranges for storefront display"
-      ]
+      "pricing_agreement_status": "confirmed_mobile_tiers_with_nelfa",
+      "confirmed_mobile_tiers_dop": {
+        "60_min": [3000, 3800],
+        "90_min": [4000, 5000],
+        "note": "Claribel confirmed 60 min mobile is 3,000–3,800 DOP and 90 min mobile is 4,000–5,000 DOP (varies by service/distance)"
+      },
+      "portable_equipment_to_lend": [
+        "1 portable massage table (camilla portátil)"
+      ],
+      "pending_items": []
     }
   ]
 }

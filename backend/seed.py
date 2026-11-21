@@ -72,7 +72,7 @@ def seed_database(db_path: str):
         ("loc_sosua", "Sosúa", "Puerto Plata Province", "active", 1, 1, "Sosua, El Batey, Los Charamicos"),
         ("loc_montellano", "Villa Montellano", "Puerto Plata Province", "active", 1, 2, "Montellano, Villa Montellano"),
         ("loc_cabarete", "Cabarete", "Puerto Plata Province", "upcoming", 0, 3, "Cabarete, Encuentro"),
-        ("loc_puerto_plata", "Puerto Plata", "Puerto Plata Province", "upcoming", 0, 4, "Puerto Plata, Playa Dorada"),
+        ("loc_puerto_plata", "Puerto Plata", "Puerto Plata Province", "active", 1, 4, "Puerto Plata, Playa Dorada, Puente Seco"),
     ]
     for item in locations:
         lid, lname, lreg, lstatus, islaun, lorder = item[0], item[1], item[2], item[3], item[4], item[5]
@@ -85,7 +85,7 @@ def seed_database(db_path: str):
                 (lid, lname, lreg, lstatus, islaun, lorder, aliases)
             )
         else:
-            cur.execute("UPDATE locations SET search_aliases = ? WHERE id = ?", (aliases, lid))
+            cur.execute("UPDATE locations SET search_aliases = ?, status = ?, is_launch_market = ? WHERE id = ?", (aliases, lstatus, islaun, lid))
 
     # 4. Demo Business Owner 1: Carlos (Has existing website)
     owner1_id = "user_carlos_villas"
@@ -727,6 +727,103 @@ def seed_database(db_path: str):
                 ("srv_mas_3", "Mobile Home/Villa Massage Visit (60 min)", "Masaje a Domicilio en Villa (60 min)", "Therapist travels with massage table.", 3500.0, 1),
             ],
             "service_areas": ["loc_montellano", "loc_sosua"]
+        },
+        # 1b. Clara Light Spa (Claribel Batista Ferreira) - Puerto Plata (Mobile launch; studio conditional)
+        {
+            "id": "biz_clara_light_spa",
+            "owner_email": "claribel@claralightspa.com",
+            "owner_name": "Claribel Batista Ferreira",
+            "trading_name": "Clara Light Spa",
+            "legal_name": "Clara Light Spa",
+            "slug": "clara-light-spa",
+            "category_id": "cat_wellness_massage",
+            "primary_location_id": "loc_puerto_plata",
+            "description_en": "4x INFOTEP-certified massage therapist & aesthetician offering mobile home/villa spa, facials, nail care, and therapeutic massage across Puerto Plata, Montellano, and Sosúa.",
+            "description_es": "Masajista terapéutica y esteticista certificada 4x por INFOTEP. Masajes a domicilio, faciales, manicure/pedicure y cuidado corporal en Puerto Plata, Montellano y Sosúa.",
+            "has_physical_location": 0,
+            "address": "Puerto Plata (Mobile / Home Visits)",
+            "serves_entire_area": 1,
+            "whatsapp": "+18299414894",
+            "phone": "+18299584064",
+            "public_email": "citas@claralightspa.com",
+            "logo_url": "/frontend/uploads/wellness/claribel_clara_spa.jpg",
+            "cover_image_url": "/frontend/uploads/wellness/clara_light_spa_cover.jpg",
+            "hours_json": json.dumps({"monday_saturday": "9:00 AM - 7:00 PM", "sunday": "Closed"}),
+            "custom_commission_rate": 0.10,
+            "requests_enabled": 1,
+            "request_action_label_en": "Request an appointment",
+            "request_action_label_es": "Solicitar una cita",
+            "whatsapp_alerts_consent": 1,
+            "whatsapp_alerts_phone": "+18299414894",
+            "service_modes_supported": json.dumps(["mobile_visit"]),
+            "storefront_pin_lat": None,
+            "storefront_pin_lng": None,
+            "pickup_pin_lat": None,
+            "pickup_pin_lng": None,
+            "pickup_pin_note": "Mobile / Home Visits only (Studio conditional)",
+            "services": [
+                ("srv_cls_1", "Express / Targeted Massage (30 min)", "Masaje Express / Localizado (30 min)", "Back, neck & shoulders mobile visit.", 1800.0, 1),
+                ("srv_cls_2", "Relaxation / Swedish Massage (60 min)", "Masaje Relajante / Sueco (60 min)", "Full-body relaxation at your home or villa.", 3000.0, 1),
+                ("srv_cls_3", "Relaxation / Swedish Massage (90 min)", "Masaje Relajante / Sueco (90 min)", "Extended full-body relaxation session.", 4000.0, 1),
+                ("srv_cls_4", "Deep Tissue / Muscle-Release Massage (60 min)", "Masaje Descontracturante / Tejido Profundo (60 min)", "Targeted chronic tension and muscle relief.", 3500.0, 1),
+                ("srv_cls_5", "Sports / Muscle-Release Massage (90 min)", "Masaje Deportivo / Descontracturante (90 min)", "Extended deep muscle recovery session.", 4500.0, 1),
+                ("srv_cls_6", "Lymphatic Drainage (60 min)", "Drenaje Linfático (60 min)", "Gentle therapeutic lymphatic drainage.", 3400.0, 1),
+                ("srv_cls_7", "Hot Stone Massage (60 min)", "Masaje con Piedras Calientes (60 min)", "Warm volcanic stone tension release.", 3800.0, 1),
+                ("srv_cls_8", "Couples Massage (60 min)", "Masaje en Pareja (60 min)", "Simultaneous two-therapist mobile session.", 5500.0, 1),
+                ("srv_cls_9", "4-Hand Massage (60 min)", "Masaje a 4 Manos (60 min)", "Synchronized two-therapist luxury session.", 6000.0, 1),
+                ("srv_cls_10", "Basic Facial", "Facial Básico", "Cleansing, exfoliation & hydration facial.", 3000.0, 1),
+                ("srv_cls_11", "Pedicure & Manicure", "Pedicure y Manicure", "Complete mobile hand and foot care.", 2000.0, 1),
+                ("srv_cls_12", "Hair Removal (Arms, Legs, Underarms)", "Depilación (Brazos, Piernas, Axilas)", "Price quoted by area and hair density.", 0.0, 0),
+            ],
+            "service_areas": ["loc_puerto_plata", "loc_montellano", "loc_sosua"]
+        },
+        # 1c. Nelfa López García (Therapeutic Massage & Physical Therapy) - Puerto Plata (Mobile-Only)
+        {
+            "id": "biz_nelfa_lopez",
+            "owner_email": "nelfa@mavunqo.com",
+            "owner_name": "Nelfa López García",
+            "trading_name": "Nelfa López García — Masajes y Terapia Física",
+            "legal_name": "Nelfa López García",
+            "slug": "nelfa-lopez-terapia",
+            "category_id": "cat_wellness_massage",
+            "primary_location_id": "loc_puerto_plata",
+            "description_en": "INFOTEP-certified massage therapist & physical therapist specializing in mobile therapeutic massage, sports recovery, and physical rehabilitation across Puerto Plata, Montellano, and Sosúa.",
+            "description_es": "Masajista profesional y terapista físico certificada por INFOTEP. Especializada en masajes terapéuticos, recuperación deportiva y rehabilitación física a domicilio en Puerto Plata, Montellano y Sosúa.",
+            "has_physical_location": 0,
+            "address": "Puerto Plata (Mobile / Home Visits Only)",
+            "serves_entire_area": 1,
+            "whatsapp": "+18299414894",
+            "phone": "+18495282828",
+            "public_email": "citas@mavunqo.com",
+            "logo_url": "/frontend/uploads/wellness/nelfa_lopez.jpg",
+            "cover_image_url": "/frontend/uploads/wellness/nelfa_lopez.jpg",
+            "hours_json": json.dumps({"daily": "8:00 AM - 4:00 PM"}),
+            "custom_commission_rate": 0.10,
+            "requests_enabled": 1,
+            "request_action_label_en": "Request an appointment",
+            "request_action_label_es": "Solicitar una cita",
+            "whatsapp_alerts_consent": 1,
+            "whatsapp_alerts_phone": "+18299414894",
+            "service_modes_supported": json.dumps(["mobile_visit"]),
+            "storefront_pin_lat": None,
+            "storefront_pin_lng": None,
+            "pickup_pin_lat": None,
+            "pickup_pin_lng": None,
+            "pickup_pin_note": "Mobile / Home Visits only (Studio conditional)",
+            "services": [
+                ("srv_nlg_1", "Express / Targeted Massage (30 min)", "Masaje Express / Localizado (30 min)", "Focused neck, back & shoulder relief at home.", 1800.0, 1),
+                ("srv_nlg_2", "Relaxing / Swedish Massage (60 min)", "Masaje Relajante / Sueco (60 min)", "Full-body relaxing mobile massage.", 3000.0, 1),
+                ("srv_nlg_3", "Relaxing / Swedish Massage (90 min)", "Masaje Relajante / Sueco (90 min)", "Extended full-body relaxing mobile session.", 4000.0, 1),
+                ("srv_nlg_4", "Deep Tissue / Descontracturante (60 min)", "Masaje Descontracturante / Tejido Profundo (60 min)", "Deep muscle tension & knot release.", 3500.0, 1),
+                ("srv_nlg_5", "Deep Tissue / Descontracturante (90 min)", "Masaje Descontracturante / Tejido Profundo (90 min)", "Extended deep tissue therapeutic session.", 4500.0, 1),
+                ("srv_nlg_6", "Sports / Recovery Massage (60 min)", "Masaje Deportivo / Recuperación (60 min)", "Athletic muscle recovery & mobility.", 3500.0, 1),
+                ("srv_nlg_7", "Lymphatic Drainage (60 min)", "Drenaje Linfático (60 min)", "Therapeutic lymphatic drainage session.", 3400.0, 1),
+                ("srv_nlg_8", "Initial Assessment + Physical Therapy Session (60 min)", "Evaluación Inicial + Sesión de Terapia Física (60 min)", "Full evaluation and first mobile rehab session.", 3200.0, 1),
+                ("srv_nlg_9", "Standard Physical Therapy / Rehab Session (45–60 min)", "Sesión Estándar de Terapia Física / Rehabilitación (45–60 min)", "Targeted physical therapy & mobility rehab.", 3000.0, 1),
+                ("srv_nlg_10", "Extended Manual Therapy + Exercise (75–90 min)", "Terapia Manual Extendida + Ejercicios (75–90 min)", "Comprehensive manual therapy & guided rehab.", 4200.0, 1),
+                ("srv_nlg_11", "Post-Op / Sports Injury Rehab (60 min)", "Rehabilitación Post-Operatoria / Lesiones Deportivas (60 min)", "Post-surgery and injury recovery protocol.", 3500.0, 1),
+            ],
+            "service_areas": ["loc_puerto_plata", "loc_montellano", "loc_sosua"]
         },
         # 2. Beauty & Personal Care (Activated) - Sosúa
         {

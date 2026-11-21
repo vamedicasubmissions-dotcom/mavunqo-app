@@ -316,6 +316,38 @@ CREATE TABLE IF NOT EXISTS reservations (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS appointments (
+    id TEXT PRIMARY KEY,
+    appointment_code TEXT UNIQUE NOT NULL,
+    business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    service_id TEXT REFERENCES services(id) ON DELETE SET NULL,
+    service_name TEXT NOT NULL,
+    service_mode TEXT NOT NULL CHECK(service_mode IN ('in_shop', 'mobile_visit')) DEFAULT 'mobile_visit',
+    location_id TEXT REFERENCES locations(id),
+    customer_name TEXT NOT NULL,
+    customer_phone TEXT NOT NULL,
+    start_at TEXT NOT NULL, -- ISO-8601 YYYY-MM-DDTHH:MM
+    end_at TEXT NOT NULL,   -- ISO-8601 YYYY-MM-DDTHH:MM
+    travel_buffer_min INTEGER DEFAULT 30,
+    price REAL DEFAULT 0.0,
+    currency TEXT DEFAULT 'DOP',
+    commission_rate REAL DEFAULT 0.10,
+    status TEXT NOT NULL CHECK(status IN ('pending', 'confirmed', 'completed', 'cancelled')) DEFAULT 'confirmed',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS provider_availability (
+    id TEXT PRIMARY KEY,
+    business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    block_start TEXT NOT NULL,
+    block_end TEXT NOT NULL,
+    reason TEXT DEFAULT 'Personal / External Calendar',
+    source TEXT DEFAULT 'manual',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_businesses_status ON businesses(status);
 CREATE INDEX IF NOT EXISTS idx_businesses_slug ON businesses(slug);
 CREATE INDEX IF NOT EXISTS idx_businesses_category ON businesses(category_id);
@@ -329,6 +361,8 @@ CREATE INDEX IF NOT EXISTS idx_orders_token ON orders(status_token);
 CREATE INDEX IF NOT EXISTS idx_fee_records_biz ON fee_records(business_id);
 CREATE INDEX IF NOT EXISTS idx_lodging_units_biz ON lodging_units(business_id);
 CREATE INDEX IF NOT EXISTS idx_reservations_biz_status ON reservations(business_id, status);
+CREATE INDEX IF NOT EXISTS idx_appointments_biz_time ON appointments(business_id, start_at, end_at);
+CREATE INDEX IF NOT EXISTS idx_provider_avail_biz ON provider_availability(business_id, block_start, block_end);
 
 -- Automatic Delivery Capacity Control & Motorcycle Dispatch Schema
 CREATE TABLE IF NOT EXISTS drivers (

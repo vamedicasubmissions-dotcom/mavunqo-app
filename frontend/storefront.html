@@ -737,6 +737,20 @@
 
   <script src="/frontend/i18n.js"></script>
   <script>
+    const MARKET_TAX_CONFIG = {
+      DR: { label: 'ITBIS (18% included)', rate: 0.18, inclusive: true },
+      US: { label: 'Sales Tax (6%)', rate: 0.06, inclusive: false }
+    };
+
+    function calculateMarketTax(subtotal, marketCode = 'DR') {
+      const cfg = MARKET_TAX_CONFIG[marketCode] || MARKET_TAX_CONFIG.DR;
+      if (cfg.inclusive) {
+        const net = subtotal / (1 + cfg.rate);
+        return { label: cfg.label, net, tax: subtotal - net, total: subtotal, inclusive: true };
+      }
+      const tax = subtotal * cfg.rate;
+      return { label: cfg.label, net: subtotal, tax, total: subtotal + tax, inclusive: false };
+    }
     let currentBusiness = null;
     let restaurantMenu = null;
     let lodgingUnits = null;
@@ -932,7 +946,11 @@
         const isClothing = b.category_slug === 'clothing-fashion';
         const isGrocery = b.category_slug === 'groceries-colmados';
         const btnText = isClothing ? 'Browse Collection & Order' : (isGrocery ? 'Browse Aisles & Order' : 'Browse Menu & Order');
-        const descText = isClothing ? 'Browse dresses, denim, rompers & sets. Order for instant pickup or local courier delivery with cash-on-delivery.' : (isGrocery ? 'Order groceries, drinking water botellones, cold beers & snacks with 20-40 min motorcycle delivery.' : 'Select items from the menu to order for delivery or pickup with cash-on-delivery tracking & driver protection.');
+        const descText = isClothing
+          ? 'Browse dresses, denim, rompers & sets. Order for instant pickup or local courier delivery with cash-on-delivery.'
+          : (isGrocery
+            ? 'Order groceries, drinking water botellones, cold beers & snacks with 20-40 min motorcycle delivery.'
+            : 'DoorDash-style menu ordering: customize items with modifiers, choose delivery or pickup, and view itemized tax & courier fees at checkout.');
         ctaList.innerHTML = `
           <div style="background: rgba(17, 107, 98, 0.08); border: 1px solid rgba(17, 107, 98, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
             <div style="font-weight: 800; font-size: 0.9rem; color: var(--teal-primary); margin-bottom: 0.25rem;">⚡ Order Directly on Mavunqo</div>
@@ -957,13 +975,26 @@
             🛏️ Reserve Stay
           </button>
         `;
+      } else if (b.category_slug === 'professional-services') {
+        // Professional Services (Calendly / Upwork model)
+        ctaList.innerHTML = `
+          <div style="background: rgba(17, 107, 98, 0.08); border: 1px solid rgba(17, 107, 98, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
+            <div style="font-weight: 800; font-size: 0.9rem; color: var(--teal-primary); margin-bottom: 0.25rem;">📅 Consultation &amp; Package Booking</div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
+              Book a consultation, review flat or hourly rates, and confirm your time slot directly on Mavunqo with transparent fee &amp; ITBIS breakdown.
+            </p>
+          </div>
+          <button class="btn btn-primary" style="width: 100%; font-weight: 800; padding: 0.75rem;" onclick="openContactModal();">
+            📅 Book Consultation
+          </button>
+        `;
       } else {
-        // Trade & Automotive Services (Caribe Fix, etc.): 100% Platform Locked! No personal phone/WhatsApp
+        // Home Services & Auto/Transport (Thumbtack / TaskRabbit model): 100% Platform Locked!
         ctaList.innerHTML = `
           <div style="background: rgba(17, 107, 98, 0.08); border: 1px solid rgba(17, 107, 98, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
             <div style="font-weight: 800; font-size: 0.9rem; color: var(--teal-primary); margin-bottom: 0.25rem;">🔒 Mavunqo Protected Booking</div>
             <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
-              Request diagnostic, mobile repair, or emergency service directly through Mavunqo. We protect your phone number & coordinate arrival.
+              Compare upfront or quote-based services, choose mobile visit or shop drop-off, and book your time slot. We protect your phone number &amp; coordinate arrival.
             </p>
           </div>
           <button class="btn btn-primary" style="width: 100%; font-weight: 800; padding: 0.75rem;" onclick="openContactModal();">
@@ -986,6 +1017,12 @@
       // CASE 2: HOSPITALITY / HOTEL (City Lights room booking active)
       if (lodgingUnits && lodgingUnits.length > 0) {
         renderLodgingUnits(lodgingUnits, sContainer);
+        return;
+      }
+
+      // CASE 2.5: MASSAGE & WELLNESS (Goal-grouped menu, On-Site vs Mobile switcher, duration pills)
+      if ((b.category_slug === 'massage-wellness' || b.category_slug === 'health-wellness') && b.services && b.services.length > 0) {
+        renderWellnessMenu(b, sContainer);
         return;
       }
 
@@ -1019,6 +1056,180 @@
         });
       } else {
         sContainer.innerHTML = `<p style="color: var(--text-muted);">Please contact this business directly for their services menu.</p>`;
+      }
+    }
+
+    // --- MASSAGE & WELLNESS GROUPED MENU ---
+    let wellnessModeFilter = 'all';
+
+    function renderWellnessMenu(b, container) {
+      const isEs = currentLang === 'es';
+      let modes = [];
+      try {
+        modes = Array.isArray(b.service_modes_supported)
+          ? b.service_modes_supported
+          : JSON.parse(b.service_modes_supported || '[]');
+      } catch (e) {
+        modes = [];
+      }
+      const hasInShop = modes.includes('in_shop') || b.has_physical_location;
+      const hasMobile = modes.includes('mobile_visit');
+      const mobileOnly = hasMobile && !hasInShop;
+      if (mobileOnly) wellnessModeFilter = 'mobile';
+
+      // 1. Trust & Mode Header Bar
+      const trustBar = document.createElement('div');
+      trustBar.style.cssText = 'display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:0.75rem; background:rgba(17,107,98,0.06); border:1px solid rgba(17,107,98,0.18); border-radius:12px; padding:0.9rem 1rem; margin-bottom:1.1rem;';
+
+      const badgesHtml = `
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.5rem;">
+          <span style="display:inline-flex; align-items:center; gap:0.35rem; background:#116B62; color:#fff; font-size:0.78rem; font-weight:750; padding:0.3rem 0.65rem; border-radius:999px;">
+            ✓ ${isEs ? 'Certificado INFOTEP' : 'INFOTEP Certified'}
+          </span>
+          <span style="display:inline-flex; align-items:center; gap:0.3rem; background:#fff; color:#09433D; border:1px solid rgba(17,107,98,0.25); font-size:0.78rem; font-weight:700; padding:0.3rem 0.65rem; border-radius:999px;">
+            ${mobileOnly
+              ? (isEs ? '🚗 Solo a Domicilio' : '🚗 Mobile / Home Visits Only')
+              : (hasInShop && hasMobile
+                ? (isEs ? '🏥 Local + A Domicilio' : '🏥 In-Studio + Mobile Visits')
+                : (isEs ? '🏥 En Local' : '🏥 In-Studio'))}
+          </span>
+        </div>
+      `;
+
+      let switcherHtml = '';
+      if (hasInShop && hasMobile) {
+        const btnStyle = (active) => active
+          ? 'background:#116B62; color:#fff; border:1px solid #116B62;'
+          : 'background:#fff; color:#1f2937; border:1px solid #d1d5db;';
+        switcherHtml = `
+          <div style="display:inline-flex; gap:0.35rem; flex-wrap:wrap;">
+            <button type="button" onclick="wellnessModeFilter='all'; renderWellnessMenu(currentBusiness, document.getElementById('servicesMenuContainer'));" style="${btnStyle(wellnessModeFilter==='all')} padding:0.35rem 0.75rem; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer;">
+              ${isEs ? 'Todos' : 'All'}
+            </button>
+            <button type="button" onclick="wellnessModeFilter='in_shop'; renderWellnessMenu(currentBusiness, document.getElementById('servicesMenuContainer'));" style="${btnStyle(wellnessModeFilter==='in_shop')} padding:0.35rem 0.75rem; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer;">
+              ${isEs ? 'En Local' : 'On-Site'}
+            </button>
+            <button type="button" onclick="wellnessModeFilter='mobile'; renderWellnessMenu(currentBusiness, document.getElementById('servicesMenuContainer'));" style="${btnStyle(wellnessModeFilter==='mobile')} padding:0.35rem 0.75rem; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer;">
+              ${isEs ? 'A Domicilio' : 'Mobile'}
+            </button>
+          </div>
+        `;
+      }
+      container.innerHTML = '';
+      trustBar.innerHTML = badgesHtml + switcherHtml;
+      container.appendChild(trustBar);
+
+      // Mobile expectation micro-copy when viewing Mobile / Home Visit
+      if (hasMobile && (wellnessModeFilter === 'mobile' || mobileOnly)) {
+        const mobileNote = document.createElement('div');
+        mobileNote.style.cssText = 'background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:0.75rem 1rem; margin-bottom:1.1rem; font-size:0.84rem; color:#78350f; line-height:1.45;';
+        mobileNote.innerHTML = isEs
+          ? `<strong>🚗 Qué esperar a domicilio:</strong> El/la terapeuta lleva camilla portátil, sábanas limpias y aceites. Solo necesitas un espacio tranquilo; los 10 min de armado no se descuentan de tu sesión.`
+          : `<strong>🚗 What to expect for mobile visits:</strong> Your therapist brings a portable table, fresh linens, and oils. Just have a quiet space ready—setup and teardown do not cut into your session time.`;
+        container.appendChild(mobileNote);
+      }
+
+      // 2. Group services by customer goal
+      const groups = [
+        {
+          id: 'pain_rehab',
+          title_en: 'Pain Relief & Physical Rehabilitation',
+          title_es: 'Alivio del Dolor y Rehabilitación Física',
+          match: /deep tissue|descontracturante|sports|deportivo|rehab|physical|terapia física|evaluación|post-op|express|localizado|recovery|recuperación/i,
+          items: []
+        },
+        {
+          id: 'relaxation',
+          title_en: 'Stress Relief & Relaxation',
+          title_es: 'Relajación y Bienestar',
+          match: /swedish|sueco|relax|relajante|hot stone|piedras|aromatherap/i,
+          items: []
+        },
+        {
+          id: 'specialty_spa',
+          title_en: 'Specialty Spa & Aesthetics',
+          title_es: 'Spa Especializado y Estética',
+          match: /lymphatic|linfático|couple|pareja|4-hand|4 manos|facial|pedicure|manicure|hair removal|depilación|reflexolog/i,
+          items: []
+        },
+        {
+          id: 'packages_addons',
+          title_en: 'Packages & Add-Ons',
+          title_es: 'Paquetes y Adicionales',
+          match: /.*/i,
+          items: []
+        }
+      ];
+
+      b.services.forEach(s => {
+        const text = `${s.name_en || ''} ${s.name_es || ''} ${s.description_en || ''} ${s.description_es || ''}`;
+        const isMobileItem = /mobile|domicilio|home|villa/i.test(text);
+        const isOnSiteItem = /on-site|in-studio|local|en local/i.test(text);
+
+        if (wellnessModeFilter === 'mobile' && isOnSiteItem && !isMobileItem) return;
+        if (wellnessModeFilter === 'in_shop' && isMobileItem && !isOnSiteItem) return;
+
+        const targetGroup = groups.find(g => g.match.test(text));
+        if (targetGroup) targetGroup.items.push(s);
+      });
+
+      // 3. Render grouped sections
+      let renderedCount = 0;
+      groups.forEach(group => {
+        if (group.items.length === 0) return;
+        renderedCount += group.items.length;
+
+        const section = document.createElement('div');
+        section.style.marginBottom = '1.5rem';
+
+        const heading = document.createElement('h3');
+        heading.style.cssText = 'font-size:1.1rem; font-weight:800; color:#09433D; margin-bottom:0.75rem; padding-bottom:0.35rem; border-bottom:2px solid rgba(17,107,98,0.15);';
+        heading.textContent = isEs ? group.title_es : group.title_en;
+        section.appendChild(heading);
+
+        group.items.forEach(s => {
+          const rawName = isEs ? s.name_es : s.name_en;
+          const sDesc = isEs ? s.description_es : s.description_en;
+
+          // Extract duration pill e.g. (60 min) or (45–60 min)
+          const durMatch = rawName.match(/\(([^)]*min[^)]*)\)/i);
+          const durationPill = durMatch
+            ? `<span style="display:inline-block; background:#f3f4f6; color:#374151; font-size:0.74rem; font-weight:700; padding:0.15rem 0.5rem; border-radius:999px; margin-left:0.4rem; vertical-align:middle;">⏱ ${durMatch[1]}</span>`
+            : '';
+          const cleanName = durMatch ? rawName.replace(durMatch[0], '').replace(/\s{2,}/g, ' ').trim() : rawName;
+
+          const priceText = s.display_price && s.price
+            ? `${s.currency} $${s.price}`
+            : `<span style="font-size:0.88rem; color:var(--text-muted); font-weight:600;">${i18n[currentLang].price_on_request}</span>`;
+
+          const card = document.createElement('div');
+          card.className = 'uber-menu-card';
+          card.style.cssText = 'display:flex; justify-content:space-between; align-items:center; gap:0.75rem; flex-wrap:wrap;';
+          card.innerHTML = `
+            <div style="flex:1; min-width:200px;">
+              <div class="uber-menu-name" style="font-size:1.02rem;">${cleanName}${durationPill}</div>
+              ${sDesc ? `<div class="uber-menu-desc">${sDesc}</div>` : ''}
+            </div>
+            <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:0.35rem;">
+              <div class="uber-menu-price">${priceText}</div>
+              <button class="btn btn-primary btn-sm" onclick="requestSpecificService('${escapeAttr(rawName)}', '${escapeAttr(priceText)}');" style="font-size:0.78rem; font-weight:750;">
+                ${isEs ? 'Reservar' : 'Book Service'}
+              </button>
+            </div>
+          `;
+          section.appendChild(card);
+        });
+
+        container.appendChild(section);
+      });
+
+      if (renderedCount === 0) {
+        const empty = document.createElement('p');
+        empty.style.color = 'var(--text-muted)';
+        empty.textContent = isEs
+          ? 'No hay servicios en esta modalidad. Cambia el filtro arriba para ver todos.'
+          : 'No services match this mode filter. Switch the filter above to view all.';
+        container.appendChild(empty);
       }
     }
 
