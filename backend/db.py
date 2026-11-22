@@ -348,6 +348,17 @@ CREATE TABLE IF NOT EXISTS provider_availability (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS merchant_intake_logs (
+    id TEXT PRIMARY KEY,
+    sender_phone TEXT NOT NULL,
+    business_id TEXT REFERENCES businesses(id) ON DELETE SET NULL,
+    raw_message TEXT NOT NULL,
+    parsed_json TEXT NOT NULL,
+    brand_anonymous BOOLEAN DEFAULT 1,
+    status TEXT NOT NULL CHECK(status IN ('pending_review', 'applied', 'ignored')) DEFAULT 'pending_review',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_businesses_status ON businesses(status);
 CREATE INDEX IF NOT EXISTS idx_businesses_slug ON businesses(slug);
 CREATE INDEX IF NOT EXISTS idx_businesses_category ON businesses(category_id);
