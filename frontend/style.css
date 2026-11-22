@@ -219,22 +219,25 @@ header.navbar {
    CARIBBEAN HERO SECTION & SEARCH
    ========================================================================== */
 .uber-hero {
-  background-color: transparent;
-  padding: 3rem 1.5rem 2rem;
+  background: linear-gradient(135deg, rgba(17, 107, 98, 0.80) 0%, rgba(9, 67, 61, 0.86) 100%), url('/frontend/dr_coast_hero.jpg') center/cover no-repeat;
+  padding: 3rem 1.5rem 2.25rem;
   max-width: 1280px;
-  margin: 0 auto;
+  margin: 1rem auto 0;
+  border-radius: var(--radius-xl);
+  border-bottom: 3px solid var(--amber-secondary);
 }
 .uber-hero-headline {
   font-size: 3.2rem;
   font-weight: 900;
   letter-spacing: -0.04em;
   line-height: 1.1;
-  color: var(--teal-primary);
+  color: #ffffff;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
   margin-bottom: 0.75rem;
 }
 .uber-hero-subtitle {
   font-size: 1.25rem;
-  color: var(--text-secondary);
+  color: #E7F3F1;
   margin-bottom: 2rem;
   font-weight: 450;
   max-width: 650px;
