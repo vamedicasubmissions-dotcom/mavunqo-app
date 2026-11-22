@@ -266,14 +266,19 @@
     <div id="profileContent" style="display: none;">
       <!-- Uber Storefront Hero Header -->
       <div class="uber-storefront-hero" style="background: linear-gradient(135deg, #116B62 0%, #09433D 100%) !important; border-bottom: 3px solid #F3A64A; color: #ffffff !important;">
-        <div class="uber-storefront-meta">
-          <span id="bizCategory" class="uber-storefront-badge">Category</span>
-          <span id="bizLocation" class="uber-storefront-badge">📍 Location</span>
-          <span id="bizTierPill" class="uber-storefront-badge">Verified Online Store</span>
-          <span id="bizDeliveryBadge" class="uber-storefront-badge" style="display: none;"></span>
+        <div style="display: flex; align-items: center; gap: 1.15rem; flex-wrap: wrap;">
+          <img id="bizLogoImg" src="" alt="Business portrait" style="display: none; width: 88px; height: 88px; border-radius: 16px; object-fit: cover; object-position: top center; border: 3px solid #F3A64A; box-shadow: 0 4px 14px rgba(0,0,0,0.3); background: #ffffff; flex-shrink: 0;">
+          <div style="flex: 1; min-width: 240px;">
+            <div class="uber-storefront-meta">
+              <span id="bizCategory" class="uber-storefront-badge">Category</span>
+              <span id="bizLocation" class="uber-storefront-badge">📍 Location</span>
+              <span id="bizTierPill" class="uber-storefront-badge">Verified Online Store</span>
+              <span id="bizDeliveryBadge" class="uber-storefront-badge" style="display: none;"></span>
+            </div>
+            <h1 id="bizTradingName" class="uber-storefront-title" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Business Name</h1>
+            <p id="bizDescription" class="uber-storefront-desc"></p>
+          </div>
         </div>
-        <h1 id="bizTradingName" class="uber-storefront-title" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Business Name</h1>
-        <p id="bizDescription" class="uber-storefront-desc"></p>
       </div>
 
       <div class="uber-storefront-layout">
@@ -818,6 +823,17 @@
       document.getElementById("profileContent").style.display = "block";
 
       document.getElementById("bizTradingName").textContent = b.trading_name;
+      const logoImg = document.getElementById("bizLogoImg");
+      const heroPhoto = b.logo_url || b.cover_image_url;
+      if (logoImg) {
+        if (heroPhoto) {
+          logoImg.src = heroPhoto;
+          logoImg.alt = b.trading_name;
+          logoImg.style.display = "block";
+        } else {
+          logoImg.style.display = "none";
+        }
+      }
       document.getElementById("bizCategory").textContent = currentLang === "es" ? b.category_name_es : b.category_name_en;
       document.getElementById("bizLocation").textContent = `📍 ${b.location_name}`;
       document.getElementById("bizDescription").textContent = currentLang === "es" ? b.description_es : b.description_en;

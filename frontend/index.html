@@ -332,13 +332,17 @@
 
         const card = document.createElement("div");
         card.className = "uber-card";
+        const thumbUrl = b.logo_url || b.cover_image_url || "";
         card.innerHTML = `
-          <div class="uber-card-top">
-            <h3 class="uber-card-title">${b.trading_name}</h3>
-            <div class="uber-card-meta">
-              <span class="uber-badge">${catName}</span>
-              <span>📍 ${b.location_name}</span>
-              ${hasExternalSite ? `<span class="uber-badge">🌐 Web</span>` : (b.category_slug === 'clothing-fashion' ? `<span class="uber-badge" style="background: #e0f2fe; color: #0369a1; font-weight: 750;">🛍️ Online Store</span>` : `<span class="uber-badge" style="background: #e2e8f0;">⚡ Storefront</span>`)}
+          <div class="uber-card-top" style="display: flex; align-items: flex-start; gap: 0.85rem;">
+            ${thumbUrl ? `<img src="${thumbUrl}" alt="${b.trading_name}" loading="lazy" style="width: 60px; height: 60px; border-radius: 12px; object-fit: cover; object-position: top center; border: 2px solid #0d9488; flex-shrink: 0; background: #f1f5f9;">` : ""}
+            <div style="flex: 1; min-width: 0;">
+              <h3 class="uber-card-title">${b.trading_name}</h3>
+              <div class="uber-card-meta">
+                <span class="uber-badge">${catName}</span>
+                <span>📍 ${b.location_name}</span>
+                ${hasExternalSite ? `<span class="uber-badge">🌐 Web</span>` : (b.category_slug === 'clothing-fashion' ? `<span class="uber-badge" style="background: #e0f2fe; color: #0369a1; font-weight: 750;">🛍️ Online Store</span>` : `<span class="uber-badge" style="background: #e2e8f0;">⚡ Storefront</span>`)}
+              </div>
             </div>
           </div>
 

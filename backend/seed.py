@@ -1093,8 +1093,8 @@ def seed_database(db_path: str):
                     requests_enabled, request_action_label_en, request_action_label_es,
                     whatsapp_alerts_consent, whatsapp_alerts_phone, service_modes_supported,
                     storefront_pin_lat, storefront_pin_lng, pickup_pin_lat, pickup_pin_lng, pickup_pin_note,
-                    pilot_delivery_enabled
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?, ?, NULL, ?, ?, ?, ?, NULL, 'verified', ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    pilot_delivery_enabled, logo_url, cover_image_url
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?, ?, NULL, ?, ?, ?, ?, NULL, 'verified', ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     p["id"], owner_id, p["trading_name"], p["legal_name"], p["slug"], p["category_id"], p["primary_location_id"],
                     p["description_en"], p["description_es"], p["has_physical_location"], p["address"],
@@ -1103,7 +1103,8 @@ def seed_database(db_path: str):
                     p["requests_enabled"], p["request_action_label_en"], p["request_action_label_es"],
                     p["whatsapp_alerts_consent"], p["whatsapp_alerts_phone"], p["service_modes_supported"],
                     p["storefront_pin_lat"], p["storefront_pin_lng"], p["pickup_pin_lat"], p["pickup_pin_lng"], p["pickup_pin_note"],
-                    1 if p["id"] == "biz_taqueria_del_sol" else 0
+                    1 if p["id"] == "biz_taqueria_del_sol" else 0,
+                    p.get("logo_url"), p.get("cover_image_url")
                 )
             )
         else:
@@ -1111,12 +1112,14 @@ def seed_database(db_path: str):
                 """UPDATE businesses SET 
                     requests_enabled = ?, request_action_label_en = ?, request_action_label_es = ?,
                     whatsapp_alerts_consent = ?, whatsapp_alerts_phone = ?, service_modes_supported = ?,
-                    storefront_pin_lat = ?, storefront_pin_lng = ?, pickup_pin_lat = ?, pickup_pin_lng = ?, pickup_pin_note = ?
+                    storefront_pin_lat = ?, storefront_pin_lng = ?, pickup_pin_lat = ?, pickup_pin_lng = ?, pickup_pin_note = ?,
+                    logo_url = COALESCE(?, logo_url), cover_image_url = COALESCE(?, cover_image_url)
                    WHERE id = ?""",
                 (
                     p["requests_enabled"], p["request_action_label_en"], p["request_action_label_es"],
                     p["whatsapp_alerts_consent"], p["whatsapp_alerts_phone"], p["service_modes_supported"],
                     p["storefront_pin_lat"], p["storefront_pin_lng"], p["pickup_pin_lat"], p["pickup_pin_lng"], p["pickup_pin_note"],
+                    p.get("logo_url"), p.get("cover_image_url"),
                     p["id"]
                 )
             )
