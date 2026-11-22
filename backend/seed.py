@@ -1157,6 +1157,83 @@ def seed_database(db_path: str):
                 (did, dname, dphone, dtype, dstatus, dcap, dloc)
             )
 
+    # Seed Monthly SaaS Plans (Free Basic + 90-Day Trial Pro Tiers)
+    # -------------------------------------------------------------
+    saas_plans_data = [
+        (
+            "plan_free",
+            "free_basic",
+            "Free Basic Listing",
+            "Listado Básico Gratis",
+            0.0,
+            0.0,
+            0.10,
+            json.dumps({
+                "trial_days": 0,
+                "highlights_en": ["Directory listing", "WhatsApp intake", "10% per completed order/booking"],
+                "highlights_es": ["Presencia en el directorio", "Recepción por WhatsApp", "10% por pedido o reserva completada"]
+            }),
+            1,
+            1
+        ),
+        (
+            "plan_ordering_pro",
+            "ordering_booking_pro",
+            "Ordering & Booking Pro (90-Day Free Trial)",
+            "Pedidos y Reservas Pro (90 Días Gratis)",
+            19.0,
+            1150.0,
+            0.05,
+            json.dumps({
+                "trial_days": 90,
+                "highlights_en": ["90-day free trial", "Reduced 5% commission", "Unlimited menu/service updates & WhatsApp alerts"],
+                "highlights_es": ["90 días de prueba gratis", "Comisión reducida al 5%", "Actualizaciones ilimitadas y alertas por WhatsApp"]
+            }),
+            1,
+            2
+        ),
+        (
+            "plan_featured",
+            "featured_boost",
+            "Featured Discovery Boost",
+            "Impulso Destacado en Búsqueda",
+            29.0,
+            1750.0,
+            0.05,
+            json.dumps({
+                "trial_days": 90,
+                "highlights_en": ["90-day free trial", "Top placement in category & AI Concierge", "5% commission + analytics"],
+                "highlights_es": ["90 días de prueba gratis", "Posición destacada en categoría y Concierge IA", "5% de comisión + analíticas"]
+            }),
+            1,
+            3
+        ),
+        (
+            "plan_clinic_multi",
+            "multi_staff_clinic",
+            "Multi-Staff Clinic & Salon Pack",
+            "Pack Multi-Personal para Clínicas y Salones",
+            39.0,
+            2350.0,
+            0.03,
+            json.dumps({
+                "trial_days": 90,
+                "highlights_en": ["90-day free trial", "Up to 10 staff calendars", "3% commission + priority dispatch"],
+                "highlights_es": ["90 días de prueba gratis", "Hasta 10 calendarios de personal", "3% de comisión + despacho prioritario"]
+            }),
+            1,
+            4
+        ),
+    ]
+    for pid, pcode, pne, pns, pusd, pdop, pcomm, pfeat, pact, psort in saas_plans_data:
+        cur.execute(
+            """INSERT OR IGNORE INTO saas_plans (
+                id, code, name_en, name_es, monthly_price_usd, monthly_price_dop,
+                commission_rate, features_json, is_active, sort_order
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (pid, pcode, pne, pns, pusd, pdop, pcomm, pfeat, pact, psort)
+        )
+
     conn.commit()
     conn.close()
     print("Database successfully initialized and seeded with Sosúa pilot data!")

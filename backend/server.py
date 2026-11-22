@@ -38,6 +38,7 @@ from .service import MavunqoService
 from .whatsapp_gateway import verify_webhook_signature, record_and_check_idempotency, process_inbound_opt_keywords
 from .whatsapp_bot import WhatsAppOrderBot
 from .whatsapp_ordering_service import WhatsAppOrderingService
+from .security_monitor import SecurityMonitor
 from .tokens_and_attribution import build_merchant_qr_link, generate_attribution_signature
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -49,13 +50,22 @@ FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 service = MavunqoService(DB_PATH)
 wa_service = WhatsAppOrderingService(DB_PATH)
 wa_bot = WhatsAppOrderBot(DB_PATH)
+security_monitor = SecurityMonitor(DB_PATH)
 
 class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
-        # Enable CORS for local dev / API calls
+        # Enable CORS for local dev / API calls + core security headers
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
+        clean_path = getattr(self, "path", "").split("?")[0]
+        if clean_path == "/frontend/sw.js":
+            self.send_header("Service-Worker-Allowed", "/")
+        if clean_path.endswith((".js", ".css", ".html")) or clean_path == "/":
+            self.send_header("Cache-Control", "no-cache, must-revalidate")
         super().end_headers()
 
     def do_OPTIONS(self):
@@ -298,10 +308,21 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         # AI Concierge Endpoint (GET)
         if path == "/api/concierge":
+            client_ip = self.client_address[0] if self.client_address else "unknown"
+            ok_rate, rate_err = security_monitor.check_rate_limit(client_ip, path, max_hits=30, window_sec=60)
+            if not ok_rate:
+                return self.send_json({"error": rate_err}, 429)
             query_params = urllib.parse.parse_qs(parsed.query)
             q = query_params.get("q", [""])[0]
             lang = query_params.get("lang", ["en"])[0]
-            return self.send_json(service.ask_ai_concierge(q, lang))
+            role = query_params.get("role", ["customer"])[0]
+            ok_safe, safe_err = security_monitor.inspect_payload(client_ip, path, q)
+            if not ok_safe:
+                return self.send_json({"error": safe_err}, 403)
+            return self.send_json(service.ask_ai_concierge(q, lang, role))
+
+        if path == "/api/plans":
+            return self.send_json(service.list_saas_plans())
 
         # WhatsApp Webhook Challenge Verification (GET)
         if path == "/api/whatsapp/webhook":

@@ -359,6 +359,29 @@ CREATE TABLE IF NOT EXISTS merchant_intake_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS saas_plans (
+    id TEXT PRIMARY KEY,
+    code TEXT UNIQUE NOT NULL,
+    name_en TEXT NOT NULL,
+    name_es TEXT NOT NULL,
+    monthly_price_usd REAL NOT NULL DEFAULT 0.0,
+    monthly_price_dop REAL NOT NULL DEFAULT 0.0,
+    commission_rate REAL NOT NULL DEFAULT 0.10,
+    features_json TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT 1,
+    sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS business_subscriptions (
+    id TEXT PRIMARY KEY,
+    business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    plan_id TEXT NOT NULL REFERENCES saas_plans(id),
+    status TEXT NOT NULL CHECK(status IN ('active', 'trial', 'past_due', 'cancelled')) DEFAULT 'active',
+    billing_currency TEXT DEFAULT 'DOP',
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    renews_at TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_businesses_status ON businesses(status);
 CREATE INDEX IF NOT EXISTS idx_businesses_slug ON businesses(slug);
 CREATE INDEX IF NOT EXISTS idx_businesses_category ON businesses(category_id);

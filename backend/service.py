@@ -1314,15 +1314,55 @@ class MavunqoService:
         return {"success": True, "reservation_id": reservation_id, "status": "checked_in"}
 
     # -------------------------------------------------------------
-    # AI Concierge Query Engine (Bilingual & Grounded)
+    # AI Concierge Query Engine (Bilingual, Role-Aware & Grounded)
     # -------------------------------------------------------------
-    def ask_ai_concierge(self, query: str, lang: str = "en"):
-        query = (query or "").strip().lower()
+    def ask_ai_concierge(self, query: str, lang: str = "en", role: str = "customer"):
+        raw_query = (query or "").strip()
+        query = raw_query.lower()
+        is_es = (lang == "es")
+
         if not query:
             return {
-                "answer": "Hello! How can I assist you with services, dining, or hotel stays in Sosúa and Puerto Plata?",
+                "answer": "Hola, ¿en qué puedo ayudarte hoy en Mavunqo?" if is_es else "Hello! How can I assist you with services, dining, or hotel stays in Sosúa and Puerto Plata?",
                 "recommendations": []
             }
+
+        # Role-specific platform guidance (Owners, Drivers, Admins)
+        if role == "owner":
+            if any(k in query for k in ["price", "precio", "photo", "foto", "edit", "editar", "update", "actualizar", "service", "servicio"]):
+                return {
+                    "answer": (
+                        "Para actualizar precios, fotos o servicios: haz clic en '+ Add Item / Photo' en tu panel, o envíanos los cambios por WhatsApp y nosotros los actualizamos por ti."
+                        if is_es else
+                        "To update prices, photos, or services: click '+ Add Item / Photo' in your dashboard, or simply send your updates via WhatsApp and our team will update your storefront."
+                    ),
+                    "recommendations": []
+                }
+            if any(k in query for k in ["commission", "comision", "comisión", "fee", "tarifa", "plan", "monthly", "mensual", "10%"]):
+                return {
+                    "answer": (
+                        "Tu perfil básico es gratis. En citas generadas por Mavunqo aplica la comisión acordada (sin recargo al cliente), o puedes optar por un plan mensual fijo después del periodo introductorio gratis."
+                        if is_es else
+                        "Your basic listing is free. Platform-booked appointments carry the agreed commission (never added onto the customer's price), or you can switch to a flat monthly plan after the free intro period."
+                    ),
+                    "recommendations": []
+                }
+        elif role == "driver":
+            if any(k in query for k in ["pay", "pago", "distance", "distancia", "fee", "tarifa", "pin", "address", "direccion", "dirección"]):
+                return {
+                    "answer": (
+                        "Tarifa base de 100 DOP hasta 3 km, más 25 DOP por km adicional (y 100% de la propina). Por privacidad del cliente, solo verás el pin de Google Maps y nota de entrada."
+                        if is_es else
+                        "Base payout is 100 DOP within 3 km, plus 25 DOP per extra km (plus 100% of driver tips). For customer privacy, you receive the Google Maps pin and entrance note only."
+                    ),
+                    "recommendations": []
+                }
+        elif role == "admin":
+            if any(k in query for k in ["security", "alert", "alerta", "seguridad", "audit"]):
+                return {
+                    "answer": "Security Monitor active: check /api/admin/security-alerts for rate-limit blocks and threat probes logged to audit_events.",
+                    "recommendations": []
+                }
 
         with self.get_connection() as conn:
             # Query approved listings including service matches
@@ -3047,5 +3087,35 @@ class MavunqoService:
             "commission_rate": comm_rate,
             "status": "confirmed"
         }
+
+    # --- MONTHLY SAAS PLANS & SUBSCRIPTIONS ---
+    def list_saas_plans(self):
+        with self.get_connection() as conn:
+            rows = conn.execute(
+                "SELECT * FROM saas_plans WHERE is_active = 1 ORDER BY sort_order ASC"
+            ).fetchall()
+            out = []
+            for r in rows:
+                item = dict(r)
+                try:
+                    item["features"] = json.loads(item.get("features_json") or "[]")
+                except Exception:
+                    item["features"] = []
+                out.append(item)
+            return out
+
+    def assign_business_subscription(self, business_id: str, plan_code: str, billing_currency: str = "DOP", status: str = "trial"):
+        with self.get_connection() as conn:
+            plan = conn.execute("SELECT id, code, commission_rate FROM saas_plans WHERE code = ?", (plan_code,)).fetchone()
+            if not plan:
+                raise ValueError(f"Plan '{plan_code}' not found.")
+            sub_id = f"sub_{uuid.uuid4().hex[:12]}"
+            conn.execute(
+                """INSERT INTO business_subscriptions (id, business_id, plan_id, status, billing_currency)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (sub_id, business_id, plan["id"], status, billing_currency)
+            )
+            conn.commit()
+            return {"subscription_id": sub_id, "business_id": business_id, "plan_code": plan["code"], "status": status}
 
 
