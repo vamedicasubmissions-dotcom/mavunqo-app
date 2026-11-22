@@ -296,6 +296,19 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 return self.send_json({"error": str(e)}, 400)
 
+        if path.startswith("/api/owner/businesses/") and path.endswith("/plan"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            biz_id = parts[4]
+            try:
+                return self.send_json({"subscription": service.get_business_subscription(user["uid"], biz_id)})
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
         # Order In-App Masked Chat Messages (GET)
         if path == "/api/orders/messages":
             query_params = urllib.parse.parse_qs(parsed.query)
@@ -1143,6 +1156,26 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     staff_notes=data.get("notes", "")
                 )
                 return self.send_json(res)
+            except PermissionError as e:
+                return self.send_json({"error": str(e)}, 403)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path.startswith("/api/owner/businesses/") and path.endswith("/plan"):
+            user = self.get_auth_user()
+            if not user:
+                return self.send_json({"error": "Unauthorized"}, 401)
+            parts = path.split("/")
+            biz_id = parts[4]
+            data = self.read_json_body()
+            try:
+                res = service.subscribe_owner_business(
+                    user_id=user["uid"],
+                    business_id=biz_id,
+                    plan_code=data.get("plan_code", ""),
+                    billing_currency=data.get("billing_currency", "DOP")
+                )
+                return self.send_json(res, 201)
             except PermissionError as e:
                 return self.send_json({"error": str(e)}, 403)
             except Exception as e:

@@ -238,7 +238,7 @@
 
     const waBtn = document.createElement("a");
     waBtn.id = "mvqWhatsAppHelpBtn";
-    waBtn.href = "https://wa.me/18095550100?text=" + encodeURIComponent(
+    waBtn.href = "https://wa.me/18299414894?text=" + encodeURIComponent(
       isEs ? "Hola Mavunqo, necesito ayuda con la plataforma." : "Hi Mavunqo, I need help with the platform."
     );
     waBtn.target = "_blank";

@@ -3118,4 +3118,32 @@ class MavunqoService:
             conn.commit()
             return {"subscription_id": sub_id, "business_id": business_id, "plan_code": plan["code"], "status": status}
 
+    def get_business_subscription(self, user_id: str, business_id: str):
+        with self.get_connection() as conn:
+            biz = conn.execute("SELECT owner_id FROM businesses WHERE id = ?", (business_id,)).fetchone()
+            if not biz:
+                raise ValueError("Business not found.")
+            if biz["owner_id"] != user_id:
+                raise PermissionError("Forbidden: you do not own this business.")
+            row = conn.execute(
+                """SELECT s.id, s.status, s.billing_currency, s.started_at, p.code, p.name_en, p.name_es,
+                          p.monthly_price_usd, p.monthly_price_dop, p.commission_rate
+                   FROM business_subscriptions s
+                   JOIN saas_plans p ON s.plan_id = p.id
+                   WHERE s.business_id = ?
+                   ORDER BY s.rowid DESC LIMIT 1""",
+                (business_id,)
+            ).fetchone()
+            return dict(row) if row else None
+
+    def subscribe_owner_business(self, user_id: str, business_id: str, plan_code: str, billing_currency: str = "DOP"):
+        with self.get_connection() as conn:
+            biz = conn.execute("SELECT owner_id FROM businesses WHERE id = ?", (business_id,)).fetchone()
+            if not biz:
+                raise ValueError("Business not found.")
+            if biz["owner_id"] != user_id:
+                raise PermissionError("Forbidden: you do not own this business.")
+        status = "active" if plan_code == "free_basic" else "trial"
+        return self.assign_business_subscription(business_id, plan_code, billing_currency, status)
+
 

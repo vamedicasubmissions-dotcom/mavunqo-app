@@ -358,6 +358,20 @@
             </div>
           </div>
 
+          <!-- Monthly SaaS Plans & 90-Day Trial Picker -->
+          <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 850;">💎 Monthly SaaS Plan &amp; 90-Day Free Trial</h3>
+                <small style="color: var(--text-secondary);">Start free or lock in lower per-order commissions with a 90-day free trial.</small>
+              </div>
+              <span id="currentPlanBadge_${b.id}" class="uber-badge" style="background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; font-weight: 800;">Loading plan...</span>
+            </div>
+            <div id="saasPlansGrid_${b.id}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.85rem;">
+              <div style="font-size: 0.85rem; color: var(--text-secondary);">Loading plans...</div>
+            </div>
+          </div>
+
           <!-- Phase 2: Online Request Automation & WhatsApp Alerts Control -->
           <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
@@ -552,8 +566,78 @@
           const defaultLng = b.storefront_pin_lng || -70.5150;
           initBusinessMap(b.id, defaultLat, defaultLng);
           loadOwnerFinancials(b.id);
+          loadBusinessSaasPlans(b.id);
         }
 
+    }
+
+    async function loadBusinessSaasPlans(bizId) {
+      const grid = document.getElementById(`saasPlansGrid_${bizId}`);
+      const badge = document.getElementById(`currentPlanBadge_${bizId}`);
+      if (!grid) return;
+      try {
+        const [plansRes, subRes] = await Promise.all([
+          fetch("/api/plans"),
+          fetch(`/api/owner/businesses/${bizId}/plan`, { headers: { "Authorization": `Bearer ${token}` } })
+        ]);
+        const plans = await plansRes.json();
+        const subData = subRes.ok ? await subRes.json() : { subscription: null };
+        const activeCode = subData.subscription ? subData.subscription.code : "free_basic";
+        const activeStatus = subData.subscription ? subData.subscription.status : "active";
+
+        if (badge) {
+          const activePlan = (plans || []).find(p => p.code === activeCode);
+          badge.textContent = activePlan
+            ? `Current: ${activePlan.name_en} (${activeStatus.toUpperCase()})`
+            : "Current: Free Basic";
+        }
+
+        grid.innerHTML = (plans || []).map(p => {
+          const isCurrent = p.code === activeCode;
+          const commPct = Math.round((p.commission_rate || 0) * 100);
+          const highlights = (p.features && p.features.highlights_en) ? p.features.highlights_en : [];
+          return `
+            <div style="border: ${isCurrent ? "2px solid #0d9488" : "1px solid var(--border)"}; background: ${isCurrent ? "#f0fdfa" : "#f8fafc"}; border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+                  <strong style="font-size: 0.95rem; color: #0f172a;">${p.name_en}</strong>
+                  ${isCurrent ? `<span style="background: #0d9488; color: #fff; font-size: 0.68rem; font-weight: 800; padding: 2px 7px; border-radius: 999px;">ACTIVE</span>` : ""}
+                </div>
+                <div style="margin-top: 0.45rem; font-size: 1.25rem; font-weight: 900; color: #0f172a;">
+                  ${p.monthly_price_usd > 0 ? `$${p.monthly_price_usd}/mo <span style="font-size:0.78rem;font-weight:700;color:#475569;">(RD$${p.monthly_price_dop})</span>` : "Free ($0/mo)"}
+                </div>
+                <div style="font-size: 0.78rem; font-weight: 700; color: #0d9488; margin-top: 2px;">${commPct}% platform fee per order</div>
+                <ul style="margin: 0.6rem 0 0 1rem; padding: 0; font-size: 0.78rem; color: #334155; line-height: 1.45;">
+                  ${highlights.map(h => `<li>${h}</li>`).join("")}
+                </ul>
+              </div>
+              <button type="button" onclick="selectBusinessSaasPlan('${bizId}', '${p.code}')" class="btn btn-sm ${isCurrent ? "btn-outline" : "btn-primary"}" ${isCurrent ? "disabled" : ""} style="width: 100%; font-weight: 800;">
+                ${isCurrent ? "✓ Current Plan" : (p.monthly_price_usd > 0 ? "Start 90-Day Free Trial" : "Switch to Free Basic")}
+              </button>
+            </div>
+          `;
+        }).join("");
+      } catch (e) {
+        console.error("Failed to load SaaS plans", e);
+      }
+    }
+
+    async function selectBusinessSaasPlan(bizId, planCode) {
+      try {
+        const res = await fetch(`/api/owner/businesses/${bizId}/plan`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ plan_code: planCode, billing_currency: "DOP" })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || "Could not update plan.");
+          return;
+        }
+        await loadBusinessSaasPlans(bizId);
+      } catch (e) {
+        alert("Network error updating plan.");
+      }
     }
 
     async function loadOwnerFinancials(bizId) {
