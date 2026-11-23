@@ -600,6 +600,10 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 content_type = "image/webp"
             elif full_path.endswith(".gif"):
                 content_type = "image/gif"
+            elif full_path.endswith(".svg"):
+                content_type = "image/svg+xml"
+            elif full_path.endswith(".json") or full_path.endswith(".webmanifest"):
+                content_type = "application/json"
             return self.send_file_response(full_path, content_type)
 
         return self.send_error(404, "Not Found")
