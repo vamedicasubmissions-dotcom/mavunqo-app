@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d9488"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" rx="64" fill="url(#bg)"/>
+  <circle cx="200" cy="185" r="96" fill="#ffffff" fill-opacity="0.14"/>
+  <!-- Paw Print -->
+  <ellipse cx="145" cy="135" rx="18" ry="24" fill="#fde047"/>
+  <ellipse cx="200" cy="115" rx="18" ry="24" fill="#fde047"/>
+  <ellipse cx="255" cy="135" rx="18" ry="24" fill="#fde047"/>
+  <path d="M150 205c0-26 22-46 50-46s50 20 50 46c0 22-18 38-50 38s-50-16-50-38z" fill="#ffffff"/>
+  <!-- Medical Cross inside Paw -->
+  <rect x="192" y="182" width="16" height="44" rx="4" fill="#0d9488"/>
+  <rect x="178" y="196" width="44" height="16" rx="4" fill="#0d9488"/>
+  <text x="200" y="315" text-anchor="middle" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="42" font-weight="900" letter-spacing="1">AmigoVet</text>
+  <text x="200" y="348" text-anchor="middle" fill="#ccfbf1" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700">SOSÚA • PUERTO PLATA</text>
+</svg>

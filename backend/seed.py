@@ -692,43 +692,9 @@ def seed_database(db_path: str):
     # Includes Villa Montellano and Sosúa
     # -------------------------------------------------------------
 
+    cur.execute("DELETE FROM businesses WHERE id = 'biz_montellano_massage'")
+
     pilot_businesses = [
-        # 1. Massage & Wellness (Activated: In-shop + Mobile/Home visits) - Villa Montellano
-        {
-            "id": "biz_montellano_massage",
-            "owner_email": "ana@montellanomassage.com",
-            "owner_name": "Ana Mercedes Diaz",
-            "trading_name": "Montellano Oasis Massage & Spa",
-            "legal_name": "Oasis Montellano SRL",
-            "slug": "montellano-oasis-massage",
-            "category_id": "cat_wellness_massage",
-            "primary_location_id": "loc_montellano",
-            "description_en": "Holistic therapeutic massage, deep tissue therapy, reflexology, and mobile home/villa visits across Montellano and Sosúa.",
-            "description_es": "Masajes terapéuticos holísticos, terapia de tejido profundo, reflexología y visitas a domicilio en Montellano y Sosúa.",
-            "has_physical_location": 1,
-            "address": "Calle Principal #42, Villa Montellano",
-            "serves_entire_area": 1,
-            "whatsapp": "+18095553101",
-            "phone": "+18095553101",
-            "public_email": "citas@montellanomassage.com",
-            "requests_enabled": 1,
-            "request_action_label_en": "Request an appointment",
-            "request_action_label_es": "Solicitar una cita",
-            "whatsapp_alerts_consent": 1,
-            "whatsapp_alerts_phone": "+18095553101",
-            "service_modes_supported": json.dumps(["in_shop", "mobile_visit"]),
-            "storefront_pin_lat": 19.7421,
-            "storefront_pin_lng": -70.5985,
-            "pickup_pin_lat": 19.7421,
-            "pickup_pin_lng": -70.5985,
-            "pickup_pin_note": "Front Spa Entrance on Calle Principal, Villa Montellano",
-            "services": [
-                ("srv_mas_1", "Full Body Swedish Massage (60 min)", "Masaje Sueco de Cuerpo Completo (60 min)", "Relaxing full body oil massage.", 2200.0, 1),
-                ("srv_mas_2", "Deep Tissue & Sports Therapy (75 min)", "Terapia de Tejido Profundo (75 min)", "Targeted chronic tension relief.", 2800.0, 1),
-                ("srv_mas_3", "Mobile Home/Villa Massage Visit (60 min)", "Masaje a Domicilio en Villa (60 min)", "Therapist travels with massage table.", 3500.0, 1),
-            ],
-            "service_areas": ["loc_montellano", "loc_sosua"]
-        },
         # 1b. Clara Light Spa (Claribel Batista Ferreira) - Puerto Plata (Mobile launch; studio conditional)
         {
             "id": "biz_clara_light_spa",
@@ -1067,24 +1033,26 @@ def seed_database(db_path: str):
             ],
             "service_areas": ["loc_montellano"]
         },
-        # 10. Veterinary & Pet Care (KlinicKey Vet Network)
+        # 10. Veterinary & Pet Care (AmigoVet Storefront on Mavunqo)
         {
             "id": "biz_klinickey_vet",
-            "owner_email": "vet@klinickey.com",
-            "owner_name": "KlinicKey Veterinary Network",
-            "trading_name": "KlinicKey Veterinary & Tele-Triage",
-            "legal_name": "KlinicKey Veterinary Services",
-            "slug": "klinickey-vet",
+            "owner_email": "vet@amigovet.do",
+            "owner_name": "AmigoVet Veterinary Network",
+            "trading_name": "AmigoVet",
+            "legal_name": "AmigoVet RD",
+            "slug": "amigovet",
             "category_id": "cat_veterinary",
             "primary_location_id": "loc_sosua",
-            "description_en": "24/7 bilingual veterinary urgent care, live video tele-triage, mobile home vet visits, vaccinations, and clinic checkups across Sosúa, Cabarete, and Puerto Plata.",
-            "description_es": "Atención veterinaria bilingüe 24/7, tele-triaje por video, visitas veterinarias a domicilio, vacunas y consultas clínicas en Sosúa, Cabarete y Puerto Plata.",
+            "description_en": "Bilingual veterinary care, video tele-triage, mobile home vet visits, vaccinations, and clinic checkups across Sosúa, Cabarete, and Puerto Plata.",
+            "description_es": "Atención veterinaria bilingüe, tele-triaje por video, visitas veterinarias a domicilio, vacunas y consultas clínicas en Sosúa, Cabarete y Puerto Plata.",
             "has_physical_location": 0,
             "address": "Sosúa, Cabarete & Puerto Plata (Mobile & Tele-Triage)",
             "serves_entire_area": 1,
             "whatsapp": "+18299414894",
             "phone": "+18299414894",
-            "public_email": "vet@klinickey.com",
+            "public_email": "vet@amigovet.do",
+            "logo_url": "/frontend/uploads/amigovet_badge.svg",
+            "cover_image_url": "/frontend/uploads/amigovet_badge.svg",
             "requests_enabled": 1,
             "request_action_label_en": "Book Vet Visit / Tele-Triage",
             "request_action_label_es": "Solicitar Consulta Veterinaria",
@@ -1107,14 +1075,20 @@ def seed_database(db_path: str):
 
     for p in pilot_businesses:
         # 1. Owner User
-        cur.execute("SELECT id FROM users WHERE email = ?", (p["owner_email"],))
+        default_owner_id = f"user_{p['id']}"
+        cur.execute("SELECT id FROM users WHERE id = ? OR email = ?", (default_owner_id, p["owner_email"]))
         user_row = cur.fetchone()
-        owner_id = user_row[0] if user_row else f"user_{p['id']}"
+        owner_id = user_row[0] if user_row else default_owner_id
         if not user_row:
             cur.execute(
                 """INSERT INTO users (id, email, password_hash, full_name, role)
                    VALUES (?, ?, ?, ?, 'owner')""",
                 (owner_id, p["owner_email"], hash_password("PilotPass2026!"), p["owner_name"])
+            )
+        else:
+            cur.execute(
+                "UPDATE users SET email = ?, full_name = ? WHERE id = ?",
+                (p["owner_email"], p["owner_name"], owner_id)
             )
 
         # 2. Business
@@ -1147,12 +1121,16 @@ def seed_database(db_path: str):
         else:
             cur.execute(
                 """UPDATE businesses SET 
+                    trading_name = ?, legal_name = ?, slug = ?,
+                    description_en = ?, description_es = ?,
                     requests_enabled = ?, request_action_label_en = ?, request_action_label_es = ?,
                     whatsapp_alerts_consent = ?, whatsapp_alerts_phone = ?, service_modes_supported = ?,
                     storefront_pin_lat = ?, storefront_pin_lng = ?, pickup_pin_lat = ?, pickup_pin_lng = ?, pickup_pin_note = ?,
                     logo_url = COALESCE(?, logo_url), cover_image_url = COALESCE(?, cover_image_url)
                    WHERE id = ?""",
                 (
+                    p["trading_name"], p["legal_name"], p["slug"],
+                    p["description_en"], p["description_es"],
                     p["requests_enabled"], p["request_action_label_en"], p["request_action_label_es"],
                     p["whatsapp_alerts_consent"], p["whatsapp_alerts_phone"], p["service_modes_supported"],
                     p["storefront_pin_lat"], p["storefront_pin_lng"], p["pickup_pin_lat"], p["pickup_pin_lng"], p["pickup_pin_note"],

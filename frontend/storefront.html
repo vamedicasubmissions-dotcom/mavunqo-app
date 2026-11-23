@@ -855,37 +855,11 @@
         delBadge.style.display = 'none';
       }
 
-      // Address & areas
-      document.getElementById("bizAddress").textContent = b.address || "Sosúa, Dominican Republic";
+      // Address & areas (mask exact street address and GPS pin across all categories until after checkout/confirmation)
+      document.getElementById("bizAddress").textContent = (b.location_name || "Sosúa") + " — " + (currentLang === "es" ? "Dirección exacta revelada después de confirmar" : "Exact address revealed after booking/checkout");
 
-      // Render Storefront Pin Map only if in-person service appointments; hide for catalog/delivery ordering to prevent diversion
       const mapWrap = document.getElementById("storefrontMapContainer");
-      const isOnlineShoppingOrDining = (b.category_slug === 'clothing-fashion' || b.category_slug === 'dining-food' || b.category_slug === 'groceries-colmados');
-      if (b.storefront_pin_lat && b.storefront_pin_lng && !isOnlineShoppingOrDining) {
-        mapWrap.style.display = "block";
-        const bLat = parseFloat(b.storefront_pin_lat);
-        const bLng = parseFloat(b.storefront_pin_lng);
-        document.getElementById("storefrontNavBtn").href = `https://www.google.com/maps/dir/?api=1&destination=${bLat},${bLng}`;
-        if (b.pickup_pin_note) {
-          document.getElementById("storefrontPinNote").textContent = `📍 ${b.pickup_pin_note}`;
-        } else {
-          document.getElementById("storefrontPinNote").textContent = "📍 " + (b.address || "Verified Location");
-        }
-        setTimeout(() => {
-          if (!window.storefrontMapInstance) {
-            window.storefrontMapInstance = L.map('storefrontLeafletMap').setView([bLat, bLng], 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              maxZoom: 19,
-              attribution: '© OpenStreetMap contributors'
-            }).addTo(window.storefrontMapInstance);
-            L.marker([bLat, bLng]).addTo(window.storefrontMapInstance)
-              .bindPopup(`<b>${escapeAttr(b.trading_name)}</b><br>${escapeAttr(b.address || 'Sosúa')}`).openPopup();
-          } else {
-            window.storefrontMapInstance.setView([bLat, bLng], 15);
-          }
-          window.storefrontMapInstance.invalidateSize();
-        }, 300);
-      } else {
+      if (mapWrap) {
         mapWrap.style.display = "none";
       }
       if (b.service_areas && b.service_areas.length > 0) {
@@ -1097,11 +1071,13 @@
       const trustBar = document.createElement('div');
       trustBar.style.cssText = 'display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:0.75rem; background:rgba(17,107,98,0.06); border:1px solid rgba(17,107,98,0.18); border-radius:12px; padding:0.9rem 1rem; margin-bottom:1.1rem;';
 
+      const hasInfotep = ((b.description_en || '') + ' ' + (b.description_es || '')).toLowerCase().includes('infotep');
       const badgesHtml = `
         <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.5rem;">
+          ${hasInfotep ? `
           <span style="display:inline-flex; align-items:center; gap:0.35rem; background:#116B62; color:#fff; font-size:0.78rem; font-weight:750; padding:0.3rem 0.65rem; border-radius:999px;">
             ✓ ${isEs ? 'Certificado INFOTEP' : 'INFOTEP Certified'}
-          </span>
+          </span>` : ''}
           <span style="display:inline-flex; align-items:center; gap:0.3rem; background:#fff; color:#09433D; border:1px solid rgba(17,107,98,0.25); font-size:0.78rem; font-weight:700; padding:0.3rem 0.65rem; border-radius:999px;">
             ${mobileOnly
               ? (isEs ? '🚗 Solo a Domicilio' : '🚗 Mobile / Home Visits Only')

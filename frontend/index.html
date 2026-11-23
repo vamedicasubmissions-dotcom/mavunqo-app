@@ -227,7 +227,7 @@
       locationsList.forEach(l => {
         const opt = document.createElement("option");
         opt.value = l.id;
-        opt.textContent = `${l.name} (${l.status === 'active' ? 'Sosúa Pilot' : 'Planned'})`;
+        opt.textContent = `${l.name} (${l.status === 'active' ? 'Active' : 'Coming Soon'})`;
         locSelect.appendChild(opt);
       });
     }
