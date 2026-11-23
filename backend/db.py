@@ -382,6 +382,17 @@ CREATE TABLE IF NOT EXISTS business_subscriptions (
     renews_at TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS sales_reps (
+    id TEXT PRIMARY KEY,
+    rep_code TEXT UNIQUE NOT NULL,
+    full_name TEXT NOT NULL,
+    phone TEXT,
+    email TEXT,
+    commission_share_rate REAL NOT NULL DEFAULT 0.25,
+    is_active BOOLEAN DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_businesses_status ON businesses(status);
 CREATE INDEX IF NOT EXISTS idx_businesses_slug ON businesses(slug);
 CREATE INDEX IF NOT EXISTS idx_businesses_category ON businesses(category_id);
@@ -684,6 +695,7 @@ def run_migrations(conn):
         ("pickup_pin_lng", "REAL"),
         ("pickup_pin_note", "TEXT"),
         ("pilot_delivery_enabled", "BOOLEAN DEFAULT 0"),
+        ("referred_by_rep_code", "TEXT"),
         ("power_backup_type", "TEXT DEFAULT 'none'"),
         ("custom_commission_rate", "REAL"),
         ("alert_email", "TEXT"),

@@ -337,6 +337,12 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/api/plans":
             return self.send_json(service.list_saas_plans())
 
+        if path == "/api/admin/sales-reps":
+            user = self.get_auth_user()
+            if not user or user.get("role") != "admin":
+                return self.send_json({"error": "Forbidden"}, 403)
+            return self.send_json(service.list_sales_rep_payouts())
+
         # WhatsApp Webhook Challenge Verification (GET)
         if path == "/api/whatsapp/webhook":
             hub_mode = query.get("hub.mode", [""])[0]
@@ -908,13 +914,31 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     rnc_tax_id=data.get("rnc_tax_id"), # Optional
                     service_area_ids=data.get("service_area_ids", []),
                     initial_services=data.get("services", []),
-                    legal_name=data.get("legal_name")
+                    legal_name=data.get("legal_name"),
+                    referred_by_rep_code=data.get("referred_by_rep_code")
                 )
                 return self.send_json({
                     "success": True,
                     "message": "Application submitted successfully and is awaiting review.",
                     "data": res
                 }, 201)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/admin/sales-reps":
+            user = self.get_auth_user()
+            if not user or user.get("role") != "admin":
+                return self.send_json({"error": "Forbidden"}, 403)
+            data = self.read_json_body()
+            try:
+                res = service.create_sales_rep(
+                    full_name=data.get("full_name", ""),
+                    phone=data.get("phone", ""),
+                    email=data.get("email", ""),
+                    commission_share_rate=float(data.get("commission_share_rate", 0.25)),
+                    rep_code=data.get("rep_code")
+                )
+                return self.send_json(res, 201)
             except Exception as e:
                 return self.send_json({"error": str(e)}, 400)
 

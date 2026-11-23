@@ -214,7 +214,8 @@ class MavunqoService:
                           phone: str = "", whatsapp: str = "", website_url: str = "",
                           address: str = "", serves_entire_area: bool = False,
                           rnc_tax_id: str = None, service_area_ids: list = None,
-                          initial_services: list = None, legal_name: str = None):
+                          initial_services: list = None, legal_name: str = None,
+                          referred_by_rep_code: str = None):
         from .auth import hash_password
         owner_email = owner_email.strip().lower()
         trading_name = trading_name.strip()
@@ -258,14 +259,14 @@ class MavunqoService:
                     id, owner_id, trading_name, legal_name, slug, category_id, primary_location_id,
                     description_en, description_es, status, has_physical_location, address,
                     serves_entire_area, website_url, whatsapp, phone, public_email,
-                    rnc_tax_id, rnc_status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, 'unverified')""",
+                    rnc_tax_id, rnc_status, referred_by_rep_code
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, 'unverified', ?)""",
                 (
                     biz_id, owner_id, trading_name, legal_name or trading_name, final_slug,
                     category_id, primary_location_id, description_en, description_es,
                     1 if address else 0, address, 1 if serves_entire_area else 0,
                     website_url or None, whatsapp or None, phone or None, owner_email,
-                    rnc_tax_id or None
+                    rnc_tax_id or None, (referred_by_rep_code or "").strip().upper() or None
                 )
             )
 
@@ -3145,5 +3146,50 @@ class MavunqoService:
                 raise PermissionError("Forbidden: you do not own this business.")
         status = "active" if plan_code == "free_basic" else "trial"
         return self.assign_business_subscription(business_id, plan_code, billing_currency, status)
+
+    def create_sales_rep(self, full_name: str, phone: str = "", email: str = "",
+                         commission_share_rate: float = 0.25, rep_code: str = None):
+        clean_name = (full_name or "").strip()
+        if not clean_name:
+            raise ValueError("Sales rep full name is required.")
+        rate = float(commission_share_rate)
+        if rate <= 0 or rate > 0.5:
+            raise ValueError("Commission share rate must be between 0.01 and 0.50.")
+        code = (rep_code or re.sub(r'[^A-Z0-9]+', '', clean_name.upper())[:6] or "REP")
+        rep_id = f"rep_{uuid.uuid4().hex[:10]}"
+        with self.get_connection() as conn:
+            existing = conn.execute("SELECT id FROM sales_reps WHERE rep_code = ?", (code,)).fetchone()
+            if existing:
+                code = f"{code}_{uuid.uuid4().hex[:4].upper()}"
+            conn.execute(
+                """INSERT INTO sales_reps (id, rep_code, full_name, phone, email, commission_share_rate)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (rep_id, code, clean_name, (phone or "").strip() or None, (email or "").strip() or None, rate)
+            )
+            conn.commit()
+        return {"id": rep_id, "rep_code": code, "full_name": clean_name, "commission_share_rate": rate}
+
+    def list_sales_rep_payouts(self):
+        with self.get_connection() as conn:
+            reps = conn.execute("SELECT * FROM sales_reps ORDER BY created_at DESC").fetchall()
+            out = []
+            for r in reps:
+                rep = dict(r)
+                referred = conn.execute(
+                    """SELECT b.id, b.trading_name, b.status,
+                              COALESCE(SUM(CASE WHEN o.status IN ('delivered', 'completed') THEN o.platform_fee_amount ELSE 0 END), 0) AS collected_order_fees
+                       FROM businesses b
+                       LEFT JOIN orders o ON o.business_id = b.id
+                       WHERE b.referred_by_rep_code = ?
+                       GROUP BY b.id""",
+                    (rep["rep_code"],)
+                ).fetchall()
+                total_fees = sum(float(row["collected_order_fees"] or 0.0) for row in referred)
+                rep["referred_businesses"] = [dict(row) for row in referred]
+                rep["referred_count"] = len(referred)
+                rep["total_collected_platform_fees"] = round(total_fees, 2)
+                rep["estimated_rep_payout"] = round(total_fees * float(rep["commission_share_rate"]), 2)
+                out.append(rep)
+            return out
 
 

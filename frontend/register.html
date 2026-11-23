@@ -180,7 +180,8 @@
         rnc_tax_id: document.getElementById("rncTaxId").value || null,
         description_en: document.getElementById("descEn").value,
         description_es: document.getElementById("descEs").value,
-        serves_entire_area: true
+        serves_entire_area: true,
+        referred_by_rep_code: new URLSearchParams(window.location.search).get("ref") || null
       };
 
       try {

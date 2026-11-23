@@ -51,6 +51,7 @@ def seed_database(db_path: str):
         ("cat_home", "home-services", "Home & Property Services", "Servicios para el Hogar y Propiedades", "wrench", 9, None, "cleaning, laundry, repairs, villa maintenance, plomero"),
         ("cat_events", "events-catering", "Events & Catering", "Eventos y Catering", "music", 10, None, "dj, venue, catering, sound, eventos, bodas"),
         ("cat_dining", "dining-food", "Dining & Restaurants", "Restaurantes y Comida", "utensils", 11, None, "restaurant, food, pizza, grill, comida, delivery"),
+        ("cat_veterinary", "veterinary-pet-care", "Veterinary & Pet Care", "Veterinaria y Mascotas", "heart", 12, None, "vet, veterinarian, veterinario, pet, dog, cat, mascota, clinic, klinickey"),
         ("cat_prof", "professional-services", "Professional Services", "Servicios Profesionales", "briefcase", 13, None, "legal, accounting, translator"),
     ]
     for item in categories:
@@ -1065,6 +1066,42 @@ def seed_database(db_path: str):
                 ("srv_fer_1", "Bulk Bagged Cement (Portland 42.5kg)", "Funda de Cemento Gris 42.5kg", "Standard construction cement.", 485.0, 1),
             ],
             "service_areas": ["loc_montellano"]
+        },
+        # 10. Veterinary & Pet Care (KlinicKey Vet Network)
+        {
+            "id": "biz_klinickey_vet",
+            "owner_email": "vet@klinickey.com",
+            "owner_name": "KlinicKey Veterinary Network",
+            "trading_name": "KlinicKey Veterinary & Tele-Triage",
+            "legal_name": "KlinicKey Veterinary Services",
+            "slug": "klinickey-vet",
+            "category_id": "cat_veterinary",
+            "primary_location_id": "loc_sosua",
+            "description_en": "24/7 bilingual veterinary urgent care, live video tele-triage, mobile home vet visits, vaccinations, and clinic checkups across Sosúa, Cabarete, and Puerto Plata.",
+            "description_es": "Atención veterinaria bilingüe 24/7, tele-triaje por video, visitas veterinarias a domicilio, vacunas y consultas clínicas en Sosúa, Cabarete y Puerto Plata.",
+            "has_physical_location": 0,
+            "address": "Sosúa, Cabarete & Puerto Plata (Mobile & Tele-Triage)",
+            "serves_entire_area": 1,
+            "whatsapp": "+18299414894",
+            "phone": "+18299414894",
+            "public_email": "vet@klinickey.com",
+            "requests_enabled": 1,
+            "request_action_label_en": "Book Vet Visit / Tele-Triage",
+            "request_action_label_es": "Solicitar Consulta Veterinaria",
+            "whatsapp_alerts_consent": 1,
+            "whatsapp_alerts_phone": "+18299414894",
+            "service_modes_supported": json.dumps(["in_shop", "mobile_visit"]),
+            "storefront_pin_lat": 19.7540,
+            "storefront_pin_lng": -70.5140,
+            "pickup_pin_lat": 19.7540,
+            "pickup_pin_lng": -70.5140,
+            "pickup_pin_note": "Mobile Vet Dispatch & Clinic Network — Sosúa / Puerto Plata",
+            "services": [
+                ("srv_vet_1", "24/7 Live Video Vet Tele-Triage", "Tele-Triaje Veterinario por Video 24/7", "Immediate video evaluation for pet symptoms & urgent care.", 1200.0, 1),
+                ("srv_vet_2", "Mobile Home / Villa Vet Visit", "Visita Veterinaria a Domicilio", "Licensed vet travels to your home or villa for exam & treatment.", 2800.0, 2),
+                ("srv_vet_3", "Pet Wellness Exam & Vaccinations", "Consulta General y Vacunación", "Routine checkup, deworming, and core vaccines.", 1800.0, 3),
+            ],
+            "service_areas": ["loc_sosua", "loc_montellano", "loc_puerto_plata"]
         }
     ]
 
