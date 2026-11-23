@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mavunqo-pwa-v3';
+const CACHE_NAME = 'mavunqo-pwa-v4';
 const APP_SHELL = [
   '/',
   '/frontend/styles.css',

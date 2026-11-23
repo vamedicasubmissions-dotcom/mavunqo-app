@@ -169,7 +169,10 @@
       document.head.appendChild(st);
     }
     const navbar = document.querySelector(".navbar");
-    const isEs = (localStorage.getItem("mavunqo_lang") || "en").toLowerCase() === "es";
+    const lang = (localStorage.getItem("mavunqo_lang") || "en").toLowerCase();
+    const isEs = lang === "es";
+    const isFr = lang === "fr";
+    const pick = function (en, es, fr) { return isEs ? es : (isFr ? fr : en); };
 
     const bar = document.createElement("div");
     bar.id = "mvqQuickNavBar";
@@ -184,7 +187,11 @@
       `<span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#0f172a;color:#fef08a;box-shadow:0 2px 6px rgba(15,23,42,0.3);">` +
       `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>` +
       `</span>` +
-      `<span>${isEs ? "Mavunqo Express — ¡Instala la App en tu teléfono para pedir en 1 toque y navegar sin conexión!" : "Mavunqo Express — Put our app on your Home Screen for 1-tap ordering & offline access!"}</span>`;
+      `<span>${pick(
+        "Mavunqo Express — Put our app on your Home Screen for 1-tap ordering & offline access!",
+        "Mavunqo Express — ¡Instala la App en tu teléfono para pedir en 1 toque y navegar sin conexión!",
+        "Mavunqo Express — Installez l'app sur votre écran d'accueil pour commander en 1 clic et hors ligne !"
+      )}</span>`;
     bar.appendChild(bannerMsg);
 
     const actions = document.createElement("div");
@@ -195,10 +202,10 @@
       backBtn.id = "mvqNavBackBtn";
       backBtn.type = "button";
       backBtn.className = "btn btn-outline btn-sm";
-      backBtn.title = isEs ? "Volver" : "Go Back";
+      backBtn.title = pick("Go Back", "Volver", "Retour");
       backBtn.innerHTML =
         `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>` +
-        `<span>${isEs ? "Atrás" : "Back"}</span>`;
+        `<span>${pick("Back", "Atrás", "Retour")}</span>`;
       backBtn.style.cssText =
         "display:inline-flex;align-items:center;gap:6px;padding:0.4rem 0.9rem;font-weight:700;border-radius:999px;";
       backBtn.onclick = triggerBack;
@@ -209,10 +216,10 @@
     refBtn.id = "mvqNavRefreshBtn";
     refBtn.type = "button";
     refBtn.className = "btn btn-outline btn-sm";
-    refBtn.title = isEs ? "Actualizar página" : "Refresh Page";
+    refBtn.title = pick("Refresh Page", "Actualizar página", "Actualiser");
     refBtn.innerHTML =
       `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>` +
-      `<span>${isEs ? "Actualizar" : "Refresh"}</span>`;
+      `<span>${pick("Refresh", "Actualizar", "Actualiser")}</span>`;
     refBtn.style.cssText =
       "display:inline-flex;align-items:center;gap:6px;padding:0.4rem 0.9rem;font-weight:700;border-radius:999px;";
     refBtn.onclick = triggerRefresh;
@@ -223,11 +230,11 @@
       installBtn.id = "mvqInstallAppBtn";
       installBtn.type = "button";
       installBtn.className = "btn btn-sm";
-      installBtn.title = isEs ? "Agregar Mavunqo a tu pantalla de inicio" : "Add Mavunqo to your phone's Home Screen";
+      installBtn.title = pick("Add Mavunqo to your phone's Home Screen", "Agregar Mavunqo a tu pantalla de inicio", "Ajouter Mavunqo à l'écran d'accueil");
       installBtn.innerHTML =
         `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 8v7"/><path d="M9 12l3 3 3-3"/></svg>` +
-        `<span>${isEs ? "Instalar Mavunqo" : "Install Mavunqo"}</span>` +
-        `<span style="background:#facc15;color:#0f172a;font-size:0.7rem;font-weight:900;padding:2px 7px;border-radius:999px;letter-spacing:0.03em;text-transform:uppercase;">${isEs ? "1 Toque" : "1-Tap"}</span>`;
+        `<span>${pick("Install Mavunqo", "Instalar Mavunqo", "Installer Mavunqo")}</span>` +
+        `<span style="background:#facc15;color:#0f172a;font-size:0.7rem;font-weight:900;padding:2px 7px;border-radius:999px;letter-spacing:0.03em;text-transform:uppercase;">${pick("1-Tap", "1 Toque", "1 Clic")}</span>`;
       installBtn.style.cssText =
         "display:inline-flex;align-items:center;gap:8px;padding:0.55rem 1.25rem;font-size:0.95rem;font-weight:900;border-radius:999px;background:linear-gradient(135deg,#ea580c 0%,#dc2626 100%);color:#ffffff;border:2.5px solid #0f172a;cursor:pointer;animation:mvqPulseGlow 2s infinite;transition:transform 0.15s ease;";
       installBtn.onmouseenter = function () { installBtn.style.transform = "translateY(-1px)"; };
@@ -236,18 +243,60 @@
       actions.appendChild(installBtn);
     }
 
+    const shareBtn = document.createElement("button");
+    shareBtn.id = "mvqShareAppBtn";
+    shareBtn.type = "button";
+    shareBtn.className = "btn btn-outline btn-sm";
+    shareBtn.title = pick("Share Mavunqo link or QR code", "Compartir enlace o código QR", "Partager le lien ou code QR");
+    shareBtn.innerHTML =
+      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>` +
+      `<span>${pick("Share", "Compartir", "Partager")}</span>`;
+    shareBtn.style.cssText =
+      "display:inline-flex;align-items:center;gap:6px;padding:0.4rem 0.9rem;font-weight:700;border-radius:999px;background:#ffffff;color:#0f172a;border:1.5px solid #0f172a;cursor:pointer;";
+    shareBtn.onclick = async function () {
+      const shareUrl = window.location.origin + "/";
+      const shareText = pick(
+        "Check out Mavunqo — local services, food, spas & vets in Sosúa & Puerto Plata:",
+        "Mira Mavunqo — servicios locales, comida, spas y veterinarios en Sosúa y Puerto Plata:",
+        "Découvrez Mavunqo — services locaux, restaurants, spas et vétérinaires à Sosúa & Puerto Plata :"
+      );
+      if (navigator.share) {
+        try { await navigator.share({ title: "Mavunqo", text: shareText, url: shareUrl }); return; } catch (_) {}
+      }
+      const waShareUrl = "https://wa.me/?text=" + encodeURIComponent(shareText + " " + shareUrl);
+      const modal = document.createElement("div");
+      modal.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;padding:16px;";
+      modal.innerHTML = `
+        <div style="background:#fff;color:#0f172a;max-width:360px;width:100%;border-radius:16px;padding:20px;box-shadow:0 16px 40px rgba(0,0,0,0.22);text-align:center;">
+          <strong style="font-size:1.05rem;">${pick("Share Mavunqo", "Compartir Mavunqo", "Partager Mavunqo")}</strong>
+          <div style="margin:12px auto;"><img src="/frontend/qr_sticker_mavunqo.svg" alt="Mavunqo QR" style="width:140px;height:140px;border-radius:10px;border:1px solid #e2e8f0;"></div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <a href="${waShareUrl}" target="_blank" rel="noopener noreferrer" style="padding:10px;border-radius:999px;background:#16a34a;color:#fff;font-weight:700;text-decoration:none;">💬 ${pick("Send via WhatsApp", "Enviar por WhatsApp", "Envoyer par WhatsApp")}</a>
+            <button type="button" id="mvqCopyShareLink" style="padding:10px;border-radius:999px;background:#0d9488;color:#fff;font-weight:700;border:none;cursor:pointer;">🔗 ${pick("Copy Link", "Copiar Enlace", "Copier le lien")}</button>
+            <button type="button" id="mvqCloseShareModal" style="padding:8px;border-radius:999px;background:#f1f5f9;color:#0f172a;font-weight:700;border:none;cursor:pointer;">${pick("Close", "Cerrar", "Fermer")}</button>
+          </div>
+        </div>`;
+      modal.onclick = function (e) { if (e.target === modal) modal.remove(); };
+      document.body.appendChild(modal);
+      document.getElementById("mvqCopyShareLink").onclick = async function () {
+        try { await navigator.clipboard.writeText(shareUrl); this.textContent = "✓ Copied!"; } catch (_) {}
+      };
+      document.getElementById("mvqCloseShareModal").onclick = function () { modal.remove(); };
+    };
+    actions.appendChild(shareBtn);
+
     const waBtn = document.createElement("a");
     waBtn.id = "mvqWhatsAppHelpBtn";
     waBtn.href = "https://wa.me/18299414894?text=" + encodeURIComponent(
-      isEs ? "Hola Mavunqo, necesito ayuda con la plataforma." : "Hi Mavunqo, I need help with the platform."
+      pick("Hi Mavunqo, I need help with the platform.", "Hola Mavunqo, necesito ayuda con la plataforma.", "Bonjour Mavunqo, j'ai besoin d'aide avec la plateforme.")
     );
     waBtn.target = "_blank";
     waBtn.rel = "noopener noreferrer";
     waBtn.className = "btn btn-outline btn-sm";
-    waBtn.title = isEs ? "Soporte rápido por WhatsApp" : "Quick WhatsApp Support";
+    waBtn.title = pick("Quick WhatsApp Support", "Soporte rápido por WhatsApp", "Support WhatsApp rapide");
     waBtn.innerHTML =
       `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>` +
-      `<span>${isEs ? "Ayuda WhatsApp" : "WhatsApp Help"}</span>`;
+      `<span>${pick("WhatsApp Help", "Ayuda WhatsApp", "Aide WhatsApp")}</span>`;
     waBtn.style.cssText =
       "display:inline-flex;align-items:center;gap:7px;padding:0.4rem 0.95rem;font-weight:700;border-radius:999px;border:1.5px solid #16a34a;color:#15803d;background:#f0fdf4;text-decoration:none;";
     actions.appendChild(waBtn);

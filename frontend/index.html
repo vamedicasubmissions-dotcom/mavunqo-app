@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mavunqo — Local Services Directory | Sosúa, Cabarete & Puerto Plata</title>
+  <link rel="icon" href="/frontend/logo.jpg" type="image/jpeg">
+  <link rel="apple-touch-icon" href="/frontend/uploads/mavunqo_icon_192.png">
   <link rel="stylesheet" href="/frontend/style.css?v=20261115_v7">
   <style>
     /* Mobile-first Hero and Search Card Constraints */
@@ -304,7 +306,11 @@
 
       grid.style.display = "grid";
       empty.style.display = "none";
-      countBadge.textContent = `${items.length} ${items.length === 1 ? 'business' : 'businesses'} in North Coast`;
+      countBadge.textContent = currentLang === "fr"
+        ? `${items.length} ${items.length === 1 ? 'entreprise' : 'entreprises'} sur la Côte Nord`
+        : (currentLang === "es"
+          ? `${items.length} ${items.length === 1 ? 'negocio' : 'negocios'} en la Costa Norte`
+          : `${items.length} ${items.length === 1 ? 'business' : 'businesses'} in North Coast`);
 
       items.forEach(b => {
         const catName = currentLang === "es" ? b.category_name_es : b.category_name_en;
@@ -315,7 +321,7 @@
         if (b.services_summary && b.services_summary.length > 0) {
           servicesHtml = `
             <div class="uber-services-mini">
-              <div class="uber-services-mini-header">${currentLang === "es" ? "Servicios Populares" : "Popular Services"}</div>
+              <div class="uber-services-mini-header">${currentLang === "fr" ? "Services Populaires" : (currentLang === "es" ? "Servicios Populares" : "Popular Services")}</div>
               ${b.services_summary.map(s => `
                 <div class="uber-service-row">
                   <span>${currentLang === "es" ? s.name_es : s.name_en}</span>
