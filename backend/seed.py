@@ -37,6 +37,23 @@ def seed_database(db_path: str):
             (hash_password(env_admin_pw),)
         )
 
+    # 1b. Secondary Admin Backup Account (preserves admin@mavunqo.com unchanged)
+    admin2_id = "user_admin_backup"
+    env_admin2_pw = os.environ.get("MAVUNQO_ADMIN2_PASSWORD", "").strip()
+    admin2_pw = env_admin2_pw or "MavunqoAdmin#2026!"
+    cur.execute("SELECT id FROM users WHERE email = 'owner@mavunqo.com'")
+    if not cur.fetchone():
+        cur.execute(
+            """INSERT INTO users (id, email, password_hash, full_name, role)
+               VALUES (?, ?, ?, ?, 'admin')""",
+            (admin2_id, "owner@mavunqo.com", hash_password(admin2_pw), "Mavunqo Secondary Admin")
+        )
+    elif env_admin2_pw:
+        cur.execute(
+            "UPDATE users SET password_hash = ? WHERE email = 'owner@mavunqo.com'",
+            (hash_password(env_admin2_pw),)
+        )
+
     # 2. Categories
     categories = [
         ("cat_health", "health-wellness", "Health & Wellness", "Salud y Bienestar", "heart-pulse", 1, None, "health, clinic, medical, farmacia"),
@@ -698,7 +715,7 @@ def seed_database(db_path: str):
         # 1b. Clara Light Spa (Claribel Batista Ferreira) - Puerto Plata (Mobile launch; studio conditional)
         {
             "id": "biz_clara_light_spa",
-            "owner_email": "claribel@claralightspa.com",
+            "owner_email": "claralightspa@mavunqo.com",
             "owner_name": "Claribel Batista Ferreira",
             "trading_name": "Clara Light Spa",
             "legal_name": "Clara Light Spa",
@@ -712,7 +729,7 @@ def seed_database(db_path: str):
             "serves_entire_area": 1,
             "whatsapp": "+18299414894",
             "phone": "+18299584064",
-            "public_email": "citas@claralightspa.com",
+            "public_email": "claralightspa@mavunqo.com",
             "logo_url": "/frontend/uploads/wellness/claribel_clara_spa.jpg",
             "cover_image_url": "/frontend/uploads/wellness/clara_light_spa_cover.jpg",
             "hours_json": json.dumps({"monday_saturday": "9:00 AM - 7:00 PM", "sunday": "Closed"}),
@@ -761,7 +778,7 @@ def seed_database(db_path: str):
             "serves_entire_area": 1,
             "whatsapp": "+18299414894",
             "phone": "+18495282828",
-            "public_email": "citas@mavunqo.com",
+            "public_email": "nelfa@mavunqo.com",
             "logo_url": "/frontend/uploads/wellness/nelfa_lopez.jpg",
             "cover_image_url": "/frontend/uploads/wellness/nelfa_lopez.jpg",
             "hours_json": json.dumps({"daily": "8:00 AM - 4:00 PM"}),
@@ -1122,7 +1139,7 @@ def seed_database(db_path: str):
             cur.execute(
                 """UPDATE businesses SET 
                     trading_name = ?, legal_name = ?, slug = ?,
-                    description_en = ?, description_es = ?,
+                    description_en = ?, description_es = ?, public_email = ?,
                     requests_enabled = ?, request_action_label_en = ?, request_action_label_es = ?,
                     whatsapp_alerts_consent = ?, whatsapp_alerts_phone = ?, service_modes_supported = ?,
                     storefront_pin_lat = ?, storefront_pin_lng = ?, pickup_pin_lat = ?, pickup_pin_lng = ?, pickup_pin_note = ?,
@@ -1130,7 +1147,7 @@ def seed_database(db_path: str):
                    WHERE id = ?""",
                 (
                     p["trading_name"], p["legal_name"], p["slug"],
-                    p["description_en"], p["description_es"],
+                    p["description_en"], p["description_es"], p.get("public_email"),
                     p["requests_enabled"], p["request_action_label_en"], p["request_action_label_es"],
                     p["whatsapp_alerts_consent"], p["whatsapp_alerts_phone"], p["service_modes_supported"],
                     p["storefront_pin_lat"], p["storefront_pin_lng"], p["pickup_pin_lat"], p["pickup_pin_lng"], p["pickup_pin_note"],

@@ -1,11 +1,13 @@
-const CACHE_NAME = 'mavunqo-pwa-v2';
+const CACHE_NAME = 'mavunqo-pwa-v3';
 const APP_SHELL = [
   '/',
   '/frontend/styles.css',
   '/frontend/i18n.js',
   '/frontend/concierge.js',
   '/frontend/pwa_nav.js',
-  '/frontend/manifest.json'
+  '/frontend/manifest.json',
+  '/frontend/uploads/mavunqo_icon_192.png',
+  '/frontend/uploads/mavunqo_icon_512.png'
 ];
 
 self.addEventListener('install', (event) => {
