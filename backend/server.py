@@ -87,6 +87,9 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         return json.loads(body.decode("utf-8"))
 
     def send_json(self, data, status=200):
+        req_start = getattr(self, "_req_start", None)
+        elapsed_ms = (time.time() - req_start) * 1000.0 if req_start else 0.0
+        security_monitor.record_request(status, elapsed_ms)
         body = json.dumps(data, indent=2).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -107,6 +110,7 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(content)
 
     def do_GET(self):
+        self._req_start = time.time()
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         query = urllib.parse.parse_qs(parsed.query)
@@ -186,6 +190,7 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 "missing_images_count": missing_imgs,
                 "security_threats": security_monitor.get_recent_security_events(limit=20),
                 "alert_config": security_monitor.get_alert_config(),
+                "server_health": security_monitor.get_server_health(),
             })
 
         if path == "/api/admin/promo-audience":
@@ -577,6 +582,9 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/admin":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "admin.html"))
 
+        if path == "/legal-demo":
+            return self.send_file_response(os.path.join(FRONTEND_DIR, "legal-demo.html"))
+
         if path == "/mockup":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "mockup.html"))
 
@@ -611,6 +619,7 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         return self.send_error(404, "Not Found")
 
     def do_POST(self):
+        self._req_start = time.time()
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
 

@@ -6,6 +6,7 @@ Mavunqo Automated Cybersecurity & Threat Monitor
 """
 import os
 import re
+import shutil
 import time
 import uuid
 from collections import defaultdict
@@ -19,7 +20,9 @@ ADMIN_ALERT_EMAIL = os.environ.get("MAVUNQO_ADMIN_ALERT_EMAIL", "admin@mavunqo.c
 class SecurityMonitor:
     def __init__(self, db_path: str):
         self.db_path = db_path
+        self._started_at = time.time()
         self._hits: Dict[str, list] = defaultdict(list)
+        self._req_log: list = []
         self._threat_patterns = [
             ("sqli_probe", re.compile(r"(\bunion\b\s+\bselect\b|\bdrop\b\s+\btable\b|'\s*or\s*'1'\s*=\s*'1|--\s*$)", re.IGNORECASE)),
             ("xss_probe", re.compile(r"(<\s*script\b|onerror\s*=|onload\s*=|javascript:)", re.IGNORECASE)),
@@ -45,6 +48,74 @@ class SecurityMonitor:
                 self.log_security_event(ip, f"security_threat_{threat_type}", path, payload_text[:120])
                 return False, "Request blocked by Mavunqo Security Monitor."
         return True, None
+
+    def record_request(self, status_code: int, duration_ms: float = 0.0):
+        now = time.time()
+        self._req_log = [r for r in self._req_log if now - r[0] < 60]
+        self._req_log.append((now, int(status_code), float(duration_ms)))
+
+    def get_server_health(self) -> Dict[str, object]:
+        now = time.time()
+        recent = [r for r in self._req_log if now - r[0] < 60]
+        self._req_log = recent
+        rpm = len(recent)
+        durations = [r[2] for r in recent if r[2] > 0]
+        avg_ms = round(sum(durations) / len(durations), 1) if durations else 0.0
+        peak_ms = round(max(durations), 1) if durations else 0.0
+        errors_5xx = sum(1 for r in recent if r[1] >= 500)
+
+        memory_pct = None
+        if os.path.isfile("/proc/meminfo"):
+            try:
+                info = {}
+                with open("/proc/meminfo", "r", encoding="utf-8") as f:
+                    for line in f:
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            info[parts[0].rstrip(":")] = int(parts[1])
+                total = info.get("MemTotal", 0)
+                avail = info.get("MemAvailable", info.get("MemFree", 0))
+                if total > 0:
+                    memory_pct = round(((total - avail) / total) * 100.0, 1)
+            except Exception:
+                memory_pct = None
+
+        load_1m = None
+        if os.path.isfile("/proc/loadavg"):
+            try:
+                with open("/proc/loadavg", "r", encoding="utf-8") as f:
+                    load_1m = float(f.read().split()[0])
+            except Exception:
+                load_1m = None
+
+        db_size_mb = round(os.path.getsize(self.db_path) / (1024 * 1024), 2) if os.path.isfile(self.db_path) else 0.0
+        try:
+            disk_free_mb = round(shutil.disk_usage(os.path.dirname(self.db_path) or ".").free / (1024 * 1024), 1)
+        except Exception:
+            disk_free_mb = None
+
+        status = "ok"
+        label = "Healthy — Current Plan OK"
+        if (memory_pct is not None and memory_pct >= 85) or avg_ms >= 1000 or errors_5xx >= 3:
+            status = "upgrade"
+            label = "Upgrade Recommended — High Load or Errors"
+        elif (memory_pct is not None and memory_pct >= 75) or avg_ms >= 500 or rpm >= 120:
+            status = "watch"
+            label = "Watch — Traffic or Latency Rising"
+
+        return {
+            "status": status,
+            "label": label,
+            "rpm": rpm,
+            "avg_ms": avg_ms,
+            "peak_ms": peak_ms,
+            "errors_5xx": errors_5xx,
+            "memory_pct": memory_pct,
+            "load_1m": load_1m,
+            "db_size_mb": db_size_mb,
+            "disk_free_mb": disk_free_mb,
+            "uptime_min": round((now - self._started_at) / 60.0, 1),
+        }
 
     def get_alert_config(self) -> Dict[str, object]:
         return {

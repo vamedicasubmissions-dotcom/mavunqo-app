@@ -161,6 +161,7 @@
         <button class="btn btn-sm" onclick="loadSecurityAlerts()">Refresh</button>
       </div>
       <div id="securityAlertBanner" style="display:none; background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-weight:700;"></div>
+      <div id="serverHealthBar" style="background:#f8fafc; border:1px solid #e2e8f0; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:0.9rem;">Loading server load...</div>
       <div id="securityHealthSummary" style="margin-bottom:12px; font-size:0.95rem;">Loading...</div>
       <div id="securityAuditList" style="max-height:220px; overflow-y:auto; font-size:0.85rem; color:#444;"></div>
     </div>
@@ -192,6 +193,13 @@
         const excCount = (data.exceptional_access || []).length;
         const threats = data.security_threats || [];
         const cfg = data.alert_config || {};
+        const srv = data.server_health || {};
+        const srvBar = document.getElementById("serverHealthBar");
+        if (srvBar && srv.label) {
+          const badgeColor = srv.status === "upgrade" ? "#dc2626" : (srv.status === "watch" ? "#d97706" : "#16a34a");
+          const memText = srv.memory_pct !== null && srv.memory_pct !== undefined ? `${srv.memory_pct}%` : "N/A";
+          srvBar.innerHTML = `<span style="color:${badgeColor}; font-weight:800;">● ${srv.label}</span> &nbsp;|&nbsp; <strong>Traffic:</strong> ${srv.rpm || 0} req/min &nbsp;|&nbsp; <strong>Speed:</strong> ${srv.avg_ms || 0}ms avg (${srv.peak_ms || 0}ms peak) &nbsp;|&nbsp; <strong>RAM:</strong> ${memText} &nbsp;|&nbsp; <strong>DB:</strong> ${srv.db_size_mb || 0} MB &nbsp;|&nbsp; <strong>5xx:</strong> ${srv.errors_5xx || 0}`;
+        }
         const smtpBadge = cfg.smtp_configured
           ? '<span style="color:#16a34a;font-weight:700;">SMTP Active</span>'
           : '<span style="color:#b45309;font-weight:700;">Dashboard-Only (SMTP env not set)</span>';

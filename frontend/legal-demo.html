@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal Intake & Case Automation Demo — Mavunqo</title>
+  <style>
+    :root {
+      --navy: #0f172a;
+      --slate: #334155;
+      --muted: #64748b;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --accent: #ea580c;
+      --accent-soft: #fff7ed;
+      --green: #16a34a;
+      --green-soft: #f0fdf4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      line-height: 1.5;
+    }
+    .topbar {
+      background: var(--navy);
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .brand { font-weight: 800; font-size: 1.05rem; letter-spacing: 0.3px; }
+    .brand span { color: #fb923c; }
+    .lang-toggle {
+      display: flex;
+      gap: 6px;
+    }
+    .lang-btn {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    .lang-btn.active { background: var(--accent); border-color: var(--accent); }
+    .container { max-width: 960px; margin: 22px auto; padding: 0 16px 48px; }
+    .hero-card {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #fff;
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 25px rgba(15,23,42,0.12);
+    }
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .hero-title { margin: 0 0 6px; font-size: 1.4rem; font-weight: 800; }
+    .hero-sub { margin: 0; color: #cbd5e1; font-size: 0.95rem; max-width: 600px; }
+    .play-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 13px 24px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 6px 18px rgba(234,88,12,0.4);
+    }
+    .play-btn:hover { background: #c2410c; }
+    .player-stage {
+      background: #020617;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    canvas#walkthroughCanvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 8px;
+      background: #0f172a;
+    }
+    .player-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .ctrl-btn {
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .ctrl-btn.active { background: var(--accent); }
+    .progress-wrap {
+      flex: 1;
+      min-width: 140px;
+      height: 8px;
+      background: rgba(255,255,255,0.16);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #fb923c;
+      transition: width 0.2s linear;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--slate);
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.92rem;
+    }
+    .tab-btn.active {
+      background: var(--navy);
+      color: #fff;
+      border-color: var(--navy);
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+    label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; color: var(--slate); }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+      font-family: inherit;
+    }
+    .btn {
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .btn-accent { background: var(--accent); }
+    .btn-outline {
+      background: #fff;
+      color: var(--navy);
+      border: 1px solid var(--border);
+    }
+    .output-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 0.9rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .badge-ok { background: var(--green-soft); color: var(--green); }
+    .badge-warn { background: var(--accent-soft); color: var(--accent); }
+    .matter-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .matter-row:last-child { border-bottom: none; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">MAVUNQO <span>Legal Workflow Demo</span></div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="btnEn" onclick="setLang('en')">English</button>
+      <button class="lang-btn" id="btnEs" onclick="setLang('es')">Español</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- First Screen Video Walkthrough Card -->
+    <div class="hero-card">
+      <div class="hero-top">
+        <div>
+          <h1 class="hero-title" id="heroTitle">Law Office Intake & Paper-to-Digital Automation</h1>
+          <p class="hero-sub" id="heroSub">Press Play to watch how WhatsApp photos, office scans, and attorney approvals work together—while keeping physical paper copies.</p>
+        </div>
+        <button class="play-btn" id="mainPlayBtn" onclick="togglePlay()">
+          <span id="playIcon">▶</span> <span id="playText">Play Demo Video</span>
+        </button>
+      </div>
+
+      <div class="player-stage">
+        <canvas id="walkthroughCanvas" width="880" height="310"></canvas>
+        <div class="player-controls">
+          <button class="ctrl-btn" onclick="jumpScene(0)" id="sc0">1. WhatsApp Intake</button>
+          <button class="ctrl-btn" onclick="jumpScene(1)" id="sc1">2. Conflict Check</button>
+          <button class="ctrl-btn" onclick="jumpScene(2)" id="sc2">3. Paper + OCR</button>
+          <button class="ctrl-btn" onclick="jumpScene(3)" id="sc3">4. Lawyer Sign-Off</button>
+          <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+          <button class="ctrl-btn" onclick="toggleVoice()" id="voiceBtn">🔊 Voice: ON</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Workflow Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab(0)" id="tab0">1. Client Intake & WhatsApp Photo</button>
+      <button class="tab-btn" onclick="showTab(1)" id="tab1">2. Staff Paper Scan & Reminders</button>
+      <button class="tab-btn" onclick="showTab(2)" id="tab2">3. Attorney Approval (Human-in-the-Loop)</button>
+    </div>
+
+    <!-- Tab 1 -->
+    <div class="card" id="panel0">
+      <div class="grid-2">
+        <div>
+          <h3 style="margin-top:0;" id="t1Head">Try Live Client Intake</h3>
+          <label id="lblClient">Client Full Name</label>
+          <input id="clientName" value="Carlos Méndez">
+          <label id="lblCase">Matter Type</label>
+          <select id="caseType">
+            <option value="Real Estate / Deslinde">Real Estate / Deslinde</option>
+            <option value="Residency / Immigration">Residency / Immigration</option>
+            <option value="Contract Review">Contract Review</option>
+            <option value="Civil / Family Matter">Civil / Family Matter</option>
+          </select>
+          <label id="lblOpp">Opposing Party (for Conflict Check)</label>
+          <input id="opposingParty" placeholder="e.g. Inversiones Norte SRL" value="Constructora del Sol SRL">
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-accent" onclick="runIntakeSim(true)" id="btnSimWa">📲 Simulate WhatsApp Cédula Photo</button>
+            <button class="btn" onclick="runIntakeSim(false)" id="btnRunCheck">Run Intake & Conflict Check</button>
+          </div>
+        </div>
+        <div class="output-box" id="intakeOutput">
+          <span class="badge badge-ok">Ready</span>
+          <p style="margin:8px 0 0; color:var(--slate);">Click <strong>Simulate WhatsApp Cédula Photo</strong> to preview automatic PDF conversion, OCR extraction, conflict check, and WhatsApp reply.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2 -->
+    <div class="card hidden" id="panel1">
+      <h3 style="margin-top:0;" id="t2Head">Staff Paper Scan & Missing-Document WhatsApp Reminders</h3>
+      <p style="color:var(--muted); margin-top:0;" id="t2Sub">Physical papers stay in the office folder, while staff scan once and let WhatsApp chase missing IDs automatically.</p>
+      <div id="mattersList"></div>
+      <div class="output-box hidden" id="reminderToast" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- Tab 3 -->
+    <div class="card hidden" id="panel2">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+        <h3 style="margin:0;" id="t3Head">Attorney Review & Sign-Off</h3>
+        <span class="badge badge-warn" id="approvalBadge">Pending Attorney Approval</span>
+      </div>
+      <div class="output-box" style="margin-bottom:14px;">
+        <strong>Draft Engagement Summary (Auto-Prepared for Review):</strong><br>
+        <span id="draftBody">Client: Carlos Méndez | Matter: Real Estate / Deslinde | Conflict Check: Clear | Attachments: Cedula_CarlosMendez.pdf (OCR verified). Ready for attorney review before sending engagement letter or printing for notary.</span>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-accent" onclick="approveDraft()" id="btnApprove">✅ Approve & Send to Client</button>
+        <button class="btn btn-outline" onclick="resetDraft()" id="btnReset">↺ Reset Demo</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let lang = "en";
+    let playing = false;
+    let voiceOn = true;
+    let sceneIdx = 0;
+    let sceneElapsed = 0;
+    const SCENE_DURATION = 7500;
+    let timer = null;
+
+    const SCENES = {
+      en: [
+        { title: "1. Client Sends Photo on WhatsApp", lines: ["Client snaps Cédula or contract photo on WhatsApp", "No email or scanner needed — works from any phone", "System converts photo to clean PDF + extracts text"] },
+        { title: "2. Instant Conflict Check & Booking", lines: ["Checks opposing party against active firm matters", "Sends instant Spanish/English WhatsApp confirmation", "Books consultation on the lawyer's calendar"] },
+        { title: "3. Office Paper Scan + Missing-Doc Chase", lines: ["Walk-in papers scanned once into organized folders", "Client & lawyer still keep original paper copies", "Auto-flags missing passport/ID and reminds via WhatsApp"] },
+        { title: "4. Lawyer Approves Every Final Step", lines: ["Private storage — never trains public AI models", "AI drafts & organizes; licensed attorney approves", "Prints clean final copies for notary or court"] }
+      ],
+      es: [
+        { title: "1. Cliente Envía Foto por WhatsApp", lines: ["El cliente toma foto de su Cédula o contrato por WhatsApp", "Sin escáner ni correo — funciona desde cualquier celular", "El sistema convierte la foto a PDF y extrae los datos"] },
+        { title: "2. Revisión de Conflictos y Cita", lines: ["Verifica la contraparte contra casos activos del bufete", "Envía confirmación automática por WhatsApp", "Agenda la consulta en el calendario del abogado"] },
+        { title: "3. Escaneo de Papel + Recordatorios", lines: ["Documentos físicos se escanean una vez al expediente", "Cliente y abogado conservan sus copias en papel", "WhatsApp recuerda automáticamente documentos faltantes"] },
+        { title: "4. El Abogado Aprueba Todo", lines: ["Datos privados — nunca entrenan modelos públicos", "La IA organiza y redacta; el abogado revisa y aprueba", "Listo para impresión, notaría o tribunal"] }
+      ]
+    };
+
+    const MATTERS = [
+      { id: "m1", client: "John Miller", matter: "Residency Renewal", missing: "Missing Passport Bio Page", phone: "+1 809-555-0142" },
+      { id: "m2", client: "María Rodríguez", matter: "Sosúa Villa Purchase", missing: "Missing Title Copy (Certificado de Título)", phone: "+1 829-555-0198" },
+      { id: "m3", client: "Café Atlántico SRL", matter: "Commercial Lease", missing: "Ready for Attorney Sign-Off", phone: "+1 809-555-0177", ready: true }
+    ];
+
+    function setLang(next) {
+      lang = next;
+      document.getElementById("btnEn").classList.toggle("active", next === "en");
+      document.getElementById("btnEs").classList.toggle("active", next === "es");
+      const es = next === "es";
+      document.getElementById("heroTitle").textContent = es ? "Automatización Legal: WhatsApp + Papel a Digital" : "Law Office Intake & Paper-to-Digital Automation";
+      document.getElementById("heroSub").textContent = es ? "Presiona Play para ver cómo fotos de WhatsApp, escaneos y aprobación del abogado trabajan juntos—sin dejar el papel." : "Press Play to watch how WhatsApp photos, office scans, and attorney approvals work together—while keeping physical paper copies.";
+      document.getElementById("playText").textContent = playing ? (es ? "Pausar Video" : "Pause Video") : (es ? "Reproducir Video Demo" : "Play Demo Video");
+      drawScene();
+    }
+
+    function drawScene() {
+      const c = document.getElementById("walkthroughCanvas");
+      const ctx = c.getContext("2d");
+      const s = SCENES[lang][sceneIdx];
+      ctx.clearRect(0, 0, c.width, c.height);
+
+      // Background
+      const grad = ctx.createLinearGradient(0, 0, c.width, c.height);
+      grad.addColorStop(0, "#0f172a");
+      grad.addColorStop(1, "#1e293b");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, c.width, c.height);
+
+      // Left Visual Phone Mockup (WhatsApp / Office Workflow)
+      const px = 34, py = 24, pw = 230, ph = 262;
+      ctx.fillStyle = "#020617";
+      ctx.strokeStyle = "#475569";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(px, py, pw, ph, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      // Phone top bar (WhatsApp green)
+      ctx.fillStyle = "#075e54";
+      ctx.beginPath();
+      ctx.roundRect(px + 6, py + 8, pw - 12, 34, 10);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 13px Segoe UI, sans-serif";
+      ctx.fillText(sceneIdx === 3 ? "⚖️ Attorney Portal" : "💬 WhatsApp Intake", px + 18, py + 30);
+
+      // Animated scene visual inside phone
+      const pulse = Math.sin(Date.now() / 300) * 0.5 + 0.5;
+      if (sceneIdx === 0) {
+        ctx.fillStyle = "#1e293b";
+        ctx.fillRect(px + 16, py + 54, pw - 32, 46);
+        ctx.fillStyle = "#e2e8f0";
+        ctx.font = "12px Segoe UI, sans-serif";
+        ctx.fillText("Client: Hola, necesito cita", px + 24, py + 74);
+        ctx.fillText("📷 [Cédula Photo Sent]", px + 24, py + 91);
+
+        ctx.fillStyle = "#dcf8c6";
+        ctx.fillRect(px + 26, py + 114, pw - 42, 54);
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 12px Segoe UI, sans-serif";
+        ctx.fillText("Auto-Bot:", px + 34, py + 133);
+        ctx.font = "12px Segoe UI, sans-serif";
+        ctx.fillText("✓ Saved Cedula_Client.pdf", px + 34, py + 152);
+
+        ctx.fillStyle = `rgba(234, 88, 12, ${0.65 + pulse * 0.35})`;
+        ctx.fillRect(px + 26, py + 184, pw - 42, 32);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 12px Segoe UI, sans-serif";
+        ctx.fillText("OCR: ID Verified ✓", px + 56, py + 204);
+      } else if (sceneIdx === 1) {
+        ctx.fillStyle = "#14532d";
+        ctx.fillRect(px + 16, py + 62, pw - 32, 64);
+        ctx.fillStyle = "#86efac";
+        ctx.font = "bold 14px Segoe UI, sans-serif";
+        ctx.fillText("✓ Conflict Check Clear", px + 28, py + 88);
+        ctx.fillStyle = "#e2e8f0";
+        ctx.font = "12px Segoe UI, sans-serif";
+        ctx.fillText("0 opposing matches found", px + 28, py + 110);
+
+        ctx.fillStyle = "#dcf8c6";
+        ctx.fillRect(px + 16, py + 142, pw - 32, 56);
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 12px Segoe UI, sans-serif";
+        ctx.fillText("📅 Booked: Tue 10:00 AM", px + 26, py + 166);
+        ctx.font = "12px Segoe UI, sans-serif";
+        ctx.fillText("WhatsApp confirmation sent", px + 26, py + 185);
+      } else if (sceneIdx === 2) {
+        ctx.fillStyle = "#1e293b";
+        ctx.fillRect(px + 16, py + 58, pw - 32, 64);
+        ctx.fillStyle = "#fb923c";
+        ctx.font = "bold 13px Segoe UI, sans-serif";
+        ctx.fillText("📄 Paper Stack Scanned", px + 26, py + 82);
+        ctx.fillStyle = "#cbd5e1";
+        ctx.font = "12px Segoe UI, sans-serif";
+        ctx.fillText("Originals stay in folder", px + 26, py + 104);
+
+        ctx.fillStyle = "#dcf8c6";
+        ctx.fillRect(px + 16, py + 138, pw - 32, 66);
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 12px Segoe UI, sans-serif";
+        ctx.fillText("📲 Auto WhatsApp Nudge:", px + 24, py + 160);
+        ctx.font = "11px Segoe UI, sans-serif";
+        ctx.fillText("\"Please reply with Passport", px + 24, py + 178);
+        ctx.fillText("photo to complete file\"", px + 24, py + 193);
+      } else {
+        ctx.fillStyle = "#1e293b";
+        ctx.fillRect(px + 16, py + 58, pw - 32, 74);
+        ctx.fillStyle = "#e2e8f0";
+        ctx.font = "bold 13px Segoe UI, sans-serif";
+        ctx.fillText("📝 Draft Ready for Review", px + 24, py + 82);
+        ctx.font = "12px Segoe UI, sans-serif";
+        ctx.fillText("Private DB • No public AI", px + 24, py + 104);
+
+        ctx.fillStyle = "#16a34a";
+        ctx.fillRect(px + 24, py + 150, pw - 48, 44);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 14px Segoe UI, sans-serif";
+        ctx.fillText("✅ APPROVED BY LAWYER", px + 34, py + 177);
+      }
+
+      // Right Side Step Info
+      const rx = 292;
+      ctx.fillStyle = "#ea580c";
+      ctx.fillRect(rx, 32, 140, 30);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 14px Segoe UI, sans-serif";
+      ctx.fillText(`STEP ${sceneIdx + 1} OF 4`, rx + 22, 52);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 24px Segoe UI, sans-serif";
+      ctx.fillText(s.title, rx, 98);
+
+      s.lines.forEach((line, i) => {
+        const y = 126 + i * 52;
+        ctx.fillStyle = "rgba(255,255,255,0.08)";
+        ctx.fillRect(rx, y, c.width - rx - 28, 42);
+        ctx.fillStyle = "#fb923c";
+        ctx.font = "bold 17px Segoe UI, sans-serif";
+        ctx.fillText("✓", rx + 14, y + 27);
+        ctx.fillStyle = "#e2e8f0";
+        ctx.font = "15px Segoe UI, sans-serif";
+        ctx.fillText(line, rx + 40, y + 27);
+      });
+
+      const pct = ((sceneIdx * SCENE_DURATION + sceneElapsed) / (SCENES[lang].length * SCENE_DURATION)) * 100;
+      document.getElementById("progressFill").style.width = Math.min(100, pct) + "%";
+      for (let i = 0; i < 4; i++) {
+        document.getElementById("sc" + i).classList.toggle("active", i === sceneIdx);
+      }
+    }
+
+    function speakScene() {
+      if (!voiceOn || !("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      const s = SCENES[lang][sceneIdx];
+      const u = new SpeechSynthesisUtterance(s.title + ". " + s.lines.join(". "));
+      u.lang = lang === "es" ? "es-DO" : "en-US";
+      u.rate = 1.02;
+      window.speechSynthesis.speak(u);
+    }
+
+    function togglePlay() {
+      playing = !playing;
+      document.getElementById("playIcon").textContent = playing ? "⏸" : "▶";
+      document.getElementById("playText").textContent = playing ? (lang === "es" ? "Pausar Video" : "Pause Video") : (lang === "es" ? "Reproducir Video Demo" : "Play Demo Video");
+      if (playing) {
+        speakScene();
+        timer = setInterval(() => {
+          sceneElapsed += 250;
+          if (sceneElapsed >= SCENE_DURATION) {
+            sceneElapsed = 0;
+            sceneIdx = (sceneIdx + 1) % 4;
+            speakScene();
+          }
+          drawScene();
+        }, 250);
+      } else {
+        clearInterval(timer);
+        if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      }
+    }
+
+    function jumpScene(idx) {
+      sceneIdx = idx;
+      sceneElapsed = 0;
+      drawScene();
+      if (playing) speakScene();
+    }
+
+    function toggleVoice() {
+      voiceOn = !voiceOn;
+      document.getElementById("voiceBtn").textContent = voiceOn ? "🔊 Voice: ON" : "🔇 Voice: OFF";
+      if (!voiceOn && "speechSynthesis" in window) window.speechSynthesis.cancel();
+    }
+
+    function showTab(idx) {
+      for (let i = 0; i < 3; i++) {
+        document.getElementById("tab" + i).classList.toggle("active", i === idx);
+        document.getElementById("panel" + i).classList.toggle("hidden", i !== idx);
+      }
+    }
+
+    function runIntakeSim(withPhoto) {
+      const name = document.getElementById("clientName").value.trim() || "Client";
+      const matter = document.getElementById("caseType").value;
+      const opp = document.getElementById("opposingParty").value.trim();
+      const conflict = opp.toLowerCase().includes("atlántico") || opp.toLowerCase().includes("rodríguez");
+      const badge = conflict
+        ? '<span class="badge badge-warn">⚠️ Potential Conflict Flagged — Attorney Check</span>'
+        : '<span class="badge badge-ok">✓ Conflict Check Clear</span>';
+      const ocrBlock = withPhoto
+        ? `<div style="margin-top:8px;"><strong>WhatsApp Photo → PDF + OCR:</strong><br><code>Cedula_${name.replace(/\s+/g,"")}.pdf</code> | ID Verified: 001-0482910-4 | Saved to Client Folder</div>`
+        : "";
+      document.getElementById("intakeOutput").innerHTML = `
+        ${badge}
+        <div style="margin-top:8px;"><strong>Client:</strong> ${name} &nbsp;|&nbsp; <strong>Matter:</strong> ${matter}</div>
+        ${ocrBlock}
+        <div style="margin-top:8px;"><strong>WhatsApp Auto-Reply Sent:</strong><br><em>"Hola ${name}, recibimos tu solicitud (${matter}). El abogado revisará tu caso y te confirmará tu cita hoy."</em></div>
+      `;
+    }
+
+    function renderMatters() {
+      const el = document.getElementById("mattersList");
+      el.innerHTML = MATTERS.map(m => `
+        <div class="matter-row">
+          <div>
+            <strong>${m.client}</strong> — ${m.matter}<br>
+            <span class="badge ${m.ready ? 'badge-ok' : 'badge-warn'}">${m.missing}</span>
+          </div>
+          ${m.ready ? "" : `<button class="btn btn-accent" onclick="sendReminder('${m.client}','${m.missing}','${m.phone}')">📲 Send WhatsApp Reminder</button>`}
+        </div>
+      `).join("");
+    }
+
+    function sendReminder(client, missing, phone) {
+      const box = document.getElementById("reminderToast");
+      box.classList.remove("hidden");
+      box.innerHTML = `<strong>WhatsApp Reminder Ready (${phone}):</strong> "Hola ${client}, para avanzar con su caso solo nos falta una foto clara de: ${missing}. Puede enviarla por aquí mismo."`;
+    }
+
+    function approveDraft() {
+      const b = document.getElementById("approvalBadge");
+      b.className = "badge badge-ok";
+      b.textContent = "✅ Approved by Attorney — Logged & Sent";
+    }
+
+    function resetDraft() {
+      const b = document.getElementById("approvalBadge");
+      b.className = "badge badge-warn";
+      b.textContent = "Pending Attorney Approval";
+    }
+
+    renderMatters();
+    drawScene();
+  </script>
+</body>
+</html>
