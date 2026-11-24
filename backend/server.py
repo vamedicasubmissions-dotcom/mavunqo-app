@@ -31,6 +31,7 @@ import http.server
 import socketserver
 import json
 import os
+import time
 import urllib.parse
 from .db import init_db
 from .auth import hash_password, verify_password, generate_token, verify_token
@@ -101,10 +102,37 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         if not os.path.isfile(file_path):
             self.send_error(404, "Page Not Found")
             return
+        file_size = os.path.getsize(file_path)
+        range_header = self.headers.get("Range")
+        if range_header and range_header.startswith("bytes="):
+            try:
+                byte_range = range_header.replace("bytes=", "").split(",")[0].strip()
+                start_str, end_str = byte_range.split("-", 1)
+                start = int(start_str) if start_str else 0
+                end = int(end_str) if end_str else file_size - 1
+                end = min(end, file_size - 1)
+                if start > end or start >= file_size:
+                    self.send_error(416, "Requested Range Not Satisfiable")
+                    return
+                length = end - start + 1
+                with open(file_path, "rb") as f:
+                    f.seek(start)
+                    chunk = f.read(length)
+                self.send_response(206)
+                self.send_header("Content-Type", content_type)
+                self.send_header("Accept-Ranges", "bytes")
+                self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
+                self.send_header("Content-Length", str(len(chunk)))
+                self.end_headers()
+                self.wfile.write(chunk)
+                return
+            except Exception:
+                pass
         with open(file_path, "rb") as f:
             content = f.read()
         self.send_response(200)
         self.send_header("Content-Type", content_type)
+        self.send_header("Accept-Ranges", "bytes")
         self.send_header("Content-Length", str(len(content)))
         self.end_headers()
         self.wfile.write(content)
@@ -373,7 +401,6 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 ).fetchone()
                 if not tok_row:
                     return self.send_json({"error": "Invalid or revoked checkout token"}, 404)
-                import time
                 if tok_row["expires_at"] < int(time.time()):
                     return self.send_json({"error": "Checkout link has expired"}, 410)
                 
@@ -591,6 +618,9 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/production" or path == "/production-package":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "production_package.html"))
 
+        if path == "/tours-preview":
+            return self.send_file_response(os.path.join(FRONTEND_DIR, "tours_preview.html"))
+
         # Assets or static files
         if path.startswith("/assets/") or path.startswith("/frontend/"):
             rel_path = path.lstrip("/")
@@ -602,6 +632,10 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 content_type = "application/javascript"
             elif full_path.endswith(".html"):
                 content_type = "text/html; charset=utf-8"
+            elif full_path.endswith(".mp4"):
+                content_type = "video/mp4"
+            elif full_path.endswith(".webm"):
+                content_type = "video/webm"
             elif full_path.endswith(".jpg") or full_path.endswith(".jpeg"):
                 content_type = "image/jpeg"
             elif full_path.endswith(".png"):
