@@ -195,13 +195,30 @@
       ],
       "sub_operators": [],
       "pending_items": [
-        "Confirm boat/vessel max passenger capacity (Party Boat, Private Party Boat, Fishing Charter, Deep Sea Fishing)",
         "Confirm Buggy sell price ($90 on internal payout sheet vs $80 on customer flyer)",
         "Confirm Private Party Boat ($800) operator payout if still offered",
         "Confirm final % split on the 'You Keep' margin (e.g. 80/20 or 75/25)",
         "Confirm Eddie's exact WhatsApp/phone number from the sheet header",
         "Confirm whether Car Rental ($50) and Scooter Rental ($25) are included at launch"
-      ]
+      ],
+      "vessel_specs": {
+        "party_boat": {
+          "vessel_style": "60ft double-decker catamaran",
+          "max_passengers": 50,
+          "included": "Food, drinks on board, and snorkel stop"
+        },
+        "deep_sea_fishing_and_charter": {
+          "vessel_style": "50ft fishing boat (shared for Deep Sea Fishing, private for Fishing Charter)",
+          "max_passengers": 9,
+          "crew_note": "9 passengers max along with crew",
+          "included": "Beers, sandwiches, and fishing equipment included"
+        }
+      },
+      "eddie_confirmations_2026_11_24": {
+        "direct_operator_contacts_and_handoff": true,
+        "self_drive_guest_meeting_coordination": true,
+        "city_tour_visuals_available": "photos_confirmed_pending_upload"
+      }
     }
   ]
 }
