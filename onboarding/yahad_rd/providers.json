@@ -1,0 +1,207 @@
+{
+  "market": "Yahad RD",
+  "folder_name": "yahad_rd",
+  "category_id": "cat_tours_activities",
+  "notes": "Staging file for Yahad RD tour & activity operators. Updated with Make It Happen Tours Associate Only (Price + Payout) sheet.",
+  "providers": [
+    {
+      "id": "staging_make_it_happen_tours",
+      "status": "payout_sheet_received_pending_split_agreement",
+      "full_name": "Eddie Valerio",
+      "trading_name": "Make It Happen Tours",
+      "subtitle": "City Tour & Adventures",
+      "tagline": "You pick the tour and we make it happen",
+      "slug": "make-it-happen-tours",
+      "role": "direct_guide_or_middleman",
+      "whatsapp": null,
+      "phone": null,
+      "primary_location_id": "loc_puerto_plata",
+      "service_areas": ["loc_puerto_plata", "Punta Rucia", "Damajagua"],
+      "service_modes_supported": ["guided_tour", "partner_brokered"],
+      "commission_split": {
+        "proposed_by_platform": "80/20 on net margin (80% platform / 20% Eddie, up to 25% with ground ops)",
+        "proposed_by_partner": "50/50",
+        "status": "pending_partner_confirmation"
+      },
+      "currency": "USD",
+      "photos": {
+        "promo_flyer": "onboarding/yahad_rd/photos/make_it_happen_tours/make_it_happen_tours_flyer.jpg",
+        "associate_payout_sheet": "onboarding/yahad_rd/photos/make_it_happen_tours/make_it_happen_tours_associate_payout_sheet.jpg",
+        "tours": []
+      },
+      "videos": [
+        {
+          "file": "onboarding/yahad_rd/videos/make_it_happen_tours/hero_puerto_plata_coast.mp4",
+          "frontend_url": "/frontend/uploads/tours/hero_puerto_plata_coast.mp4",
+          "resolution": "720p HD",
+          "codec": "H.264 (avc1)",
+          "size_mb": 7.93,
+          "title": "Puerto Plata Coast & Beaches",
+          "summary": "Aerial coastal view of crystal-clear turquoise Caribbean waters, sandy beaches, and tropical palm shoreline—used as the main hero preview for Make It Happen Tours."
+        },
+        {
+          "file": "onboarding/yahad_rd/videos/make_it_happen_tours/waterfalls_nature.mp4",
+          "frontend_url": "/frontend/uploads/tours/waterfalls_nature.mp4",
+          "resolution": "720p HD",
+          "codec": "H.264 (avc1)",
+          "size_mb": 3.04,
+          "title": "27 Waterfalls & Blue Lagoon",
+          "summary": "Lush tropical waterfall cascades and natural turquoise rock pools showcasing the 27 Waterfalls Damajagua and Blue Lagoon excursions."
+        },
+        {
+          "file": "onboarding/yahad_rd/videos/make_it_happen_tours/ocean_party_boat.mp4",
+          "frontend_url": "/frontend/uploads/tours/ocean_party_boat.mp4",
+          "resolution": "720p HD",
+          "codec": "H.264 (avc1)",
+          "size_mb": 4.71,
+          "title": "Party Boat, Fishing & Paradise Island",
+          "summary": "Cruising across open Caribbean waters on a boat excursion—covers Party Boat, Paradise Island Punta Rucia, Deep Sea Fishing, and Private Fishing Charters."
+        },
+        {
+          "file": "onboarding/yahad_rd/videos/make_it_happen_tours/snorkeling_reef.mp4",
+          "frontend_url": "/frontend/uploads/tours/snorkeling_reef.mp4",
+          "resolution": "720p HD",
+          "codec": "H.264 (avc1)",
+          "size_mb": 7.62,
+          "title": "Coral Reef Snorkeling",
+          "summary": "Underwater coral reef and tropical marine life footage highlighting the Snorkeling Tour and swim stops."
+        },
+        {
+          "file": "onboarding/yahad_rd/videos/make_it_happen_tours/land_adventure_atv_horse.mp4",
+          "frontend_url": "/frontend/uploads/tours/land_adventure_atv_horse.mp4",
+          "resolution": "720p HD",
+          "codec": "H.264 (avc1)",
+          "size_mb": 13.31,
+          "title": "Land Adventures: Horse Riding, ATV & Buggy",
+          "summary": "Scenic outdoor riding and trail adventure footage representing Horse Riding, ATV Tours, and Buggy excursions."
+        }
+      ],
+      "services": [
+        {
+          "name": "Puerto Plata City Tour",
+          "sell_price_usd": 60,
+          "operator_payout_usd": 40,
+          "margin_usd": 20,
+          "margin_pct": 33.3,
+          "pricing_unit": "per_person"
+        },
+        {
+          "name": "27 Waterfalls Damajagua",
+          "sell_price_usd": 80,
+          "operator_payout_usd": 50,
+          "margin_usd": 30,
+          "margin_pct": 37.5,
+          "pricing_unit": "per_person"
+        },
+        {
+          "name": "Deep Sea Fishing",
+          "sell_price_usd": 120,
+          "operator_payout_usd": 70,
+          "margin_usd": 50,
+          "margin_pct": 41.7,
+          "pricing_unit": "per_person"
+        },
+        {
+          "name": "Horse Riding",
+          "sell_price_usd": 80,
+          "operator_payout_usd": 40,
+          "margin_usd": 40,
+          "margin_pct": 50.0,
+          "pricing_unit": "per_person"
+        },
+        {
+          "name": "Buggy",
+          "sell_price_usd": 90,
+          "flyer_price_usd": 80,
+          "operator_payout_usd": 70,
+          "margin_usd": 20,
+          "margin_pct": 22.2,
+          "pricing_unit": "per_person",
+          "price_note": "Internal sheet shows $90 price ($70 payout / $20 keep) whereas customer flyer shows $80"
+        },
+        {
+          "name": "Blue Lagoon",
+          "sell_price_usd": 80,
+          "operator_payout_usd": 50,
+          "margin_usd": 30,
+          "margin_pct": 37.5,
+          "pricing_unit": "per_person"
+        },
+        {
+          "name": "ATV Tour",
+          "sell_price_usd": 75,
+          "operator_payout_usd": 50,
+          "margin_usd": 25,
+          "margin_pct": 33.3,
+          "pricing_unit": "per_person"
+        },
+        {
+          "name": "Paradise Island Punta Rucia",
+          "sell_price_usd": 85,
+          "operator_payout_usd": 50,
+          "margin_usd": 35,
+          "margin_pct": 41.2,
+          "pricing_unit": "per_person"
+        },
+        {
+          "name": "Party Boat",
+          "sell_price_usd": 100,
+          "operator_payout_usd": 50,
+          "margin_usd": 50,
+          "margin_pct": 50.0,
+          "pricing_unit": "per_person"
+        },
+        {
+          "name": "Fishing Charter",
+          "sell_price_usd": 750,
+          "operator_payout_usd": 450,
+          "margin_usd": 300,
+          "margin_pct": 40.0,
+          "pricing_unit": "per_charter"
+        },
+        {
+          "name": "Snorkeling Tour",
+          "sell_price_usd": 50,
+          "operator_payout_usd": 25,
+          "margin_usd": 25,
+          "margin_pct": 50.0,
+          "pricing_unit": "per_person"
+        },
+        {
+          "name": "Car Rental",
+          "sell_price_usd": 50,
+          "operator_payout_usd": 35,
+          "margin_usd": 15,
+          "margin_pct": 30.0,
+          "pricing_unit": "per_24_hours"
+        },
+        {
+          "name": "Scooter Rental",
+          "sell_price_usd": 25,
+          "operator_payout_usd": 15,
+          "margin_usd": 10,
+          "margin_pct": 40.0,
+          "pricing_unit": "per_24_hours"
+        },
+        {
+          "name": "Private Party Boat",
+          "sell_price_usd": 800,
+          "operator_payout_usd": null,
+          "margin_usd": null,
+          "margin_pct": null,
+          "pricing_unit": "per_charter",
+          "price_note": "Quoted earlier at $800; not on flyer or internal payout sheet"
+        }
+      ],
+      "sub_operators": [],
+      "pending_items": [
+        "Confirm boat/vessel max passenger capacity (Party Boat, Private Party Boat, Fishing Charter, Deep Sea Fishing)",
+        "Confirm Buggy sell price ($90 on internal payout sheet vs $80 on customer flyer)",
+        "Confirm Private Party Boat ($800) operator payout if still offered",
+        "Confirm final % split on the 'You Keep' margin (e.g. 80/20 or 75/25)",
+        "Confirm Eddie's exact WhatsApp/phone number from the sheet header",
+        "Confirm whether Car Rental ($50) and Scooter Rental ($25) are included at launch"
+      ]
+    }
+  ]
+}
