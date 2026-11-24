@@ -16,7 +16,7 @@
       "whatsapp": null,
       "phone": null,
       "primary_location_id": "loc_puerto_plata",
-      "service_areas": ["loc_puerto_plata", "Punta Rucia", "Damajagua"],
+      "service_areas": ["loc_puerto_plata", "loc_sosua", "loc_cabarete", "Punta Rucia", "Damajagua"],
       "service_modes_supported": ["guided_tour", "partner_brokered"],
       "commission_split": {
         "proposed_by_platform": "80/20 on net margin (80% platform / 20% Eddie, up to 25% with ground ops)",
