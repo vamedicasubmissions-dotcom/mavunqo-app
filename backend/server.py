@@ -183,7 +183,9 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             return self.send_json({
                 "recent_audits": audits,
                 "exceptional_access": exc,
-                "missing_images_count": missing_imgs
+                "missing_images_count": missing_imgs,
+                "security_threats": security_monitor.get_recent_security_events(limit=20),
+                "alert_config": security_monitor.get_alert_config(),
             })
 
         if path == "/api/admin/promo-audience":
@@ -879,6 +881,10 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return self.send_json({"error": str(e)}, 400)
 
         if path == "/api/auth/login":
+            client_ip = self.headers.get("X-Forwarded-For", self.client_address[0]).split(",")[0].strip()
+            ok_rate, rate_err = security_monitor.check_rate_limit(client_ip, path, max_hits=15, window_sec=60)
+            if not ok_rate:
+                return self.send_json({"error": rate_err}, 429)
             data = self.read_json_body()
             email = data.get("email", "").strip().lower()
             password = data.get("password", "")
