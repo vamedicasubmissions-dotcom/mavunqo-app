@@ -885,8 +885,8 @@ def seed_database(db_path: str):
                 ("srv_mih_partyboat", "Party Boat ($100 USD)", "Party Boat ($100 USD)", "60ft double-decker catamaran (Max 50 passengers). Food, drinks & snorkel stop included.", 6000.0, 1),
                 ("srv_mih_charter", "Private Fishing Charter ($750 USD)", "Charter Privado de Pesca ($750 USD)", "Private 50ft fishing boat (Max 9 passengers + crew). Beers, sandwiches & all equipment included.", 45000.0, 1),
                 ("srv_mih_snorkel", "Snorkeling Tour ($50 USD)", "Tour de Snorkel ($50 USD)", "Coral reef snorkeling with gear included.", 3000.0, 1),
-                ("srv_mih_car", "Car Rental 24 Hours ($50 USD)", "Alquiler de Carro 24 Horas ($50 USD)", "Self-drive car rental, insurance & free pickup.", 3000.0, 1),
-                ("srv_mih_scooter", "Scooter Rental 24 Hours ($25 USD)", "Alquiler de Pasola 24 Horas ($25 USD)", "Easy ride, insurance & free delivery.", 1500.0, 1),
+                ("srv_mih_car", "Car Rental 24 Hours — Eddie Direct ($50 USD)", "Alquiler de Carro 24 Horas — Eddie Direct ($50 USD)", "General car rental (Eddie Direct ad — call Eddie directly for availability & pickup details).", 3000.0, 1),
+                ("srv_mih_scooter", "Scooter Rental 24 Hours — Eddie Direct ($25 USD)", "Alquiler de Pasola 24 Horas — Eddie Direct ($25 USD)", "General scooter rental (Eddie Direct ad — call Eddie directly for availability & pickup details).", 1500.0, 1),
             ],
             "service_areas": ["loc_puerto_plata", "loc_sosua", "loc_cabarete"]
         },

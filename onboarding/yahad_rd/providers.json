@@ -169,19 +169,23 @@
         },
         {
           "name": "Car Rental",
+          "listing_mode": "eddie_direct_ad_only",
           "sell_price_usd": 50,
           "operator_payout_usd": 35,
           "margin_usd": 15,
           "margin_pct": 30.0,
-          "pricing_unit": "per_24_hours"
+          "pricing_unit": "per_24_hours",
+          "flyer_details": "General car rental — Eddie Direct (call Eddie for availability & pickup)"
         },
         {
           "name": "Scooter Rental",
+          "listing_mode": "eddie_direct_ad_only",
           "sell_price_usd": 25,
           "operator_payout_usd": 15,
           "margin_usd": 10,
           "margin_pct": 40.0,
-          "pricing_unit": "per_24_hours"
+          "pricing_unit": "per_24_hours",
+          "flyer_details": "General scooter rental — Eddie Direct (call Eddie for availability & pickup)"
         },
         {
           "name": "Private Party Boat",
