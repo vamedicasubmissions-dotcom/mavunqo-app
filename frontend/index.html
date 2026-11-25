@@ -96,16 +96,110 @@
         width: 100% !important;
       }
     }
+    .carib-navbar {
+      background: #ffffff !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      box-shadow: 0 2px 10px rgba(15,23,42,0.05) !important;
+    }
+    .carib-navbar .lang-btn {
+      color: #334155 !important;
+      border-color: #cbd5e1 !important;
+      background: #f8fafc !important;
+    }
+    .carib-navbar .lang-btn.active {
+      background: #0d9488 !important;
+      color: #ffffff !important;
+      border-color: #0d9488 !important;
+    }
+    .carib-navbar .btn-outline-white {
+      color: #0d9488 !important;
+      border-color: #0d9488 !important;
+    }
+    .carib-navbar .btn-white {
+      background: #f59e0b !important;
+      color: #ffffff !important;
+      border: none !important;
+    }
+    .carib-search-wrap {
+      background: linear-gradient(135deg, #2bb3a3 0%, #149689 100%) !important;
+      border-radius: 18px !important;
+      padding: 0.9rem !important;
+      box-shadow: 0 10px 26px rgba(13, 148, 136, 0.22) !important;
+      border: none !important;
+    }
+    .carib-search-wrap .uber-input {
+      background: #ffffff !important;
+      border-radius: 9999px !important;
+      border: none !important;
+    }
+    .carib-search-btn {
+      background: #f59e0b !important;
+      color: #ffffff !important;
+      border: none !important;
+      border-radius: 9999px !important;
+      font-weight: 800 !important;
+    }
+    .carib-circles {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(68px, 1fr));
+      gap: 0.75rem;
+      max-width: 560px;
+      margin: 1.25rem auto 0.5rem;
+      text-align: center;
+    }
+    .carib-circle-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem;
+    }
+    .carib-circle-icon {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.65rem;
+      box-shadow: 0 4px 12px rgba(15,23,42,0.08);
+      transition: transform 0.15s ease;
+    }
+    .carib-circle-btn:hover .carib-circle-icon { transform: translateY(-2px); }
+    .carib-circle-label { font-size: 0.8rem; font-weight: 750; color: #0f172a; }
+    .carib-feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      max-width: 560px;
+      margin: 0.9rem auto 0;
+    }
+    .carib-feature-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 0.9rem 0.75rem;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(15,23,42,0.05);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .carib-feature-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(13,148,136,0.12);
+    }
   </style>
 </head>
 <body>
 
-  <!-- Uber-style Dark Minimal Navbar -->
-  <header class="navbar">
+  <!-- Fun Caribbean Header with Accented V & U Logo -->
+  <header class="navbar carib-navbar">
     <div class="nav-container">
-      <a href="/" class="brand-logo">
-        MAVUNQO<span class="dot">.</span>
-        <span class="brand-pill" data-i18n="brand_subtitle">Services</span>
+      <a href="/" class="brand-logo" style="display: flex; align-items: center;">
+        <img src="/frontend/logo_wordmark.svg" alt="mavunqo.COM" style="height: 38px; width: auto; display: block;">
       </a>
 
       <div class="nav-actions">
@@ -122,17 +216,17 @@
     </div>
   </header>
 
-  <!-- Uber Hero Header -->
-  <section class="uber-hero">
-    <h1 class="uber-hero-headline" data-i18n="hero_title">Find Local Services in the North Coast</h1>
-    <p class="uber-hero-subtitle" data-i18n="hero_subtitle">Instant access to verified local businesses, upfront pricing, and direct WhatsApp / phone contact.</p>
+  <!-- Fun Caribbean Hero Header -->
+  <section class="uber-hero" style="background: linear-gradient(180deg, #f0fdfa 0%, #f8fafc 100%) !important; color: #0f172a !important;">
+    <h1 class="uber-hero-headline" style="color: #0f172a !important;" data-i18n="hero_title">Find Local Services in the North Coast</h1>
+    <p class="uber-hero-subtitle" style="color: #475569 !important;" data-i18n="hero_subtitle">Instant access to verified local businesses, upfront pricing, and direct WhatsApp / phone contact.</p>
 
-    <!-- Uber Interactive Search Box -->
-    <div class="uber-search-card">
+    <!-- Teal Pill Search Card with Orange Search Button -->
+    <div class="uber-search-card carib-search-wrap">
       <form id="searchForm" class="uber-search-grid" onsubmit="event.preventDefault(); handleSearch();">
         <div class="uber-input-wrap">
           <span class="uber-input-icon">🔍</span>
-          <input type="text" id="searchInput" class="uber-input" placeholder="Search business by name or type (e.g. Yaha, Auto, Pizza, Boutique)..." oninput="debounceSearch();">
+          <input type="text" id="searchInput" class="uber-input" placeholder="Search tours, massages, stays, or local pros..." oninput="debounceSearch();">
         </div>
         
         <div class="uber-input-wrap">
@@ -149,8 +243,52 @@
           </select>
         </div>
 
-        <button type="submit" class="btn btn-primary" data-i18n="search_button">Search</button>
+        <button type="submit" class="btn carib-search-btn" data-i18n="search_button">🔍 Search</button>
       </form>
+    </div>
+
+    <!-- 4 Circular Pastel Category Quick-Taps -->
+    <div class="carib-circles">
+      <button type="button" class="carib-circle-btn" onclick="selectChip('cat_tours', null);">
+        <div class="carib-circle-icon" style="background: linear-gradient(135deg, #FBBF24, #F97316);">🌴</div>
+        <span class="carib-circle-label">Tours</span>
+      </button>
+      <button type="button" class="carib-circle-btn" onclick="selectChip('cat_tourism', null);">
+        <div class="carib-circle-icon" style="background: #CCFBF1;">🏨</div>
+        <span class="carib-circle-label">Hoteles</span>
+      </button>
+      <button type="button" class="carib-circle-btn" onclick="selectChip('cat_health', null);">
+        <div class="carib-circle-icon" style="background: #FEF3C7;">💆</div>
+        <span class="carib-circle-label">Masajes</span>
+      </button>
+      <button type="button" class="carib-circle-btn" onclick="selectChip('', null);">
+        <div class="carib-circle-icon" style="background: #EDE9FE;">📍</div>
+        <span class="carib-circle-label">Servicios</span>
+      </button>
+    </div>
+
+    <!-- 2x2 Illustrated Tropical Feature Cards -->
+    <div class="carib-feature-grid">
+      <div class="carib-feature-card" onclick="window.location.href='/b/make-it-happen-tours';">
+        <div style="font-size: 2.1rem; line-height: 1.1;">🛥️☀️</div>
+        <div style="font-weight: 800; font-size: 0.92rem; margin-top: 0.35rem; color: #0f172a;">Make It Happen Tours</div>
+        <div style="font-size: 0.76rem; color: #0d9488; font-weight: 700;">Party Boat • ATV • Waterfalls</div>
+      </div>
+      <div class="carib-feature-card" onclick="selectChip('cat_tours', null);">
+        <div style="font-size: 2.1rem; line-height: 1.1;">🏝️🌊</div>
+        <div style="font-weight: 800; font-size: 0.92rem; margin-top: 0.35rem; color: #0f172a;">Island &amp; Reef</div>
+        <div style="font-size: 0.76rem; color: #0d9488; font-weight: 700;">Paradise Island • Snorkel</div>
+      </div>
+      <div class="carib-feature-card" onclick="selectChip('cat_health', null);">
+        <div style="font-size: 2.1rem; line-height: 1.1;">🌺💆</div>
+        <div style="font-weight: 800; font-size: 0.92rem; margin-top: 0.35rem; color: #0f172a;">Wellness &amp; Spa</div>
+        <div style="font-size: 0.76rem; color: #0d9488; font-weight: 700;">Massages • Physical Therapy</div>
+      </div>
+      <div class="carib-feature-card" onclick="selectChip('cat_tourism', null);">
+        <div style="font-size: 2.1rem; line-height: 1.1;">🏖️🛏️</div>
+        <div style="font-weight: 800; font-size: 0.92rem; margin-top: 0.35rem; color: #0f172a;">Stays &amp; Local Pros</div>
+        <div style="font-size: 0.76rem; color: #0d9488; font-weight: 700;">Puerto Plata • Sosúa • Cabarete</div>
+      </div>
     </div>
 
     <!-- Category Chips (Uber Services style) -->
