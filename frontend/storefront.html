@@ -236,16 +236,20 @@
   </style>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="manifest" href="/frontend/manifest.json">
+  <meta name="theme-color" content="#116B62">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 
-  <!-- Uber Dark Navbar -->
+  <!-- Uber Dark Navbar (Locked to Business Storefront) -->
   <header class="navbar">
     <div class="nav-container">
-      <a href="/" class="brand-logo">
-        MAVUNQO<span class="dot">.</span>
+      <div class="brand-logo" style="cursor: default;">
+        MAVUNQO<span class="dot">.</span>COM
         <span class="brand-pill" data-i18n="brand_subtitle">Services</span>
-      </a>
+      </div>
 
       <div class="nav-actions">
         <div class="lang-switch">
@@ -253,7 +257,6 @@
           <button class="lang-btn" data-lang="es">Español</button>
           <button class="lang-btn" data-lang="fr">FR</button>
         </div>
-        <a href="/" class="btn btn-outline-white btn-sm" data-i18n="nav_home">Directory</a>
       </div>
     </div>
   </header>
@@ -2531,25 +2534,7 @@ A confirmation has been registered for front desk check-in.`);
     </div>
   </div>
 
-  <!-- Bottom Mobile Navigation Bar -->
-  <nav class="bottom-nav">
-    <a href="/" class="bottom-nav-item">
-      <span class="icon">🔍</span>
-      <span>Directory</span>
-    </a>
-    <a href="/orders" class="bottom-nav-item">
-      <span class="icon">📋</span>
-      <span>Orders</span>
-    </a>
-    <a href="/staff" class="bottom-nav-item">
-      <span class="icon">⚡</span>
-      <span>Staff</span>
-    </a>
-    <a href="/login" class="bottom-nav-item">
-      <span class="icon">👤</span>
-      <span>Account</span>
-    </a>
-  </nav>
+  <!-- Bottom Mobile Navigation Bar hidden on locked business storefront -->
 
   <!-- Bilingual AI Concierge -->
   <script src="/frontend/concierge.js"></script>

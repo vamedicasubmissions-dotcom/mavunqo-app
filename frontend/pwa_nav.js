@@ -441,6 +441,9 @@
     injectButtons();
     setupMobileLangDropdown();
     setupPullToRefresh();
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/frontend/sw.js").catch(function () {});
+    }
   }
 
   if (document.readyState === "loading") {
