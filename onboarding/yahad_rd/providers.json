@@ -111,13 +111,12 @@
         },
         {
           "name": "Buggy",
-          "sell_price_usd": 90,
-          "flyer_price_usd": 80,
+          "sell_price_usd": 80,
           "operator_payout_usd": 70,
-          "margin_usd": 20,
-          "margin_pct": 22.2,
+          "margin_usd": 10,
+          "margin_pct": 12.5,
           "pricing_unit": "per_person",
-          "price_note": "Internal sheet shows $90 price ($70 payout / $20 keep) whereas customer flyer shows $80"
+          "price_note": "Confirmed by Eddie on 2026-11-24: $80 sell price / $70 payout / $10 margin"
         },
         {
           "name": "Blue Lagoon",
@@ -190,20 +189,19 @@
         {
           "name": "Private Party Boat",
           "sell_price_usd": 800,
-          "operator_payout_usd": null,
-          "margin_usd": null,
-          "margin_pct": null,
+          "operator_payout_usd": 500,
+          "margin_usd": 300,
+          "margin_pct": 37.5,
           "pricing_unit": "per_charter",
-          "price_note": "Quoted earlier at $800; not on flyer or internal payout sheet"
+          "vessel_style": "60ft double-decker catamaran",
+          "max_passengers": 50,
+          "price_note": "Confirmed active by Eddie on 2026-11-24: $800 sell price / $500 payout / $300 margin"
         }
       ],
       "sub_operators": [],
       "pending_items": [
-        "Confirm Buggy sell price ($90 on internal payout sheet vs $80 on customer flyer)",
-        "Confirm Private Party Boat ($800) operator payout if still offered",
         "Confirm final % split on the 'You Keep' margin (e.g. 80/20 or 75/25)",
-        "Confirm Eddie's exact WhatsApp/phone number from the sheet header",
-        "Confirm whether Car Rental ($50) and Scooter Rental ($25) are included at launch"
+        "Confirm Eddie's exact WhatsApp/phone number from the sheet header"
       ],
       "vessel_specs": {
         "party_boat": {
@@ -221,7 +219,10 @@
       "eddie_confirmations_2026_11_24": {
         "direct_operator_contacts_and_handoff": true,
         "self_drive_guest_meeting_coordination": true,
-        "city_tour_visuals_available": "photos_confirmed_pending_upload"
+        "city_tour_visuals_available": "photos_confirmed_pending_upload",
+        "buggy_final_sell_price_usd": 80,
+        "private_party_boat_active": true,
+        "private_party_boat_payout_usd": 500
       }
     }
   ]
