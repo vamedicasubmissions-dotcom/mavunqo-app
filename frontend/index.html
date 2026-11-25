@@ -244,8 +244,7 @@
         </div>
 
         <a href="/register" class="btn btn-outline-white btn-sm" data-i18n="nav_register">List Your Business</a>
-        <a href="/login" class="btn btn-white btn-sm" title="Account" aria-label="Account" data-i18n="nav_login">👤 Sign In</a>
-        <a href="/orders" class="btn btn-outline-white btn-sm" title="Orders &amp; Cart" aria-label="Cart" style="display: inline-flex; align-items: center; gap: 0.3rem;">🛒 <span style="background: #0d9488; color: #fff; border-radius: 9999px; padding: 0 6px; font-size: 0.72rem; font-weight: 800;">0</span></a>
+        <a href="/login" class="btn btn-white btn-sm" title="Account" aria-label="Account" data-i18n="nav_login">Sign In</a>
       </div>
     </div>
   </header>
@@ -257,7 +256,7 @@
 
     <!-- Teal Pill Search Card with Orange Search Button -->
     <div class="uber-search-card carib-search-wrap">
-      <form id="searchForm" class="uber-search-grid" onsubmit="event.preventDefault(); handleSearch();">
+      <form id="searchForm" class="uber-search-grid" onsubmit="event.preventDefault(); openCategoryView(document.getElementById('categorySelect').value);">
         <div class="uber-input-wrap">
           <span class="uber-input-icon">🔍</span>
           <input type="text" id="searchInput" class="uber-input" placeholder="Search tours, massages, stays, or local pros..." oninput="debounceSearch();">
@@ -281,40 +280,19 @@
       </form>
     </div>
 
-    <!-- Unified Circular Pastel Category Quick-Taps (All Categories, Zero Redundancy) -->
+    <!-- Unified Circular Pastel Category Quick-Taps -->
     <div id="categoryCircles" class="carib-circles">
       <!-- Populated dynamically by renderChips() -->
     </div>
-
-    <!-- 2x2 Compact Visual Feature Cards (Clean Vector Icons, Zero Duplicates) -->
-    <div class="carib-feature-grid">
-      <div class="carib-feature-card" onclick="window.location.href='/b/make-it-happen-tours';">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20c2-1 4-1 6 0s4 1 6 0 4-1 6 0"/><path d="M4 16l2-7h12l2 7"/><path d="M9 9V5h6v4"/><circle cx="18" cy="5" r="2" stroke="#f59e0b"/></svg>
-        <div style="font-weight: 800; font-size: 0.86rem; margin-top: 0.3rem; color: #0f172a;">Make It Happen Tours</div>
-        <div style="font-size: 0.72rem; color: #0d9488; font-weight: 700;">Party Boat • ATV • Waterfalls</div>
-      </div>
-      <div class="carib-feature-card" onclick="selectChip('cat_wellness_massage', null);">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2 3 2 6 0 9-2-3-2-6 0-9z"/><path d="M6 8c3 1 5 3 6 6-3-1-5-3-6-6z"/><path d="M18 8c-3 1-5 3-6 6 3-1 5-3 6-6z"/><path d="M4 18c3 2 13 2 16 0"/></svg>
-        <div style="font-weight: 800; font-size: 0.86rem; margin-top: 0.3rem; color: #0f172a;">Massage &amp; Wellness</div>
-        <div style="font-size: 0.72rem; color: #0d9488; font-weight: 700;">Clara Light Spa • Nelfa López</div>
-      </div>
-      <div class="carib-feature-card" onclick="selectCity('loc_puerto_plata');">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg>
-        <div style="font-weight: 800; font-size: 0.86rem; margin-top: 0.3rem; color: #0f172a;">Puerto Plata</div>
-        <div style="font-size: 0.72rem; color: #0d9488; font-weight: 700;">Tours • Wellness • City</div>
-      </div>
-      <div class="carib-feature-card" onclick="selectCity('loc_sosua');">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h18"/><path d="M5 17l2-8h10l2 8"/><path d="M9 9V6h6v3"/><circle cx="18" cy="5" r="2" stroke="#f59e0b"/></svg>
-        <div style="font-weight: 800; font-size: 0.86rem; margin-top: 0.3rem; color: #0f172a;">Sosúa &amp; Cabarete</div>
-        <div style="font-size: 0.72rem; color: #0d9488; font-weight: 700;">Stays • Dining • Local Pros</div>
-      </div>
-    </div>
   </section>
 
-  <!-- Directory Results Section -->
-  <main class="container">
-    <div class="listings-header-bar">
-      <h2 class="section-title">Available Services</h2>
+  <!-- Dedicated Category / Search Results View (Hidden on Clean Home Hub until category or search is selected) -->
+  <main id="resultsSection" class="container" style="display: none; padding-top: 1.25rem;">
+    <div class="listings-header-bar" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="goHomeHub();" style="font-weight: 750;">← Home</button>
+        <h2 id="categoryPageTitle" class="section-title" style="margin: 0;">Available Services</h2>
+      </div>
       <span id="resultsCount" class="results-count-badge"></span>
     </div>
 
@@ -359,10 +337,53 @@
 
         populateFilters();
         renderChips();
-        handleSearch();
+
+        // If URL has ?category= or ?q= or ?location=, open dedicated results view directly
+        const urlParams = new URLSearchParams(window.location.search);
+        const initCat = urlParams.get("category");
+        const initQ = urlParams.get("q");
+        const initLoc = urlParams.get("location");
+        if (initCat !== null || initQ || initLoc) {
+          if (initCat !== null) {
+            activeCategory = initCat;
+            document.getElementById("categorySelect").value = initCat;
+          }
+          if (initQ) document.getElementById("searchInput").value = initQ;
+          if (initLoc) document.getElementById("locationSelect").value = initLoc;
+          openCategoryView(initCat || "");
+        }
       } catch (err) {
         console.error("Error loading filters:", err);
       }
+    }
+
+    function goHomeHub() {
+      activeCategory = "";
+      document.getElementById("searchInput").value = "";
+      document.getElementById("categorySelect").value = "";
+      document.getElementById("locationSelect").value = "";
+      document.getElementById("resultsSection").style.display = "none";
+      document.querySelector(".uber-hero").style.display = "block";
+      document.querySelectorAll(".carib-circle-btn").forEach(c => c.classList.toggle("active", c.dataset.cat === ""));
+      window.history.pushState({}, "", "/");
+    }
+
+    function openCategoryView(catId) {
+      const hero = document.querySelector(".uber-hero");
+      const resultsSec = document.getElementById("resultsSection");
+      const titleEl = document.getElementById("categoryPageTitle");
+      if (hero) hero.style.display = "none";
+      if (resultsSec) resultsSec.style.display = "block";
+      if (titleEl) {
+        if (!catId) {
+          titleEl.textContent = i18n[currentLang].all_categories || "All Categories";
+        } else {
+          const found = categoriesList.find(c => c.id === catId);
+          titleEl.textContent = found ? (currentLang === "es" ? found.name_es : found.name_en) : "Available Services";
+        }
+      }
+      handleSearch();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function populateFilters() {
@@ -449,7 +470,9 @@
       });
       if (btnEl) btnEl.classList.add("active");
       document.getElementById("categorySelect").value = catId;
-      handleSearch();
+      const nextUrl = catId ? `/?category=${encodeURIComponent(catId)}` : "/?category=";
+      window.history.pushState({}, "", nextUrl);
+      openCategoryView(catId);
     }
 
     let searchDebounceTimer = null;
