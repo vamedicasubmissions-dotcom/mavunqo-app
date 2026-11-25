@@ -9,8 +9,8 @@
       <stop offset="100%" stop-color="#EA580C"/>
     </linearGradient>
   </defs>
-  <!-- Tropical Sun, Rays & Palm Leaves lowered and centered between V and U (cx=90) -->
-  <g transform="translate(-8, 3)">
+  <!-- Tropical Sun, Rays & Palm Leaves centered between V and U (cx=98) with clean 2.5px gap -->
+  <g transform="translate(0, -1)">
     <circle cx="98" cy="18" r="8" fill="#FBBF24"/>
     <path d="M98 3.5 L98 7.5 M85 8 L88 11 M111 8 L108 11 M80 18 L85 18 M111 18 L116 18" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
     <path d="M93 18 C86 10, 77 12, 74 17 C80 16, 86 16, 93 18 Z" fill="#10B981"/>

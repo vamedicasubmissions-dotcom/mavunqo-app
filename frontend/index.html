@@ -475,6 +475,7 @@
         "cat_auto": { icon: svgIcon('<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4l-5.3 5.3 2 2 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2z"/>', "#334155"), bg: "#E2E8F0" },
         "cat_home": { icon: svgIcon('<path d="M3 10.5L12 3l9 7.5"/><path d="M5 10v10h14V10"/>', "#475569"), bg: "#F1F5F9" },
         "cat_prof": { icon: svgIcon('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>', "#3730a3"), bg: "#E0E7FF" },
+        "cat_legal": { icon: svgIcon('<path d="M12 3v18"/><path d="M5 7h14"/><path d="M5 7l-2 6h4l-2-6z"/><path d="M19 7l-2 6h4l-2-6z"/><path d="M8 21h8"/>', "#1e3a8a"), bg: "#DBEAFE" },
         "cat_events": { icon: svgIcon('<path d="M12 2v4"/><path d="M5 7l2 2"/><path d="M19 7l-2 2"/><path d="M4 20l5-10 6 6z"/>', "#86198f"), bg: "#FAE8FF" },
         "cat_veterinary": { icon: svgIcon('<circle cx="7" cy="9" r="1.5"/><circle cx="17" cy="9" r="1.5"/><circle cx="12" cy="7" r="1.5"/><path d="M8 16c0-2.5 8-2.5 8 0 0 2-1.5 3-4 3s-4-1-4-3z"/>', "#047857"), bg: "#ECFDF5" }
       };
@@ -486,8 +487,8 @@
         </button>
       `;
 
-      // Prioritize Tours, Massage & Wellness, Hotels first
-      const priority = ["cat_tours", "cat_wellness_massage", "cat_tourism"];
+      // Prioritize Tours, Massage & Wellness, Hotels, Legal first
+      const priority = ["cat_tours", "cat_wellness_massage", "cat_tourism", "cat_legal"];
       const sorted = [...categoriesList].sort((a, b) => {
         const ia = priority.indexOf(a.id), ib = priority.indexOf(b.id);
         if (ia !== -1 && ib !== -1) return ia - ib;
