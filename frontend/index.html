@@ -245,6 +245,94 @@
       transform: translateY(-2px);
       box-shadow: 0 6px 14px rgba(13,148,136,0.12);
     }
+    .carib-hero-banner {
+      max-width: 520px;
+      margin: 0.75rem auto 0;
+      height: 128px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(15,23,42,0.12) 0%, rgba(15,23,42,0.72) 100%),
+                  url('/frontend/uploads/heritage/fortaleza_puerto_plata.jpg') center/cover no-repeat;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0.9rem 1rem;
+      color: #ffffff;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(15,23,42,0.14);
+      overflow: hidden;
+    }
+    .carib-hero-tag {
+      display: inline-block;
+      align-self: flex-start;
+      background: rgba(245, 158, 11, 0.92);
+      color: #0f172a;
+      font-size: 0.68rem;
+      font-weight: 850;
+      padding: 0.18rem 0.55rem;
+      border-radius: 999px;
+      margin-bottom: 0.3rem;
+      letter-spacing: 0.02em;
+    }
+    .carib-feature-card.photo-card {
+      position: relative;
+      padding: 0.75rem;
+      justify-content: flex-end;
+      align-items: flex-start;
+      text-align: left;
+      min-height: 112px;
+      color: #ffffff;
+      border: none;
+      background-size: cover;
+      background-position: center;
+      overflow: hidden;
+    }
+    .carib-feature-card.photo-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(15,23,42,0.10) 15%, rgba(15,23,42,0.78) 100%);
+      z-index: 0;
+    }
+    .carib-feature-card.photo-card > * { position: relative; z-index: 1; }
+    .carib-heritage-wrap {
+      max-width: 520px;
+      margin: 0.95rem auto 0;
+      text-align: left;
+    }
+    .carib-heritage-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.45rem;
+      padding: 0 0.15rem;
+    }
+    .carib-heritage-strip {
+      display: flex;
+      gap: 0.65rem;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding-bottom: 0.25rem;
+      scrollbar-width: none;
+    }
+    .carib-heritage-strip::-webkit-scrollbar { display: none; }
+    .carib-heritage-tile {
+      flex: 0 0 156px;
+      scroll-snap-align: start;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 3px 10px rgba(15,23,42,0.06);
+      cursor: pointer;
+    }
+    .carib-heritage-img {
+      height: 82px;
+      background-size: cover;
+      background-position: center;
+    }
+    .carib-heritage-body { padding: 0.45rem 0.6rem; }
     /* Uniform, compact directory cards */
     #listingsGrid .uber-card {
       display: flex !important;
@@ -318,23 +406,68 @@
       <!-- Populated dynamically by renderChips() -->
     </div>
 
-    <!-- 2x2 Clean Illustrated Quick-Launch Cards -->
+    <!-- Dominican Heritage Hero Photo Banner (Fortaleza San Felipe / Costa Ámbar) -->
+    <div class="carib-hero-banner" onclick="selectChip('cat_tours', null);">
+      <span class="carib-hero-tag">COSTA ÁMBAR · EST. 1502</span>
+      <div style="font-weight: 900; font-size: 1.05rem; line-height: 1.2;">Fortaleza San Felipe &amp; North Coast Tours</div>
+      <div style="font-size: 0.78rem; opacity: 0.92; margin-top: 0.15rem;">Puerto Plata · Sosúa · Cabarete</div>
+    </div>
+
+    <!-- 2x2 Photo-Backed Dominican Heritage & Service Cards -->
     <div class="carib-feature-grid">
-      <div class="carib-feature-card" onclick="selectChip('cat_tours', null);">
-        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19c2-1 4-1 6 0s4 1 6 0 4-1 6 0"/><path d="M4 15l2-6h11l2 6"/><path d="M9 9V5h5v4"/><circle cx="18" cy="5" r="2.2" fill="#fbbf24" stroke="#f59e0b"/></svg>
-        <div style="font-weight: 800; font-size: 0.86rem; margin-top: 0.35rem; color: #0f172a;">Tours</div>
+      <div class="carib-feature-card photo-card" style="background-image: url('/frontend/uploads/heritage/cayo_arena_waterfalls.jpg');" onclick="selectChip('cat_tours', null);">
+        <div style="font-weight: 850; font-size: 0.92rem; line-height: 1.2;">Tours &amp; Charcos</div>
+        <div style="font-size: 0.72rem; opacity: 0.9;">27 Waterfalls · Cayo Arena</div>
       </div>
-      <div class="carib-feature-card" onclick="selectChip('cat_tourism', null);">
-        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18c4-2 14-2 18 0"/><path d="M12 16V8"/><path d="M12 8c-2.5-2-5.5-1.5-7 1 2.5-.5 5 0 7 1.5"/><path d="M12 8c2.5-2 5.5-1.5 7 1-2.5-.5-5 0-7 1.5"/><circle cx="18.5" cy="5" r="2" fill="#fbbf24" stroke="#f59e0b"/></svg>
-        <div style="font-weight: 800; font-size: 0.86rem; margin-top: 0.35rem; color: #0f172a;">Hoteles</div>
+      <div class="carib-feature-card photo-card" style="background-image: url('/frontend/uploads/heritage/colonial_villa_stays.jpg');" onclick="selectChip('cat_tourism', null);">
+        <div style="font-weight: 850; font-size: 0.92rem; line-height: 1.2;">Colonial Stays</div>
+        <div style="font-size: 0.72rem; opacity: 0.9;">Victorian &amp; Beach Villas</div>
       </div>
-      <div class="carib-feature-card" onclick="selectChip('cat_wellness_massage', null);">
-        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2 3 2 6 0 9-2-3-2-6 0-9z"/><path d="M6 8c3 1 5 3 6 6-3-1-5-3-6-6z"/><path d="M18 8c-3 1-5 3-6 6 3-1 5-3 6-6z"/><path d="M4 18c3 2 13 2 16 0"/></svg>
-        <div style="font-weight: 800; font-size: 0.86rem; margin-top: 0.35rem; color: #0f172a;">Masajes</div>
+      <div class="carib-feature-card photo-card" style="background-image: url('/frontend/uploads/wellness/clara_light_spa_cover.jpg');" onclick="selectChip('cat_wellness_massage', null);">
+        <div style="font-weight: 850; font-size: 0.92rem; line-height: 1.2;">Spa &amp; Bienestar</div>
+        <div style="font-size: 0.72rem; opacity: 0.9;">In-Villa Massage &amp; Care</div>
       </div>
-      <div class="carib-feature-card" onclick="selectChip('', null);">
-        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#6d28d9" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-5.5-4.8-5.5-9a5.5 5.5 0 1 1 11 0c0 4.2-5.5 9-5.5 9z"/><circle cx="12" cy="11" r="2" fill="#fde68a"/></svg>
-        <div style="font-weight: 800; font-size: 0.86rem; margin-top: 0.35rem; color: #0f172a;">All Categories</div>
+      <div class="carib-feature-card photo-card" style="background-image: url('/frontend/uploads/heritage/sabor_criollo.jpg');" onclick="selectChip('cat_dining', null);">
+        <div style="font-weight: 850; font-size: 0.92rem; line-height: 1.2;">Sabor Criollo</div>
+        <div style="font-size: 0.72rem; opacity: 0.9;">Local Dining &amp; Colmados</div>
+      </div>
+    </div>
+
+    <!-- Dominican Culture & Heritage Strip -->
+    <div class="carib-heritage-wrap">
+      <div class="carib-heritage-head">
+        <span style="font-weight: 850; font-size: 0.92rem; color: #0f172a;">Dominican Heritage &amp; Culture</span>
+        <button type="button" onclick="openCategoryView('');" style="background:none;border:none;color:#0d9488;font-weight:750;font-size:0.78rem;cursor:pointer;">See all →</button>
+      </div>
+      <div class="carib-heritage-strip">
+        <div class="carib-heritage-tile" onclick="document.getElementById('locationSelect').value='loc_puerto_plata'; selectChip('cat_tours', null);">
+          <div class="carib-heritage-img" style="background-image: url('/frontend/uploads/heritage/fortaleza_puerto_plata.jpg');"></div>
+          <div class="carib-heritage-body">
+            <div style="font-weight:800;font-size:0.8rem;color:#0f172a;">Fortaleza 1577</div>
+            <div style="font-size:0.7rem;color:#64748b;">Puerto Plata Heritage</div>
+          </div>
+        </div>
+        <div class="carib-heritage-tile" onclick="selectChip('cat_tours', null);">
+          <div class="carib-heritage-img" style="background-image: url('/frontend/uploads/heritage/cayo_arena_waterfalls.jpg');"></div>
+          <div class="carib-heritage-body">
+            <div style="font-weight:800;font-size:0.8rem;color:#0f172a;">Taíno Waters</div>
+            <div style="font-size:0.7rem;color:#64748b;">Damajagua &amp; Reefs</div>
+          </div>
+        </div>
+        <div class="carib-heritage-tile" onclick="selectChip('cat_dining', null);">
+          <div class="carib-heritage-img" style="background-image: url('/frontend/uploads/heritage/sabor_criollo.jpg');"></div>
+          <div class="carib-heritage-body">
+            <div style="font-weight:800;font-size:0.8rem;color:#0f172a;">Comida Criolla</div>
+            <div style="font-size:0.7rem;color:#64748b;">Fresh Catch &amp; Chinola</div>
+          </div>
+        </div>
+        <div class="carib-heritage-tile" onclick="selectChip('cat_legal', null);">
+          <div class="carib-heritage-img" style="background-image: url('/frontend/uploads/heritage/colonial_villa_stays.jpg');"></div>
+          <div class="carib-heritage-body">
+            <div style="font-weight:800;font-size:0.8rem;color:#0f172a;">Legal &amp; Titles</div>
+            <div style="font-size:0.7rem;color:#64748b;">Verified DR Counsel</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
