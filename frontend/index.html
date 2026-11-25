@@ -706,7 +706,25 @@
       items.forEach(b => {
         const catName = currentLang === "es" ? b.category_name_es : b.category_name_en;
         const desc = currentLang === "es" ? b.description_es : b.description_en;
-        const hasExternalSite = !!b.website_url;
+        const fallbackPhotos = {
+          "tours-activities": "/frontend/uploads/heritage/people_catamaran.jpg",
+          "hospitality-tourism": "/frontend/uploads/heritage/colonial_villa_stays.jpg",
+          "massage-wellness": "/frontend/uploads/wellness/clara_light_spa_cover.jpg",
+          "dining-food": "/frontend/uploads/heritage/people_comida_veranda.jpg",
+          "groceries-colmados": "/frontend/uploads/heritage/people_comida_veranda.jpg",
+          "events-catering": "/frontend/uploads/heritage/people_bachata.jpg",
+          "legal-lawyers": "/frontend/uploads/heritage/fortaleza_puerto_plata.jpg",
+          "professional-services": "/frontend/uploads/heritage/fortaleza_puerto_plata.jpg"
+        };
+        const coverPhoto = b.cover_image_url || b.logo_url || fallbackPhotos[b.category_slug] || "/frontend/uploads/heritage/cayo_arena_waterfalls.jpg";
+        const ctaLabel = b.category_slug === 'clothing-fashion' ? '🛍️ Shop Boutique'
+          : (b.category_slug === 'dining-food' ? '🍽️ Order Food'
+          : (b.category_slug === 'groceries-colmados' ? '🛒 Order Groceries'
+          : (b.category_slug === 'hospitality-tourism' ? '🏨 Reserve Stay'
+          : (b.category_slug === 'tours-activities' ? '🌴 Book Tour'
+          : (b.category_slug === 'massage-wellness' ? '💆 Book Massage'
+          : (b.category_slug === 'legal-lawyers' ? '⚖️ Book Consultation'
+          : '⚡ View & Book'))))));
 
         let servicesHtml = "";
         if (b.services_summary && b.services_summary.length > 0) {
@@ -723,35 +741,33 @@
           `;
         }
 
-        const waMsg = currentLang === "es"
-          ? encodeURIComponent(`Hola ${b.trading_name}, vi su negocio en Mavunqo y me gustaría información.`)
-          : encodeURIComponent(`Hello ${b.trading_name}, I found your business on Mavunqo and would like to inquire.`);
-
         const card = document.createElement("div");
         card.className = "uber-card";
-        const thumbUrl = b.logo_url || b.cover_image_url || "";
+        card.style.overflow = "hidden";
+        card.style.padding = "0";
         card.innerHTML = `
-          <div class="uber-card-top" style="display: flex; align-items: flex-start; gap: 0.85rem;">
-            ${thumbUrl ? `<img src="${thumbUrl}" alt="${b.trading_name}" loading="lazy" style="width: 60px; height: 60px; border-radius: 12px; object-fit: cover; object-position: top center; border: 2px solid #0d9488; flex-shrink: 0; background: #f1f5f9;">` : ""}
-            <div style="flex: 1; min-width: 0;">
-              <h3 class="uber-card-title">${b.trading_name}</h3>
-              <div class="uber-card-meta">
-                <span class="uber-badge">${catName}</span>
-                <span>📍 ${b.location_name}</span>
-                ${hasExternalSite ? `<span class="uber-badge">🌐 Web</span>` : (b.category_slug === 'clothing-fashion' ? `<span class="uber-badge" style="background: #e0f2fe; color: #0369a1; font-weight: 750;">🛍️ Online Store</span>` : `<span class="uber-badge" style="background: #e2e8f0;">⚡ Storefront</span>`)}
-              </div>
+          <div style="position: relative; height: 142px; background: url('${coverPhoto}') center/cover no-repeat; cursor: pointer;" onclick="window.location.href='/b/${b.slug}'">
+            <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15,23,42,0.08) 20%, rgba(15,23,42,0.75) 100%);"></div>
+            <div style="position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; flex-wrap: wrap;">
+              <span style="background: rgba(255,255,255,0.92); color: #0f172a; font-size: 0.7rem; font-weight: 800; padding: 3px 9px; border-radius: 999px;">${catName}</span>
+            </div>
+            <div style="position: absolute; bottom: 10px; left: 12px; right: 12px; color: #ffffff;">
+              <h3 class="uber-card-title" style="color: #ffffff; margin: 0 0 2px; font-size: 1.08rem; text-shadow: 0 1px 3px rgba(0,0,0,0.45);">${b.trading_name}</h3>
+              <div style="font-size: 0.76rem; opacity: 0.92;">📍 ${b.location_name}</div>
             </div>
           </div>
 
-          <div class="uber-card-body">
-            <p class="uber-card-desc">${desc}</p>
-            ${servicesHtml}
-          </div>
+          <div style="padding: 0.9rem 1rem 1rem; display: flex; flex-direction: column; justify-content: space-between; flex: 1;">
+            <div class="uber-card-body">
+              <p class="uber-card-desc" style="margin-top: 0;">${desc}</p>
+              ${servicesHtml}
+            </div>
 
-          <div class="uber-card-actions">
-            <a href="/b/${b.slug}" class="btn btn-primary btn-sm" style="flex: 1; text-align: center; font-weight: 750; padding: 0.65rem 1rem;">
-              ${b.category_slug === 'clothing-fashion' ? '🛍️ Shop Boutique' : (b.category_slug === 'dining-food' ? '🍽️ Order Food' : (b.category_slug === 'groceries-colmados' ? '🛒 Order Groceries' : (b.category_slug === 'hospitality-tourism' ? '🏨 Reserve Stay' : '⚡ Request Service via Mavunqo')))}
-            </a>
+            <div class="uber-card-actions" style="margin-top: 0.75rem;">
+              <a href="/b/${b.slug}" class="btn btn-primary btn-sm" style="flex: 1; text-align: center; font-weight: 800; padding: 0.7rem 1rem; border-radius: 12px; background: linear-gradient(135deg, #149689, #0d9488); border: none;">
+                ${ctaLabel} →
+              </a>
+            </div>
           </div>
         `;
         grid.appendChild(card);

@@ -267,7 +267,7 @@
 
     <div id="profileContent" style="display: none;">
       <!-- Uber Storefront Hero Header -->
-      <div class="uber-storefront-hero" style="background: linear-gradient(135deg, #116B62 0%, #09433D 100%) !important; border-bottom: 3px solid #F3A64A; color: #ffffff !important;">
+      <div id="storefrontHero" class="uber-storefront-hero" style="background: linear-gradient(135deg, #116B62 0%, #09433D 100%) !important; border-bottom: 3px solid #F3A64A; color: #ffffff !important;">
         <div style="display: flex; align-items: center; gap: 1.15rem; flex-wrap: wrap;">
           <img id="bizLogoImg" src="" alt="Business portrait" style="display: none; width: 88px; height: 88px; border-radius: 16px; object-fit: cover; object-position: top center; border: 3px solid #F3A64A; box-shadow: 0 4px 14px rgba(0,0,0,0.3); background: #ffffff; flex-shrink: 0;">
           <div style="flex: 1; min-width: 240px;">
@@ -825,16 +825,26 @@
       document.getElementById("profileContent").style.display = "block";
 
       document.getElementById("bizTradingName").textContent = b.trading_name;
+      const fallbackHeroPhotos = {
+        "tours-activities": "/frontend/uploads/heritage/people_catamaran.jpg",
+        "hospitality-tourism": "/frontend/uploads/heritage/colonial_villa_stays.jpg",
+        "massage-wellness": "/frontend/uploads/wellness/clara_light_spa_cover.jpg",
+        "dining-food": "/frontend/uploads/heritage/people_comida_veranda.jpg",
+        "groceries-colmados": "/frontend/uploads/heritage/people_comida_veranda.jpg",
+        "events-catering": "/frontend/uploads/heritage/people_bachata.jpg",
+        "legal-lawyers": "/frontend/uploads/heritage/fortaleza_puerto_plata.jpg",
+        "professional-services": "/frontend/uploads/heritage/fortaleza_puerto_plata.jpg"
+      };
+      const heroPhoto = b.logo_url || b.cover_image_url || fallbackHeroPhotos[b.category_slug] || "/frontend/uploads/heritage/cayo_arena_waterfalls.jpg";
+      const sfHero = document.getElementById("storefrontHero");
+      if (sfHero) {
+        sfHero.style.setProperty("background", `linear-gradient(135deg, rgba(17,107,98,0.82) 0%, rgba(9,67,61,0.90) 100%), url('${heroPhoto}') center/cover no-repeat`, "important");
+      }
       const logoImg = document.getElementById("bizLogoImg");
-      const heroPhoto = b.logo_url || b.cover_image_url;
       if (logoImg) {
-        if (heroPhoto) {
-          logoImg.src = heroPhoto;
-          logoImg.alt = b.trading_name;
-          logoImg.style.display = "block";
-        } else {
-          logoImg.style.display = "none";
-        }
+        logoImg.src = heroPhoto;
+        logoImg.alt = b.trading_name;
+        logoImg.style.display = "block";
       }
       document.getElementById("bizCategory").textContent = currentLang === "es" ? b.category_name_es : b.category_name_en;
       document.getElementById("bizLocation").textContent = `📍 ${b.location_name}`;
