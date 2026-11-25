@@ -35,9 +35,9 @@
       },
       customer: {
         title: 'Mavunqo AI Concierge',
-        sub: 'Sosúa & Puerto Plata Local Guide',
-        welcome: '👋 ¡Hola! I am your bilingual North Coast Concierge. Ask me about massage & wellness, dining, hotel rooms, or services in Sosúa and Puerto Plata!',
-        chips: ['Massage in Puerto Plata', 'Hotel rooms in Sosúa']
+        sub: 'Puerto Plata · Sosúa · Cabarete Guide',
+        welcome: '🌴 ¡Hola! Ask me about North Coast tours & waterfalls, bachata & cultural events, comida criolla, wellness, villas, or verified DR lawyers.',
+        chips: ['Tours & waterfalls', 'Bachata & events', 'Verified lawyers', 'Massage in Puerto Plata']
       }
     }[role];
 

@@ -413,23 +413,23 @@
       <div style="font-size: 0.78rem; opacity: 0.92; margin-top: 0.15rem;">Puerto Plata · Sosúa · Cabarete</div>
     </div>
 
-    <!-- 2x2 Photo-Backed Dominican Heritage & Service Cards -->
+    <!-- 2x2 Photo-Backed Dominican Heritage & People Cards -->
     <div class="carib-feature-grid">
-      <div class="carib-feature-card photo-card" style="background-image: url('/frontend/uploads/heritage/cayo_arena_waterfalls.jpg');" onclick="selectChip('cat_tours', null);">
+      <div class="carib-feature-card photo-card" style="background-image: url('/frontend/uploads/heritage/people_catamaran.jpg');" onclick="selectChip('cat_tours', null);">
         <div style="font-weight: 850; font-size: 0.92rem; line-height: 1.2;">Tours &amp; Charcos</div>
-        <div style="font-size: 0.72rem; opacity: 0.9;">27 Waterfalls · Cayo Arena</div>
+        <div style="font-size: 0.72rem; opacity: 0.9;">Catamaran · 27 Waterfalls</div>
       </div>
-      <div class="carib-feature-card photo-card" style="background-image: url('/frontend/uploads/heritage/colonial_villa_stays.jpg');" onclick="selectChip('cat_tourism', null);">
-        <div style="font-weight: 850; font-size: 0.92rem; line-height: 1.2;">Colonial Stays</div>
-        <div style="font-size: 0.72rem; opacity: 0.9;">Victorian &amp; Beach Villas</div>
+      <div class="carib-feature-card photo-card" style="background-image: url('/frontend/uploads/heritage/people_bachata.jpg');" onclick="selectChip('cat_events', null);">
+        <div style="font-weight: 850; font-size: 0.92rem; line-height: 1.2;">Bachata &amp; Culture</div>
+        <div style="font-size: 0.72rem; opacity: 0.9;">Dance Classes · Live Music</div>
       </div>
       <div class="carib-feature-card photo-card" style="background-image: url('/frontend/uploads/wellness/clara_light_spa_cover.jpg');" onclick="selectChip('cat_wellness_massage', null);">
         <div style="font-weight: 850; font-size: 0.92rem; line-height: 1.2;">Spa &amp; Bienestar</div>
         <div style="font-size: 0.72rem; opacity: 0.9;">In-Villa Massage &amp; Care</div>
       </div>
-      <div class="carib-feature-card photo-card" style="background-image: url('/frontend/uploads/heritage/sabor_criollo.jpg');" onclick="selectChip('cat_dining', null);">
+      <div class="carib-feature-card photo-card" style="background-image: url('/frontend/uploads/heritage/people_comida_veranda.jpg');" onclick="selectChip('cat_dining', null);">
         <div style="font-weight: 850; font-size: 0.92rem; line-height: 1.2;">Sabor Criollo</div>
-        <div style="font-size: 0.72rem; opacity: 0.9;">Local Dining &amp; Colmados</div>
+        <div style="font-size: 0.72rem; opacity: 0.9;">Local Dining &amp; Greca Coffee</div>
       </div>
     </div>
 
@@ -440,6 +440,13 @@
         <button type="button" onclick="openCategoryView('');" style="background:none;border:none;color:#0d9488;font-weight:750;font-size:0.78rem;cursor:pointer;">See all →</button>
       </div>
       <div class="carib-heritage-strip">
+        <div class="carib-heritage-tile" onclick="selectChip('cat_events', null);">
+          <div class="carib-heritage-img" style="background-image: url('/frontend/uploads/heritage/people_bachata.jpg');"></div>
+          <div class="carib-heritage-body">
+            <div style="font-weight:800;font-size:0.8rem;color:#0f172a;">Bachata &amp; Merengue</div>
+            <div style="font-size:0.7rem;color:#64748b;">Cabarete Beach Classes</div>
+          </div>
+        </div>
         <div class="carib-heritage-tile" onclick="document.getElementById('locationSelect').value='loc_puerto_plata'; selectChip('cat_tours', null);">
           <div class="carib-heritage-img" style="background-image: url('/frontend/uploads/heritage/fortaleza_puerto_plata.jpg');"></div>
           <div class="carib-heritage-body">
@@ -447,24 +454,17 @@
             <div style="font-size:0.7rem;color:#64748b;">Puerto Plata Heritage</div>
           </div>
         </div>
-        <div class="carib-heritage-tile" onclick="selectChip('cat_tours', null);">
-          <div class="carib-heritage-img" style="background-image: url('/frontend/uploads/heritage/cayo_arena_waterfalls.jpg');"></div>
+        <div class="carib-heritage-tile" onclick="selectChip('cat_tourism', null);">
+          <div class="carib-heritage-img" style="background-image: url('/frontend/uploads/heritage/colonial_villa_stays.jpg');"></div>
           <div class="carib-heritage-body">
-            <div style="font-weight:800;font-size:0.8rem;color:#0f172a;">Taíno Waters</div>
-            <div style="font-size:0.7rem;color:#64748b;">Damajagua &amp; Reefs</div>
-          </div>
-        </div>
-        <div class="carib-heritage-tile" onclick="selectChip('cat_dining', null);">
-          <div class="carib-heritage-img" style="background-image: url('/frontend/uploads/heritage/sabor_criollo.jpg');"></div>
-          <div class="carib-heritage-body">
-            <div style="font-weight:800;font-size:0.8rem;color:#0f172a;">Comida Criolla</div>
-            <div style="font-size:0.7rem;color:#64748b;">Fresh Catch &amp; Chinola</div>
+            <div style="font-weight:800;font-size:0.8rem;color:#0f172a;">Colonial Stays</div>
+            <div style="font-size:0.7rem;color:#64748b;">Victorian &amp; Beach Villas</div>
           </div>
         </div>
         <div class="carib-heritage-tile" onclick="selectChip('cat_legal', null);">
-          <div class="carib-heritage-img" style="background-image: url('/frontend/uploads/heritage/colonial_villa_stays.jpg');"></div>
+          <div class="carib-heritage-img" style="background-image: url('/frontend/uploads/heritage/people_comida_veranda.jpg');"></div>
           <div class="carib-heritage-body">
-            <div style="font-weight:800;font-size:0.8rem;color:#0f172a;">Legal &amp; Titles</div>
+            <div style="font-weight:800;font-size:0.8rem;color:#0f172a;">Legal &amp; Expat Life</div>
             <div style="font-size:0.7rem;color:#64748b;">Verified DR Counsel</div>
           </div>
         </div>
