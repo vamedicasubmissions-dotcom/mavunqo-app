@@ -140,13 +140,16 @@
       font-weight: 800 !important;
     }
     .carib-circles {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(68px, 1fr));
-      gap: 0.75rem;
-      max-width: 560px;
-      margin: 1.25rem auto 0.5rem;
-      text-align: center;
+      display: flex;
+      gap: 0.85rem;
+      overflow-x: auto;
+      padding: 0.75rem 0.25rem 0.25rem;
+      max-width: 820px;
+      margin: 0.75rem auto 0;
+      scrollbar-width: none;
+      justify-content: flex-start;
     }
+    .carib-circles::-webkit-scrollbar { display: none; }
     .carib-circle-btn {
       background: none;
       border: none;
@@ -154,42 +157,72 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.38rem;
       padding: 0.25rem;
+      min-width: 72px;
+      flex-shrink: 0;
     }
     .carib-circle-icon {
-      width: 62px;
-      height: 62px;
+      width: 58px;
+      height: 58px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.65rem;
+      font-size: 1.55rem;
       box-shadow: 0 4px 12px rgba(15,23,42,0.08);
-      transition: transform 0.15s ease;
+      border: 2px solid transparent;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .carib-circle-btn.active .carib-circle-icon {
+      border-color: #0d9488;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(13,148,136,0.22);
     }
     .carib-circle-btn:hover .carib-circle-icon { transform: translateY(-2px); }
-    .carib-circle-label { font-size: 0.8rem; font-weight: 750; color: #0f172a; }
+    .carib-circle-label { font-size: 0.76rem; font-weight: 750; color: #0f172a; text-align: center; line-height: 1.2; max-width: 76px; }
     .carib-feature-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 0.75rem;
-      max-width: 560px;
-      margin: 0.9rem auto 0;
+      gap: 0.65rem;
+      max-width: 520px;
+      margin: 0.75rem auto 0;
     }
     .carib-feature-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 16px;
-      padding: 0.9rem 0.75rem;
+      border-radius: 14px;
+      padding: 0.7rem 0.65rem;
       text-align: center;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(15,23,42,0.05);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 98px;
+      box-shadow: 0 3px 10px rgba(15,23,42,0.05);
       transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
     .carib-feature-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 18px rgba(13,148,136,0.12);
+      box-shadow: 0 6px 14px rgba(13,148,136,0.12);
+    }
+    /* Uniform, compact directory cards */
+    #listingsGrid .uber-card {
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: space-between !important;
+      min-height: 210px !important;
+      padding: 1rem !important;
+      border-radius: 14px !important;
+    }
+    #listingsGrid .uber-card p,
+    #listingsGrid .uber-card-desc {
+      display: -webkit-box !important;
+      -webkit-line-clamp: 2 !important;
+      -webkit-box-orient: vertical !important;
+      overflow: hidden !important;
+      min-height: 2.6em;
     }
   </style>
 </head>
@@ -211,7 +244,8 @@
         </div>
 
         <a href="/register" class="btn btn-outline-white btn-sm" data-i18n="nav_register">List Your Business</a>
-        <a href="/login" class="btn btn-white btn-sm" data-i18n="nav_login">Sign In</a>
+        <a href="/login" class="btn btn-white btn-sm" title="Account" aria-label="Account" data-i18n="nav_login">👤 Sign In</a>
+        <a href="/orders" class="btn btn-outline-white btn-sm" title="Orders &amp; Cart" aria-label="Cart" style="display: inline-flex; align-items: center; gap: 0.3rem;">🛒 <span style="background: #0d9488; color: #fff; border-radius: 9999px; padding: 0 6px; font-size: 0.72rem; font-weight: 800;">0</span></a>
       </div>
     </div>
   </header>
@@ -247,56 +281,33 @@
       </form>
     </div>
 
-    <!-- 4 Circular Pastel Category Quick-Taps -->
-    <div class="carib-circles">
-      <button type="button" class="carib-circle-btn" onclick="selectChip('cat_tours', null);">
-        <div class="carib-circle-icon" style="background: linear-gradient(135deg, #FBBF24, #F97316);">🌴</div>
-        <span class="carib-circle-label">Tours</span>
-      </button>
-      <button type="button" class="carib-circle-btn" onclick="selectChip('cat_tourism', null);">
-        <div class="carib-circle-icon" style="background: #CCFBF1;">🏨</div>
-        <span class="carib-circle-label">Hoteles</span>
-      </button>
-      <button type="button" class="carib-circle-btn" onclick="selectChip('cat_health', null);">
-        <div class="carib-circle-icon" style="background: #FEF3C7;">💆</div>
-        <span class="carib-circle-label">Masajes</span>
-      </button>
-      <button type="button" class="carib-circle-btn" onclick="selectChip('', null);">
-        <div class="carib-circle-icon" style="background: #EDE9FE;">📍</div>
-        <span class="carib-circle-label">Servicios</span>
-      </button>
+    <!-- Unified Circular Pastel Category Quick-Taps (All Categories, Zero Redundancy) -->
+    <div id="categoryCircles" class="carib-circles">
+      <!-- Populated dynamically by renderChips() -->
     </div>
 
-    <!-- 2x2 Illustrated Tropical Feature Cards -->
+    <!-- 2x2 Compact Visual Feature Cards (Clean Vector Icons, Zero Duplicates) -->
     <div class="carib-feature-grid">
       <div class="carib-feature-card" onclick="window.location.href='/b/make-it-happen-tours';">
-        <div style="font-size: 2.1rem; line-height: 1.1;">🛥️☀️</div>
-        <div style="font-weight: 800; font-size: 0.92rem; margin-top: 0.35rem; color: #0f172a;">Make It Happen Tours</div>
-        <div style="font-size: 0.76rem; color: #0d9488; font-weight: 700;">Party Boat • ATV • Waterfalls</div>
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20c2-1 4-1 6 0s4 1 6 0 4-1 6 0"/><path d="M4 16l2-7h12l2 7"/><path d="M9 9V5h6v4"/><circle cx="18" cy="5" r="2" stroke="#f59e0b"/></svg>
+        <div style="font-weight: 800; font-size: 0.86rem; margin-top: 0.3rem; color: #0f172a;">Make It Happen Tours</div>
+        <div style="font-size: 0.72rem; color: #0d9488; font-weight: 700;">Party Boat • ATV • Waterfalls</div>
       </div>
-      <div class="carib-feature-card" onclick="selectChip('cat_tours', null);">
-        <div style="font-size: 2.1rem; line-height: 1.1;">🏝️🌊</div>
-        <div style="font-weight: 800; font-size: 0.92rem; margin-top: 0.35rem; color: #0f172a;">Island &amp; Reef</div>
-        <div style="font-size: 0.76rem; color: #0d9488; font-weight: 700;">Paradise Island • Snorkel</div>
+      <div class="carib-feature-card" onclick="selectChip('cat_wellness_massage', null);">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2 3 2 6 0 9-2-3-2-6 0-9z"/><path d="M6 8c3 1 5 3 6 6-3-1-5-3-6-6z"/><path d="M18 8c-3 1-5 3-6 6 3-1 5-3 6-6z"/><path d="M4 18c3 2 13 2 16 0"/></svg>
+        <div style="font-weight: 800; font-size: 0.86rem; margin-top: 0.3rem; color: #0f172a;">Massage &amp; Wellness</div>
+        <div style="font-size: 0.72rem; color: #0d9488; font-weight: 700;">Clara Light Spa • Nelfa López</div>
       </div>
-      <div class="carib-feature-card" onclick="selectChip('cat_health', null);">
-        <div style="font-size: 2.1rem; line-height: 1.1;">🌺💆</div>
-        <div style="font-weight: 800; font-size: 0.92rem; margin-top: 0.35rem; color: #0f172a;">Wellness &amp; Spa</div>
-        <div style="font-size: 0.76rem; color: #0d9488; font-weight: 700;">Massages • Physical Therapy</div>
+      <div class="carib-feature-card" onclick="selectCity('loc_puerto_plata');">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg>
+        <div style="font-weight: 800; font-size: 0.86rem; margin-top: 0.3rem; color: #0f172a;">Puerto Plata</div>
+        <div style="font-size: 0.72rem; color: #0d9488; font-weight: 700;">Tours • Wellness • City</div>
       </div>
-      <div class="carib-feature-card" onclick="selectChip('cat_tourism', null);">
-        <div style="font-size: 2.1rem; line-height: 1.1;">🏖️🛏️</div>
-        <div style="font-weight: 800; font-size: 0.92rem; margin-top: 0.35rem; color: #0f172a;">Stays &amp; Local Pros</div>
-        <div style="font-size: 0.76rem; color: #0d9488; font-weight: 700;">Puerto Plata • Sosúa • Cabarete</div>
+      <div class="carib-feature-card" onclick="selectCity('loc_sosua');">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h18"/><path d="M5 17l2-8h10l2 8"/><path d="M9 9V6h6v3"/><circle cx="18" cy="5" r="2" stroke="#f59e0b"/></svg>
+        <div style="font-weight: 800; font-size: 0.86rem; margin-top: 0.3rem; color: #0f172a;">Sosúa &amp; Cabarete</div>
+        <div style="font-size: 0.72rem; color: #0d9488; font-weight: 700;">Stays • Dining • Local Pros</div>
       </div>
-    </div>
-
-    <!-- Category Chips (Uber Services style) -->
-    <div id="categoryChips" class="category-chips-scroll">
-      <button class="category-chip active" onclick="selectChip('', this);">
-        <span>✨</span> <span data-i18n="all_categories">All Categories</span>
-      </button>
-      <!-- Injected categories chips -->
     </div>
   </section>
 
@@ -374,37 +385,68 @@
     }
 
     function renderChips() {
-      const chipsBox = document.getElementById("categoryChips");
-      chipsBox.innerHTML = `
-        <button class="category-chip ${activeCategory === '' ? 'active' : ''}" onclick="selectChip('', this);">
-          <span>✨</span> <span>${i18n[currentLang].all_categories}</span>
+      const box = document.getElementById("categoryCircles");
+      if (!box) return;
+      const svgIcon = (d, stroke = "#0f172a") => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+      const styles = {
+        "cat_tours": { icon: svgIcon('<path d="M12 21V9"/><path d="M12 9c-3-3-7-2-8 1 3-1 6 0 8 2"/><path d="M12 9c3-3 7-2 8 1-3-1-6 0-8 2"/><circle cx="18" cy="5" r="2"/>', "#ffffff"), bg: "linear-gradient(135deg, #FBBF24, #F97316)" },
+        "cat_wellness_massage": { icon: svgIcon('<circle cx="12" cy="6" r="2.2"/><path d="M7 18c0-3 2.2-5 5-5s5 2 5 5"/><path d="M4 13c2 0 3 1 4 2"/><path d="M20 13c-2 0-3 1-4 2"/>', "#b45309"), bg: "#FEF3C7" },
+        "cat_tourism": { icon: svgIcon('<path d="M3 18V8"/><path d="M3 13h18v5"/><path d="M7 13v-2a2 2 0 0 1 2-2h3v4"/><path d="M15 10h4a2 2 0 0 1 2 2v1"/>', "#0f766e"), bg: "#CCFBF1" },
+        "cat_dining": { icon: svgIcon('<path d="M4 3v7a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V3"/><path d="M6 12v9"/><path d="M16 3v18"/><path d="M16 3c2 2 3 5 3 8h-3"/>', "#be123c"), bg: "#FFE4E6" },
+        "cat_health": { icon: svgIcon('<path d="M12 5v14"/><path d="M5 12h14"/>', "#15803d"), bg: "#DCFCE7" },
+        "cat_beauty": { icon: svgIcon('<path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8z"/>', "#be185d"), bg: "#FCE7F3" },
+        "cat_fashion": { icon: svgIcon('<path d="M6 4l3-1 3 2 3-2 3 1 2 4-3 2v10H7V10L4 8z"/>', "#6d28d9"), bg: "#EDE9FE" },
+        "cat_grocery": { icon: svgIcon('<circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/><path d="M3 4h2l2.4 11h10.6l2-7H6"/>', "#0369a1"), bg: "#E0F2FE" },
+        "cat_transport": { icon: svgIcon('<path d="M5 16l1.5-5h11L19 16"/><rect x="4" y="13" width="16" height="5" rx="2"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="16.5" cy="18" r="1.5"/>', "#a16207"), bg: "#FEF9C3" },
+        "cat_auto": { icon: svgIcon('<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4l-5.3 5.3 2 2 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2z"/>', "#334155"), bg: "#E2E8F0" },
+        "cat_home": { icon: svgIcon('<path d="M3 10.5L12 3l9 7.5"/><path d="M5 10v10h14V10"/>', "#475569"), bg: "#F1F5F9" },
+        "cat_prof": { icon: svgIcon('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>', "#3730a3"), bg: "#E0E7FF" },
+        "cat_events": { icon: svgIcon('<path d="M12 2v4"/><path d="M5 7l2 2"/><path d="M19 7l-2 2"/><path d="M4 20l5-10 6 6z"/>', "#86198f"), bg: "#FAE8FF" },
+        "cat_veterinary": { icon: svgIcon('<circle cx="7" cy="9" r="1.5"/><circle cx="17" cy="9" r="1.5"/><circle cx="12" cy="7" r="1.5"/><path d="M8 16c0-2.5 8-2.5 8 0 0 2-1.5 3-4 3s-4-1-4-3z"/>', "#047857"), bg: "#ECFDF5" }
+      };
+
+      box.innerHTML = `
+        <button type="button" class="carib-circle-btn ${activeCategory === '' ? 'active' : ''}" data-cat="" onclick="selectChip('', this);">
+          <div class="carib-circle-icon" style="background: #EDE9FE;">${svgIcon('<path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2"/>', "#5b21b6")}</div>
+          <span class="carib-circle-label">${i18n[currentLang].all_categories}</span>
         </button>
       `;
 
-      const icons = {
-        "cat_home": "🛠️",
-        "cat_dining": "🍽️",
-        "cat_health": "💆",
-        "cat_auto": "🚗",
-        "cat_prof": "💼",
-        "cat_tourism": "🌴",
-        "cat_grocery": "🛒",
-        "cat_fashion": "👗"
-      };
-
-      categoriesList.forEach(c => {
-        const icon = icons[c.id] || "🏷️";
-        const btn = document.createElement("button");
-        btn.className = `category-chip ${activeCategory === c.id ? 'active' : ''}`;
-        btn.onclick = () => selectChip(c.id, btn);
-        btn.innerHTML = `<span>${icon}</span> <span>${currentLang === "es" ? c.name_es : c.name_en}</span>`;
-        chipsBox.appendChild(btn);
+      // Prioritize Tours, Massage & Wellness, Hotels first
+      const priority = ["cat_tours", "cat_wellness_massage", "cat_tourism"];
+      const sorted = [...categoriesList].sort((a, b) => {
+        const ia = priority.indexOf(a.id), ib = priority.indexOf(b.id);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        if (ia !== -1) return -1;
+        if (ib !== -1) return 1;
+        return 0;
       });
+
+      sorted.forEach(c => {
+        const st = styles[c.id] || { icon: svgIcon('<circle cx="12" cy="12" r="7"/>'), bg: "#F1F5F9" };
+        const label = currentLang === "es" ? c.name_es : c.name_en;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `carib-circle-btn ${activeCategory === c.id ? 'active' : ''}`;
+        btn.dataset.cat = c.id;
+        btn.onclick = () => selectChip(c.id, btn);
+        btn.innerHTML = `<div class="carib-circle-icon" style="background: ${st.bg};">${st.icon}</div><span class="carib-circle-label">${label}</span>`;
+        box.appendChild(btn);
+      });
+    }
+
+    function selectCity(locId) {
+      const sel = document.getElementById("locationSelect");
+      if (sel) sel.value = locId;
+      handleSearch();
+      document.getElementById("listingsGrid")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function selectChip(catId, btnEl) {
       activeCategory = catId;
-      document.querySelectorAll(".category-chip").forEach(c => c.classList.remove("active"));
+      document.querySelectorAll(".carib-circle-btn").forEach(c => {
+        c.classList.toggle("active", c.dataset.cat === catId);
+      });
       if (btnEl) btnEl.classList.add("active");
       document.getElementById("categorySelect").value = catId;
       handleSearch();

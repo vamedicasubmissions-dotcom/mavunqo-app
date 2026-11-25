@@ -83,11 +83,10 @@ class MavunqoService:
 
             sql += """ AND (
                 b.primary_location_id = ? OR 
-                bsa.location_id = ? OR 
                 l.name LIKE ? OR 
                 LOWER(l.search_aliases) LIKE ?
             )"""
-            params.extend([loc_match, loc_match, f"%{location_id}%", f"%{location_id.lower()}%"])
+            params.extend([loc_match, f"%{location_id}%", f"%{location_id.lower()}%"])
 
         if q:
             sql += """ AND (
