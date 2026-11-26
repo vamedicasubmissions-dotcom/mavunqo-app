@@ -1092,12 +1092,16 @@
       };
 
       if (b.services && b.services.length > 0) {
+        const sLangT = (typeof i18n !== "undefined" && i18n[currentLang]) || (typeof i18n !== "undefined" ? i18n.en : {});
         b.services.forEach(s => {
-          const sName = currentLang === "es" ? s.name_es : s.name_en;
-          const sDesc = currentLang === "es" ? s.description_es : s.description_en;
-          const priceText = s.display_price && s.price 
-            ? `${s.currency} $${s.price}` 
-            : `<span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">${i18n[currentLang].price_on_request}</span>`;
+          const sName = currentLang === "es" ? (s.name_es || s.name_en) : s.name_en;
+          const sDesc = currentLang === "es" ? (s.description_es || s.description_en) : s.description_en;
+          const pricePlain = s.display_price && s.price
+            ? `${s.currency} $${s.price}`
+            : (sLangT.price_on_request || 'Contact for price');
+          const priceHtml = s.display_price && s.price
+            ? pricePlain
+            : `<span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">${pricePlain}</span>`;
           const tourVideoSrc = (b.slug === 'make-it-happen-tours' || (b.category_slug || '').includes('tour')) ? getTourVideoForService(s.name_en || sName) : null;
           const videoThumbHtml = tourVideoSrc
             ? `<div onclick="openTourVideoModal('${tourVideoSrc}', '${escapeAttr(sName)}', '${escapeAttr(sDesc || '')}');" style="position: relative; width: 92px; height: 70px; border-radius: 10px; overflow: hidden; background: #0f172a; flex-shrink: 0; cursor: pointer; margin-right: 0.85rem; border: 1px solid rgba(15,23,42,0.12);">
@@ -1111,7 +1115,7 @@
           const isDirectAd = (sName || '').toLowerCase().includes('eddie direct');
           const actionBtnHtml = isDirectAd
             ? `<button class="btn btn-outline btn-sm" onclick="openContactModal();" style="font-size: 0.78rem; font-weight: 750; border-color: var(--teal-primary); color: var(--teal-primary);">📞 Call Eddie Direct</button>`
-            : `<button class="btn btn-primary btn-sm" onclick="requestSpecificService('${escapeAttr(sName)}', '${escapeAttr(priceText)}');" style="font-size: 0.78rem; font-weight: 750;">Book Service</button>`;
+            : `<button class="btn btn-primary btn-sm" onclick="requestSpecificService('${escapeAttr(sName)}', '${escapeAttr(pricePlain)}');" style="font-size: 0.78rem; font-weight: 750;">${sLangT.book_service_btn || 'Book Service'}</button>`;
 
           const card = document.createElement("div");
           card.className = "uber-menu-card";
@@ -1125,14 +1129,14 @@
               <div class="uber-menu-desc">${sDesc || ''}</div>
             </div>
             <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem;">
-              <div class="uber-menu-price">${priceText}</div>
+              <div class="uber-menu-price">${priceHtml}</div>
               ${actionBtnHtml}
             </div>
           `;
           sContainer.appendChild(card);
         });
       } else {
-        sContainer.innerHTML = `<p style="color: var(--text-muted);">Please contact this business directly for their services menu.</p>`;
+        sContainer.innerHTML = `<p style="color: var(--text-muted);">${currentLang === 'es' ? 'Por favor contáctanos directamente para ver el menú de servicios.' : (currentLang === 'fr' ? 'Veuillez contacter directement cette entreprise pour son catalogue de services.' : 'Please contact this business directly for their services menu.')}</p>`;
       }
     }
 
@@ -1141,6 +1145,22 @@
 
     function renderWellnessMenu(b, container) {
       const isEs = currentLang === 'es';
+      const isFr = currentLang === 'fr';
+      const t = (typeof i18n !== 'undefined' && i18n[currentLang]) || (typeof i18n !== 'undefined' ? i18n.en : {});
+      const frWellnessServices = {
+        srv_cls_1: { name: "Massage Express / Ciblé (30 min)", desc: "Visite à domicile ciblant dos, nuque et épaules." },
+        srv_cls_2: { name: "Massage Relaxant / Suédois (60 min)", desc: "Relaxation complète du corps à votre domicile ou villa." },
+        srv_cls_3: { name: "Massage Relaxant / Suédois (90 min)", desc: "Séance prolongée de relaxation corporelle complète." },
+        srv_cls_4: { name: "Massage Profond / Décontracturant (60 min)", desc: "Soulagement ciblé des tensions chroniques et nœuds musculaires." },
+        srv_cls_5: { name: "Massage Sportif / Récupération (90 min)", desc: "Séance prolongée de récupération musculaire profonde." },
+        srv_cls_6: { name: "Drainage Lymphatique (60 min)", desc: "Drainage lymphatique thérapeutique doux." },
+        srv_cls_7: { name: "Massage aux Pierres Chaudes (60 min)", desc: "Détente musculaire aux pierres volcaniques chaudes." },
+        srv_cls_8: { name: "Massage en Couple (60 min)", desc: "Séance simultanée à domicile avec deux thérapeutes." },
+        srv_cls_9: { name: "Massage à 4 Mains (60 min)", desc: "Séance luxe synchronisée avec deux thérapeutes." },
+        srv_cls_10: { name: "Soin du Visage Basique", desc: "Nettoyage, exfoliation et hydratation du visage." },
+        srv_cls_11: { name: "Pédicure et Manucure", desc: "Soin complet des mains et des pieds à domicile." },
+        srv_cls_12: { name: "Épilation (Bras, Jambes, Aisselles)", desc: "Tarif établi selon la zone et la densité." }
+      };
       let modes = [];
       try {
         modes = Array.isArray(b.service_modes_supported)
@@ -1163,14 +1183,14 @@
         <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.5rem;">
           ${hasInfotep ? `
           <span style="display:inline-flex; align-items:center; gap:0.35rem; background:#116B62; color:#fff; font-size:0.78rem; font-weight:750; padding:0.3rem 0.65rem; border-radius:999px;">
-            ✓ ${isEs ? 'Certificado INFOTEP' : 'INFOTEP Certified'}
+            ✓ ${t.infotep_certified || 'INFOTEP Certified'}
           </span>` : ''}
           <span style="display:inline-flex; align-items:center; gap:0.3rem; background:#fff; color:#09433D; border:1px solid rgba(17,107,98,0.25); font-size:0.78rem; font-weight:700; padding:0.3rem 0.65rem; border-radius:999px;">
             ${mobileOnly
-              ? (isEs ? '🚗 Solo a Domicilio' : '🚗 Mobile / Home Visits Only')
+              ? (t.mobile_only_badge || '🚗 Mobile / Home Visits Only')
               : (hasInShop && hasMobile
-                ? (isEs ? '🏥 Local + A Domicilio' : '🏥 In-Studio + Mobile Visits')
-                : (isEs ? '🏥 En Local' : '🏥 In-Studio'))}
+                ? (t.in_studio_mobile_badge || '🏥 In-Studio + Mobile Visits')
+                : (t.in_studio_badge || '🏥 In-Studio'))}
           </span>
         </div>
       `;
@@ -1183,13 +1203,13 @@
         switcherHtml = `
           <div style="display:inline-flex; gap:0.35rem; flex-wrap:wrap;">
             <button type="button" onclick="wellnessModeFilter='all'; renderWellnessMenu(currentBusiness, document.getElementById('servicesMenuContainer'));" style="${btnStyle(wellnessModeFilter==='all')} padding:0.35rem 0.75rem; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer;">
-              ${isEs ? 'Todos' : 'All'}
+              ${t.all_filter || 'All'}
             </button>
             <button type="button" onclick="wellnessModeFilter='in_shop'; renderWellnessMenu(currentBusiness, document.getElementById('servicesMenuContainer'));" style="${btnStyle(wellnessModeFilter==='in_shop')} padding:0.35rem 0.75rem; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer;">
-              ${isEs ? 'En Local' : 'On-Site'}
+              ${t.onsite_filter || 'On-Site'}
             </button>
             <button type="button" onclick="wellnessModeFilter='mobile'; renderWellnessMenu(currentBusiness, document.getElementById('servicesMenuContainer'));" style="${btnStyle(wellnessModeFilter==='mobile')} padding:0.35rem 0.75rem; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer;">
-              ${isEs ? 'A Domicilio' : 'Mobile'}
+              ${t.mobile_filter || 'Mobile'}
             </button>
           </div>
         `;
@@ -1202,9 +1222,7 @@
       if (hasMobile && (wellnessModeFilter === 'mobile' || mobileOnly)) {
         const mobileNote = document.createElement('div');
         mobileNote.style.cssText = 'background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:0.75rem 1rem; margin-bottom:1.1rem; font-size:0.84rem; color:#78350f; line-height:1.45;';
-        mobileNote.innerHTML = isEs
-          ? `<strong>🚗 Qué esperar a domicilio:</strong> El/la terapeuta lleva camilla portátil, sábanas limpias y aceites. Solo necesitas un espacio tranquilo; los 10 min de armado no se descuentan de tu sesión.`
-          : `<strong>🚗 What to expect for mobile visits:</strong> Your therapist brings a portable table, fresh linens, and oils. Just have a quiet space ready—setup and teardown do not cut into your session time.`;
+        mobileNote.innerHTML = t.mobile_expect_html || `<strong>🚗 What to expect for mobile visits:</strong> Your therapist brings a portable table, fresh linens, and oils. Just have a quiet space ready—setup and teardown do not cut into your session time.`;
         container.appendChild(mobileNote);
       }
 
@@ -1212,29 +1230,25 @@
       const groups = [
         {
           id: 'pain_rehab',
-          title_en: 'Pain Relief & Physical Rehabilitation',
-          title_es: 'Alivio del Dolor y Rehabilitación Física',
+          title: t.wellness_pain_rehab || 'Pain Relief & Physical Rehabilitation',
           match: /deep tissue|descontracturante|sports|deportivo|rehab|physical|terapia física|evaluación|post-op|express|localizado|recovery|recuperación/i,
           items: []
         },
         {
           id: 'relaxation',
-          title_en: 'Stress Relief & Relaxation',
-          title_es: 'Relajación y Bienestar',
+          title: t.wellness_relaxation || 'Stress Relief & Relaxation',
           match: /swedish|sueco|relax|relajante|hot stone|piedras|aromatherap/i,
           items: []
         },
         {
           id: 'specialty_spa',
-          title_en: 'Specialty Spa & Aesthetics',
-          title_es: 'Spa Especializado y Estética',
+          title: t.wellness_specialty_spa || 'Specialty Spa & Aesthetics',
           match: /lymphatic|linfático|couple|pareja|4-hand|4 manos|facial|pedicure|manicure|hair removal|depilación|reflexolog/i,
           items: []
         },
         {
           id: 'packages_addons',
-          title_en: 'Packages & Add-Ons',
-          title_es: 'Paquetes y Adicionales',
+          title: t.wellness_packages || 'Packages & Add-Ons',
           match: /.*/i,
           items: []
         }
@@ -1263,12 +1277,13 @@
 
         const heading = document.createElement('h3');
         heading.style.cssText = 'font-size:1.1rem; font-weight:800; color:#09433D; margin-bottom:0.75rem; padding-bottom:0.35rem; border-bottom:2px solid rgba(17,107,98,0.15);';
-        heading.textContent = isEs ? group.title_es : group.title_en;
+        heading.textContent = group.title;
         section.appendChild(heading);
 
         group.items.forEach(s => {
-          const rawName = isEs ? s.name_es : s.name_en;
-          const sDesc = isEs ? s.description_es : s.description_en;
+          const frOv = isFr ? frWellnessServices[s.id] : null;
+          const rawName = isEs ? (s.name_es || s.name_en) : (frOv ? frOv.name : s.name_en);
+          const sDesc = isEs ? (s.description_es || s.description_en) : (frOv ? frOv.desc : s.description_en);
 
           // Extract duration pill e.g. (60 min) or (45–60 min)
           const durMatch = rawName.match(/\(([^)]*min[^)]*)\)/i);
@@ -1277,9 +1292,12 @@
             : '';
           const cleanName = durMatch ? rawName.replace(durMatch[0], '').replace(/\s{2,}/g, ' ').trim() : rawName;
 
-          const priceText = s.display_price && s.price
+          const pricePlain = s.display_price && s.price
             ? `${s.currency} $${s.price}`
-            : `<span style="font-size:0.88rem; color:var(--text-muted); font-weight:600;">${i18n[currentLang].price_on_request}</span>`;
+            : (t.price_on_request || 'Contact for price');
+          const priceHtml = s.display_price && s.price
+            ? pricePlain
+            : `<span style="font-size:0.88rem; color:var(--text-muted); font-weight:600;">${pricePlain}</span>`;
 
           const card = document.createElement('div');
           card.className = 'uber-menu-card';
@@ -1290,9 +1308,9 @@
               ${sDesc ? `<div class="uber-menu-desc">${sDesc}</div>` : ''}
             </div>
             <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:0.35rem;">
-              <div class="uber-menu-price">${priceText}</div>
-              <button class="btn btn-primary btn-sm" onclick="requestSpecificService('${escapeAttr(rawName)}', '${escapeAttr(priceText)}');" style="font-size:0.78rem; font-weight:750;">
-                ${isEs ? 'Reservar' : 'Book Service'}
+              <div class="uber-menu-price">${priceHtml}</div>
+              <button class="btn btn-primary btn-sm" onclick="requestSpecificService('${escapeAttr(rawName)}', '${escapeAttr(pricePlain)}');" style="font-size:0.78rem; font-weight:750;">
+                ${t.book_service_btn || 'Book Service'}
               </button>
             </div>
           `;
@@ -1307,7 +1325,7 @@
         empty.style.color = 'var(--text-muted)';
         empty.textContent = isEs
           ? 'No hay servicios en esta modalidad. Cambia el filtro arriba para ver todos.'
-          : 'No services match this mode filter. Switch the filter above to view all.';
+          : (isFr ? 'Aucun service dans ce mode. Changez le filtre ci-dessus pour tout voir.' : 'No services match this mode filter. Switch the filter above to view all.');
         container.appendChild(empty);
       }
     }
@@ -2126,30 +2144,37 @@ A confirmation has been registered for front desk check-in.`);
 
     function openUniversalRequestModal(actionLabel, prefilledText, prefilledPrice) {
       if (!currentBusiness) return;
-      document.getElementById("universalModalTitle").textContent = actionLabel || (currentBusiness.request_action_label_en || "Submit Request");
+      const t = (typeof i18n !== "undefined" && i18n[currentLang]) || (typeof i18n !== "undefined" ? i18n.en : {});
+      document.getElementById("universalModalTitle").textContent = actionLabel || (currentBusiness.request_action_label_en || t.request_appointment_btn || "Submit Request");
       document.getElementById("universalModalSubtitle").textContent = currentBusiness.trading_name;
 
       const respTargetEl = document.getElementById("reqResponseTargetText");
       if (respTargetEl) {
         const slug = currentBusiness.category_slug || "";
-        let targetNote = "Typically confirmed within 30 minutes during business hours.";
-        if (slug === "dining-food" || slug === "groceries-colmados" || slug === "pharmacy") {
-          targetNote = "Target confirmation: under 15 minutes.";
-        } else if (slug === "massage-wellness") {
-          targetNote = "Target confirmation: 15–30 minutes during business hours.";
+        if (currentLang === "es") {
+          let targetNote = "Confirmación habitual en 30 minutos en horario laboral.";
+          if (slug === "dining-food" || slug === "groceries-colmados" || slug === "pharmacy") {
+            targetNote = "Confirmación estimada: menos de 15 minutos.";
+          } else if (slug === "massage-wellness") {
+            targetNote = "Confirmación estimada: 15–30 minutos en horario laboral.";
+          }
+          respTargetEl.textContent = `Sin cargos previos con tarjeta. Paga en Efectivo, Transferencia Bancaria, Zelle o Wise al confirmar. ${targetNote}`;
+        } else if (currentLang === "fr") {
+          respTargetEl.textContent = "Aucun prélèvement par carte. Payez en espèces, virement, Zelle ou Wise après confirmation.";
+        } else {
+          let targetNote = "Typically confirmed within 30 minutes during business hours.";
+          if (slug === "dining-food" || slug === "groceries-colmados" || slug === "pharmacy") {
+            targetNote = "Target confirmation: under 15 minutes.";
+          } else if (slug === "massage-wellness") {
+            targetNote = "Target confirmation: 15–30 minutes during business hours.";
+          }
+          respTargetEl.textContent = `No upfront card charge. Pay via Cash, Bank Transfer, Zelle, or Wise once confirmed. ${targetNote}`;
         }
-        respTargetEl.textContent = `No upfront card charge. Pay via Cash, Bank Transfer, Zelle, or Wise once confirmed. ${targetNote}`;
       }
       
       const reqTextEl = document.getElementById("reqDescInput");
-      if (prefilledText) {
-        reqTextEl.value = prefilledText;
-      }
-      if (prefilledPrice) {
-        document.getElementById("reqAgreedPrice").value = prefilledPrice;
-      } else {
-        document.getElementById("reqAgreedPrice").value = "";
-      }
+      reqTextEl.value = prefilledText || "";
+      document.getElementById("reqAgreedPrice").value = prefilledPrice || "";
 
       // Configure Service Modes
       let modes = ["in_shop"];
@@ -2160,13 +2185,17 @@ A confirmation has been registered for front desk check-in.`);
       }
       selectedServiceMode = modes[0];
 
+      const modeLabels = {
+        in_shop: currentLang === "es" ? "🏢 En Local" : (currentLang === "fr" ? "🏢 Sur Place" : "🏢 In-Shop Visit"),
+        mobile_visit: currentLang === "es" ? "🛵 Visita a Domicilio" : (currentLang === "fr" ? "🛵 Visite à Domicile" : "🛵 Mobile / Home Visit"),
+        pickup: currentLang === "es" ? "🛍️ Recoger en Local" : (currentLang === "fr" ? "🛍️ À Emporter" : "🛍️ Pickup"),
+        delivery: currentLang === "es" ? "🛵 Delivery / Entrega" : (currentLang === "fr" ? "🛵 Livraison" : "🛵 Delivery"),
+        meeting_point: currentLang === "es" ? "📍 Punto de Encuentro" : (currentLang === "fr" ? "📍 Point de Rendez-vous" : "📍 Tour Meeting Point")
+      };
+
       const mContainer = document.getElementById("serviceModesContainer");
       mContainer.innerHTML = modes.map(m => {
-        let label = "🏢 In-Shop Visit";
-        if (m === "mobile_visit") label = "🛵 Mobile / Home Visit";
-        if (m === "pickup") label = "🛍️ Pickup";
-        if (m === "delivery") label = "🛵 Delivery";
-        if (m === "meeting_point") label = "📍 Tour Meeting Point";
+        const label = modeLabels[m] || "🏢 In-Shop Visit";
         return `
           <label style="border: 1px solid var(--border); padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.82rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.35rem;">
             <input type="radio" name="serviceModeRadio" value="${m}" ${m === selectedServiceMode ? 'checked' : ''} onchange="toggleServiceMode(this.value);">
@@ -2181,6 +2210,10 @@ A confirmation has been registered for front desk check-in.`);
 
     function closeUniversalRequestModal() {
       document.getElementById("universalRequestModal").style.display = "none";
+      const reqTextEl = document.getElementById("reqDescInput");
+      if (reqTextEl) reqTextEl.value = "";
+      const agreedEl = document.getElementById("reqAgreedPrice");
+      if (agreedEl) agreedEl.value = "";
     }
 
     function toggleServiceMode(mode) {
@@ -2303,15 +2336,21 @@ A confirmation has been registered for front desk check-in.`);
     }
 
     function requestSpecificService(serviceName, price) {
+      const cleanPrice = String(price || '').replace(/<[^>]*>/g, '').trim();
+      const t = (typeof i18n !== "undefined" && i18n[currentLang]) || (typeof i18n !== "undefined" ? i18n.en : {});
       if (currentBusiness && currentBusiness.requests_enabled) {
-        const numPrice = parseFloat((price || '').replace(/[^0-9.]/g, '')) || null;
-        openUniversalRequestModal(
-          currentLang === 'es' ? (currentBusiness.request_action_label_es || 'Solicitar') : (currentBusiness.request_action_label_en || 'Submit Request'),
-          `I would like to book "${serviceName}" (${price}).`,
-          numPrice
-        );
+        const numPrice = parseFloat(cleanPrice.replace(/[^0-9.]/g, '')) || null;
+        const actionLabel = currentLang === 'es'
+          ? (currentBusiness.request_action_label_es || t.request_appointment_btn || 'Solicitar')
+          : (currentLang === 'fr' ? (t.request_appointment_btn || 'Demander un rendez-vous') : (currentBusiness.request_action_label_en || t.request_appointment_btn || 'Submit Request'));
+        const bookMsg = currentLang === 'es'
+          ? `Me gustaría reservar "${serviceName}" (${cleanPrice}).`
+          : (currentLang === 'fr'
+            ? `Je souhaite réserver "${serviceName}" (${cleanPrice}).`
+            : `I would like to book "${serviceName}" (${cleanPrice}).`);
+        openUniversalRequestModal(actionLabel, bookMsg, numPrice);
       } else {
-        document.getElementById("contactMessage").value = `I would like to book "${serviceName}" (${price}) for my vehicle/home. Please confirm technician availability.`;
+        document.getElementById("contactMessage").value = `I would like to book "${serviceName}" (${cleanPrice}) for my vehicle/home. Please confirm technician availability.`;
         openContactModal();
       }
     }
@@ -2322,6 +2361,8 @@ A confirmation has been registered for front desk check-in.`);
 
     function closeContactModal() {
       document.getElementById("contactModal").style.display = "none";
+      const msgEl = document.getElementById("contactMessage");
+      if (msgEl) msgEl.value = "";
     }
 
     async function submitContact() {
