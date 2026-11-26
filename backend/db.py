@@ -61,6 +61,23 @@ CREATE TABLE IF NOT EXISTS notification_queue (
     sent_at TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS outreach_leads (
+    id TEXT PRIMARY KEY,
+    business_name TEXT NOT NULL,
+    category TEXT,
+    town TEXT DEFAULT 'Sosúa',
+    phone TEXT NOT NULL,
+    contact_name TEXT,
+    status TEXT NOT NULL CHECK(status IN ('new', 'called', 'no_answer', 'interested', 'signed_up', 'not_interested')) DEFAULT 'new',
+    assigned_to TEXT REFERENCES users(id),
+    notes TEXT,
+    call_count INTEGER DEFAULT 0,
+    last_called_at TIMESTAMP,
+    next_followup_at TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS locations (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,

@@ -37,6 +37,20 @@ def seed_database(db_path: str):
             (hash_password(env_admin_pw),)
         )
 
+    # 1b. Two-Person Outreach Staff Accounts
+    staff_pw = os.environ.get("MAVUNQO_STAFF_PASSWORD", "").strip() or "StaffPass2026!"
+    for sid, semail, sname in [
+        ("user_staff_1", "staff1@mavunqo.com", "Outreach Rep 1"),
+        ("user_staff_2", "staff2@mavunqo.com", "Outreach Rep 2"),
+    ]:
+        cur.execute("SELECT id FROM users WHERE email = ?", (semail,))
+        if not cur.fetchone():
+            cur.execute(
+                """INSERT INTO users (id, email, password_hash, full_name, role)
+                   VALUES (?, ?, ?, ?, 'staff')""",
+                (sid, semail, hash_password(staff_pw), sname),
+            )
+
     # 1b. Secondary Admin Backup Account (preserves admin@mavunqo.com unchanged)
     admin2_id = "user_admin_backup"
     env_admin2_pw = os.environ.get("MAVUNQO_ADMIN2_PASSWORD", "").strip()

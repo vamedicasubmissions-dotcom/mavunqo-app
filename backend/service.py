@@ -3360,4 +3360,80 @@ class MavunqoService:
                 out.append(rep)
             return out
 
+    def list_outreach_leads(self, user_id: str, status: str = None):
+        with self.get_connection() as conn:
+            u = conn.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()
+            if not u or u["role"] not in ("admin", "manager", "staff"):
+                raise PermissionError("Staff or admin access required.")
+            if status and status != "all":
+                rows = conn.execute(
+                    """SELECT l.*, u.full_name AS assigned_name
+                       FROM outreach_leads l
+                       LEFT JOIN users u ON l.assigned_to = u.id
+                       WHERE l.status = ?
+                       ORDER BY l.updated_at DESC""",
+                    (status,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """SELECT l.*, u.full_name AS assigned_name
+                       FROM outreach_leads l
+                       LEFT JOIN users u ON l.assigned_to = u.id
+                       ORDER BY l.updated_at DESC"""
+                ).fetchall()
+            return [dict(r) for r in rows]
+
+    def create_outreach_lead(self, user_id: str, data: dict):
+        bname = (data.get("business_name") or "").strip()
+        phone = (data.get("phone") or "").strip()
+        if not bname or not phone:
+            raise ValueError("Business name and phone number are required.")
+        lid = f"lead_{uuid.uuid4().hex[:12]}"
+        with self.get_connection() as conn:
+            u = conn.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()
+            if not u or u["role"] not in ("admin", "manager", "staff"):
+                raise PermissionError("Staff or admin access required.")
+            conn.execute(
+                """INSERT INTO outreach_leads
+                   (id, business_name, category, town, phone, contact_name, status, assigned_to, notes)
+                   VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?)""",
+                (
+                    lid,
+                    bname,
+                    (data.get("category") or "Restaurant").strip(),
+                    (data.get("town") or "Sosúa").strip(),
+                    phone,
+                    (data.get("contact_name") or "").strip(),
+                    user_id,
+                    (data.get("notes") or "").strip(),
+                ),
+            )
+            conn.commit()
+        return {"success": True, "lead_id": lid}
+
+    def log_outreach_call(self, user_id: str, lead_id: str, status: str, notes: str = "", next_followup_at: str = None):
+        valid_statuses = ("new", "called", "no_answer", "interested", "signed_up", "not_interested")
+        if status not in valid_statuses:
+            raise ValueError("Invalid outreach status.")
+        with self.get_connection() as conn:
+            u = conn.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()
+            if not u or u["role"] not in ("admin", "manager", "staff"):
+                raise PermissionError("Staff or admin access required.")
+            cur = conn.execute(
+                """UPDATE outreach_leads
+                   SET status = ?,
+                       notes = CASE WHEN ? != '' THEN ? ELSE notes END,
+                       assigned_to = COALESCE(assigned_to, ?),
+                       call_count = call_count + 1,
+                       last_called_at = CURRENT_TIMESTAMP,
+                       next_followup_at = COALESCE(?, next_followup_at),
+                       updated_at = CURRENT_TIMESTAMP
+                   WHERE id = ?""",
+                (status, (notes or "").strip(), (notes or "").strip(), user_id, next_followup_at, lead_id),
+            )
+            if cur.rowcount == 0:
+                raise ValueError("Lead not found.")
+            conn.commit()
+        return {"success": True, "lead_id": lead_id, "status": status}
+
 

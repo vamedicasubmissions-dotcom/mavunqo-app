@@ -589,6 +589,16 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/staff":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "staff.html"))
 
+        if path == "/outreach":
+            return self.send_file_response(os.path.join(FRONTEND_DIR, "outreach.html"))
+
+        if path == "/api/outreach/leads":
+            user = self.get_auth_user()
+            if not user or user.get("role") not in ("admin", "manager", "staff"):
+                return self.send_json({"error": "Forbidden: Staff or Admin required"}, 403)
+            st_filter = query.get("status", [None])[0]
+            return self.send_json({"leads": service.list_outreach_leads(user["uid"], status=st_filter)})
+
         if path == "/register":
             return self.send_file_response(os.path.join(FRONTEND_DIR, "register.html"))
 
@@ -710,6 +720,33 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     source_url=data.get("source_url", "")
                 )
                 return self.send_json(res, 201)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path == "/api/outreach/leads":
+            user = self.get_auth_user()
+            if not user or user.get("role") not in ("admin", "manager", "staff"):
+                return self.send_json({"error": "Forbidden: Staff or Admin required"}, 403)
+            data = self.read_json_body()
+            try:
+                return self.send_json(service.create_outreach_lead(user["uid"], data), 201)
+            except Exception as e:
+                return self.send_json({"error": str(e)}, 400)
+
+        if path.startswith("/api/outreach/leads/") and path.endswith("/log-call"):
+            user = self.get_auth_user()
+            if not user or user.get("role") not in ("admin", "manager", "staff"):
+                return self.send_json({"error": "Forbidden: Staff or Admin required"}, 403)
+            lead_id = path.split("/")[4]
+            data = self.read_json_body()
+            try:
+                return self.send_json(service.log_outreach_call(
+                    user["uid"],
+                    lead_id,
+                    status=data.get("status", "called"),
+                    notes=data.get("notes", ""),
+                    next_followup_at=data.get("next_followup_at"),
+                ))
             except Exception as e:
                 return self.send_json({"error": str(e)}, 400)
 

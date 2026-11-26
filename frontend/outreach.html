@@ -3,177 +3,228 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Merchant WhatsApp Outreach Hub | Mavunqo</title>
+  <title>Outreach & Call Portal | Mavunqo</title>
   <link rel="stylesheet" href="/frontend/style.css?v=20261115_v6">
-  <style>
-    .outreach-lead-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 1.25rem;
-      margin-bottom: 1.25rem;
-      box-shadow: var(--shadow-sm);
-    }
-    .pitch-preview {
-      background: var(--surface-subtle);
-      border-left: 4px solid var(--teal-primary);
-      padding: 1rem;
-      border-radius: var(--radius-sm);
-      font-size: 0.92rem;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      margin-top: 0.75rem;
-      font-family: inherit;
-    }
-  </style>
   <link rel="manifest" href="/frontend/manifest.json">
   <meta name="theme-color" content="#116B62">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
-
-  <!-- Navbar -->
   <header class="navbar">
     <div class="nav-container">
-      <a href="/" class="brand-logo">
-        MAVUNQO<span class="dot">.</span>
-        <span class="brand-pill">Outreach Hub</span>
-      </a>
-
+      <a href="/" class="brand-logo">MAVUNQO<span class="dot">.</span> <span class="brand-pill">Outreach Portal</span></a>
       <div class="nav-actions">
-        <a href="/admin" class="btn btn-outline-white btn-sm">Admin Portal</a>
-        <a href="/" class="btn btn-white btn-sm">Directory</a>
+        <a href="/admin" class="btn btn-outline-white btn-sm">Admin</a>
+        <button onclick="localStorage.removeItem('mavunqo_token'); window.location.href='/login';" class="btn btn-white btn-sm">Sign Out</button>
       </div>
     </div>
   </header>
 
-  <main class="container" style="max-width: 920px; padding-top: 2rem; padding-bottom: 5rem;">
-    <div style="margin-bottom: 1.5rem;">
-      <h1 style="font-size: 1.8rem; font-weight: 850; color: var(--teal-primary);">Google Maps Merchant WhatsApp Outreach</h1>
-      <p style="color: var(--text-secondary); margin-top: 0.25rem;">
-        Paste business details or Google Maps info to instantly generate personalized, high-converting WhatsApp invitation messages and 1-click send links.
-      </p>
+  <main id="outreachMain" class="container" style="padding-top: 1.5rem; padding-bottom: 4rem; display: none;">
+    <h1 style="font-size: 1.75rem; font-weight: 900; margin-bottom: 0.25rem;">📞 Sales Outreach & Call Logger</h1>
+    <p style="color: var(--text-secondary); font-size: 0.92rem; margin-bottom: 1rem;">Call or WhatsApp local businesses in Sosúa, Cabarete & Puerto Plata and log every outcome.</p>
+
+    <!-- Staff Brand Kit (WhatsApp Profile Logo) -->
+    <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:0.85rem 1rem; margin-bottom:1.25rem; display:flex; align-items:center; justify-content:space-between; gap:0.75rem; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <img src="/frontend/logo.jpg" alt="MAVUNQO Logo" style="width:44px; height:44px; border-radius:10px; object-fit:cover;">
+        <div>
+          <strong style="font-size:0.9rem;">Staff WhatsApp Business Profile</strong>
+          <div style="font-size:0.78rem; color:var(--text-secondary);">Set this as your WhatsApp Business photo so businesses see the MAVUNQO logo when you call.</div>
+        </div>
+      </div>
+      <a href="/frontend/logo.jpg" download="mavunqo_logo.jpg" class="btn btn-sm btn-outline" style="font-weight:800;">⬇ Download Logo</a>
     </div>
 
-    <!-- Lead Input Card -->
-    <div class="form-card" style="margin: 0 0 2rem 0; max-width: 100%;">
-      <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 1rem;">1. Add Merchant Details from Google Maps</h3>
-      
-      <div class="form-row">
-        <div>
-          <label>Business Name *</label>
-          <input type="text" id="leadName" class="input-field" placeholder="e.g. Sosúa Sunset Grill">
-        </div>
-        <div>
-          <label>WhatsApp / Phone Number *</label>
-          <input type="text" id="leadPhone" class="input-field" placeholder="e.g. 809-555-1234 or +1809...">
-        </div>
+    <!-- Stats -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
+      <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:0.9rem;">
+        <div id="stTotal" style="font-size:1.6rem; font-weight:900;">0</div>
+        <div style="font-size:0.75rem; font-weight:750; color:var(--text-muted);">TOTAL LEADS</div>
       </div>
-
-      <div class="form-row">
-        <div>
-          <label>Category</label>
-          <input type="text" id="leadCat" class="input-field" placeholder="e.g. Restaurant, Villa Rental, Auto Repair">
-        </div>
-        <div>
-          <label>Language</label>
-          <select id="leadLang" class="input-field">
-            <option value="es" selected>Spanish (Español)</option>
-            <option value="en">English</option>
-          </select>
-        </div>
+      <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:0.9rem;">
+        <div id="stInterested" style="font-size:1.6rem; font-weight:900; color:#0284c7;">0</div>
+        <div style="font-size:0.75rem; font-weight:750; color:var(--text-muted);">INTERESTED</div>
       </div>
-
-      <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
-        <button class="btn btn-primary" onclick="generatePitch();">✨ Generate WhatsApp Invite & Link</button>
-        <button class="btn btn-outline" onclick="loadSampleSosuaLeads();">Load Sosúa Sample Leads</button>
+      <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:0.9rem;">
+        <div id="stSigned" style="font-size:1.6rem; font-weight:900; color:#15803d;">0</div>
+        <div style="font-size:0.75rem; font-weight:750; color:var(--text-muted);">SIGNED UP</div>
       </div>
     </div>
 
-    <!-- Generated Leads / Outreach Queue -->
-    <h3 style="font-size: 1.25rem; font-weight: 850; margin-bottom: 1rem;">2. WhatsApp Outreach Ready Queue</h3>
-    <div id="leadsQueue"></div>
+    <!-- Add Lead -->
+    <form onsubmit="addLead(event);" style="background:#fff; border:1px solid var(--border); border-radius:14px; padding:1.1rem; margin-bottom:1.5rem;">
+      <h3 style="font-size:1rem; font-weight:850; margin-bottom:0.75rem;">+ Add Business Lead</h3>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:0.6rem;">
+        <input id="ldName" class="input-field" placeholder="Business Name *" required>
+        <input id="ldPhone" class="input-field" placeholder="Phone / WhatsApp *" required>
+        <select id="ldCategory" class="input-field">
+          <option value="Restaurant">Restaurant</option>
+          <option value="Tours & Excursions">Tours & Excursions</option>
+          <option value="Hotel / Villa">Hotel / Villa</option>
+          <option value="Massage & Spa">Massage & Spa</option>
+          <option value="Supermarket / Pharmacy">Supermarket / Pharmacy</option>
+          <option value="Car / Auto">Car / Auto</option>
+        </select>
+        <select id="ldTown" class="input-field">
+          <option value="Sosúa">Sosúa</option>
+          <option value="Cabarete">Cabarete</option>
+          <option value="Puerto Plata">Puerto Plata</option>
+          <option value="Montellano">Montellano</option>
+        </select>
+        <input id="ldContact" class="input-field" placeholder="Owner / Contact Name">
+        <button type="submit" class="btn btn-primary" style="font-weight:800;">Add Lead</button>
+      </div>
+    </form>
+
+    <!-- Filter Tabs & Rep Tracker -->
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">
+      <div style="display:flex; gap:0.4rem; flex-wrap:wrap;" id="leadFilterTabs">
+        <button type="button" onclick="setFilter('all', this)" class="btn btn-sm btn-primary">All</button>
+        <button type="button" onclick="setFilter('new', this)" class="btn btn-sm btn-outline">New</button>
+        <button type="button" onclick="setFilter('interested', this)" class="btn btn-sm btn-outline">Interested</button>
+        <button type="button" onclick="setFilter('in_person', this)" class="btn btn-sm btn-outline">In-Person Visit</button>
+        <button type="button" onclick="setFilter('callback', this)" class="btn btn-sm btn-outline">Specialist Callback</button>
+        <button type="button" onclick="setFilter('signed_up', this)" class="btn btn-sm btn-outline">Signed Up</button>
+      </div>
+      <div id="repTrackerText" style="font-size:0.82rem; font-weight:750; color:var(--text-secondary);"></div>
+    </div>
+
+    <!-- Collapsible 20-Second Call Script & Scouting Guide -->
+    <details style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:0.85rem 1rem; margin-bottom:1.25rem;">
+      <summary style="font-weight:850; font-size:0.92rem; cursor:pointer;">📋 20-Second Call Script & North Coast Scouting Guide</summary>
+      <div style="margin-top:0.75rem; font-size:0.84rem; line-height:1.5; color:var(--text-secondary);">
+        <p style="margin-bottom:0.5rem;"><strong>Spanish Pitch:</strong> "Hola, llamo de MAVUNQO.com en Sosúa. Conectamos restaurantes, tours, masajes y villas con turistas sin costo mensual—solo ganamos si les llevamos clientes. ¿Le envío el enlace de 2 minutos por WhatsApp?"</p>
+        <p style="margin-bottom:0.75rem;"><strong>English Pitch:</strong> "Hi, I'm calling from MAVUNQO.com. We bring North Coast tourists to local restaurants, tours, massages, and villas with zero monthly fee. Can I text you our 2-minute signup link?"</p>
+        <p style="margin-bottom:0.5rem;"><strong>B2B &amp; SaaS Pitch (ES):</strong> "Hola, soy de MAVUNQO.com. Ayudamos a negocios y plataformas locales a automatizar reservas y depender menos de Airbnb o OTAs que cobran 15%—solo cobramos 15% cuando nosotros mismos les llevamos clientes nuevos. ¿Podemos agendar una llamada rápida?"</p>
+        <p style="margin-bottom:0.75rem;"><strong>B2B &amp; SaaS Pitch (EN):</strong> "Hi, I'm with MAVUNQO.com. We help local businesses, suppliers, and platforms automate their workflow and wean off 15% Airbnb/OTA fees—you only pay 15% on new customers we bring you directly. Open to a quick 5-minute chat?"</p>
+        <strong>Where to Scout & What to Look For (Cast a wide net first, then double down on what gets traction):</strong>
+        <ul style="margin-left:1.2rem; margin-top:0.35rem;">
+          <li><strong>Sosúa (El Batey / Sosúa Ocean Village / Playa Alicia):</strong> Tourist-friendly restaurants, colmados with delivery, mobile massage therapists, villa hosts, catamaran & snorkel operators.</li>
+          <li><strong>Cabarete (Main Strip / Kite Beach / Encuentro):</strong> Surf & kite schools, beachfront cafes, healthy food spots, scooter/car rentals.</li>
+          <li><strong>Puerto Plata & Montellano (Malecón / Cofresí / Cruise Port):</strong> Excursion operators (27 Waterfalls, Teleférico, ATV/buggy, Del Oro Chocolate), private drivers, spas.</li>
+          <li><strong>B2B &amp; SaaS Distribution:</strong> Local hospitality suppliers, POS/booking software vendors, property management companies, and wholesale distributors serving North Coast businesses.</li>
+          <li><strong>Supply-Chain Chain-Reaction (All Clients):</strong> Whenever any business signs up (hotel, restaurant, tour, or supplier), ask for their top suppliers/distributors—and when you sign that supplier, ask for <em>their</em> suppliers too—adding each one as a new lead right here.</li>
+        </ul>
+      </div>
+    </details>
+
+    <!-- Leads List -->
+    <div id="leadsList"></div>
   </main>
 
   <script>
-    const sampleSosuaLeads = [
-      { name: "Playa Alicia Sunset Cafe", phone: "+18095551122", category: "Dining & Drinks", lang: "es" },
-      { name: "Sosúa Surf & Kiteschool", phone: "+18095553344", category: "Tourism & Water Sports", lang: "es" },
-      { name: "North Coast Villa Care", phone: "+18095557788", category: "Property Management & Maintenance", lang: "es" }
-    ];
+    const token = localStorage.getItem("mavunqo_token");
+    if (!token) window.location.replace("/login");
+    let currentFilter = "all";
+    let allLeads = [];
 
-    function cleanPhone(phone) {
-      if (!phone) return "";
-      let d = phone.replace(/[^0-9]/g, '');
-      if (d.length === 10 && (d.startsWith('809') || d.startsWith('829') || d.startsWith('849'))) {
-        d = '1' + d;
-      }
-      return d;
+    function setFilter(status, btn) {
+      currentFilter = status;
+      document.querySelectorAll("#leadFilterTabs button").forEach(b => {
+        b.className = "btn btn-sm btn-outline";
+      });
+      if (btn) btn.className = "btn btn-sm btn-primary";
+      renderLeads();
     }
 
-    function buildPitch(name, cat, lang) {
-      const regLink = window.location.origin + "/register";
-      if (lang === "es") {
-        return `¡Hola equipo de *${name}*! 👋 Saludos desde Sosúa.\n\nLos vimos en Google Maps y nos encantó su trabajo en *${cat}*.\n\nEstamos lanzando *Mavunqo*, el nuevo directorio y portal comercial para Sosúa y la Costa Norte. Queremos incluir a *${name}* con un perfil y vitrina digital gratuita (con menú/servicios y botón directo a su WhatsApp).\n\n✨ Es *100% gratuito* y toma menos de 2 minutos registrarse aquí:\n👉 ${regLink}\n\n¿Tienen alguna pregunta o les gustaría que les ayudemos a configurarlo gratis? ¡Quedamos a su orden!`;
-      } else {
-        return `Hi team at *${name}*! 👋 Greetings from Sosúa.\n\nWe found your business on Google Maps and love what you're doing in *${cat}*.\n\nWe are launching *Mavunqo*, the local directory and commerce platform for Sosúa and the North Coast. We'd love to feature *${name}* with a free listing and hosted storefront (with your services/menu and direct WhatsApp button).\n\n✨ It is *100% free* and takes 2 minutes to activate here:\n👉 ${regLink}\n\nLet us know if you have any questions or if you'd like us to set up your profile for you!`;
-      }
-    }
-
-    function renderCard(lead) {
-      const clean = cleanPhone(lead.phone);
-      const pitch = buildPitch(lead.name, lead.category, lead.lang);
-      const waUrl = `https://wa.me/${clean}?text=${encodeURIComponent(pitch)}`;
-
-      const div = document.createElement('div');
-      div.className = 'outreach-lead-card';
-      div.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-          <div>
-            <strong style="font-size: 1.2rem; color: var(--teal-primary);">${lead.name}</strong>
-            <div style="font-size: 0.88rem; color: var(--text-secondary); margin-top: 0.2rem;">
-              🏷️ ${lead.category} • 📍 Sosúa • 📞 ${lead.phone}
-            </div>
-          </div>
-          <a href="${waUrl}" target="_blank" class="btn btn-success">
-            💬 Open WhatsApp Chat
-          </a>
-        </div>
-
-        <div class="pitch-preview">${pitch}</div>
-      `;
-      return div;
-    }
-
-    function generatePitch() {
-      const name = document.getElementById('leadName').value.trim();
-      const phone = document.getElementById('leadPhone').value.trim();
-      const cat = document.getElementById('leadCat').value.trim() || "Comercio Local";
-      const lang = document.getElementById('leadLang').value;
-
-      if (!name || !phone) {
-        alert("Please provide the Business Name and WhatsApp phone number.");
+    async function loadLeads() {
+      const res = await fetch("/api/outreach/leads", { headers: { "Authorization": `Bearer ${token}` } });
+      if (res.status === 401 || res.status === 403) {
+        window.location.replace("/login");
         return;
       }
+      document.getElementById("outreachMain").style.display = "block";
+      const d = await res.json();
+      allLeads = d.leads || [];
+      document.getElementById("stTotal").textContent = allLeads.length;
+      document.getElementById("stInterested").textContent = allLeads.filter(l => l.status === "interested").length;
+      document.getElementById("stSigned").textContent = allLeads.filter(l => l.status === "signed_up").length;
 
-      const card = renderCard({ name, phone, category: cat, lang });
-      const q = document.getElementById('leadsQueue');
-      q.insertBefore(card, q.firstChild);
-
-      document.getElementById('leadName').value = '';
-      document.getElementById('leadPhone').value = '';
-    }
-
-    function loadSampleSosuaLeads() {
-      const q = document.getElementById('leadsQueue');
-      q.innerHTML = '';
-      sampleSosuaLeads.forEach(lead => {
-        q.appendChild(renderCard(lead));
+      // Rep tracker summary
+      const repCounts = {};
+      allLeads.forEach(l => {
+        const name = l.assigned_name || "Unassigned";
+        if (!repCounts[name]) repCounts[name] = { calls: 0, signed: 0 };
+        repCounts[name].calls += (l.call_count || 0);
+        if (l.status === "signed_up") repCounts[name].signed += 1;
       });
+      document.getElementById("repTrackerText").textContent = Object.entries(repCounts)
+        .map(([k, v]) => `${k}: ${v.calls} calls (${v.signed} signed)`).join(" • ");
+
+      renderLeads();
     }
 
-    document.addEventListener('DOMContentLoaded', loadSampleSosuaLeads);
+    function renderLeads() {
+      const leads = currentFilter === "all" ? allLeads : allLeads.filter(l => l.status === currentFilter);
+      const list = document.getElementById("leadsList");
+      if (!leads.length) {
+        list.innerHTML = '<div style="background:#fff; padding:1.5rem; border-radius:12px; border:1px solid var(--border); color:var(--text-secondary);">No leads yet. Add your first business above!</div>';
+        return;
+      }
+      list.innerHTML = leads.map(l => {
+        const digits = (l.phone || "").replace(/[^0-9]/g, "");
+        const waText = encodeURIComponent(`Hola ${l.contact_name || l.business_name}! Somos de MAVUNQO.com en ${l.town}. Queremos ayudarles a recibir más pedidos y reservas de turistas sin costo fijo. Regístrense en 2 minutos aquí: https://mavunqo.com/register`);
+        return `
+          <div style="background:#fff; border:1px solid var(--border); border-radius:14px; padding:1rem; margin-bottom:0.85rem;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.5rem;">
+              <div>
+                <strong style="font-size:1.05rem;">${l.business_name}</strong>
+                <div style="font-size:0.8rem; color:var(--text-secondary);">${l.category || ''} • ${l.town || ''} • Calls: ${l.call_count || 0}</div>
+              </div>
+              <span style="font-size:0.75rem; font-weight:800; padding:0.2rem 0.6rem; border-radius:999px; background:#f1f5f9;">${l.status.toUpperCase()}</span>
+            </div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.65rem;">
+              <a href="tel:${l.phone}" class="btn btn-sm btn-primary" style="font-weight:800;">📞 Call ${l.phone}</a>
+              <a href="https://wa.me/${digits}?text=${waText}" target="_blank" class="btn btn-sm btn-outline" style="font-weight:800; color:#15803d; border-color:#86efac;">💬 WhatsApp Pitch + Form</a>
+            </div>
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center;">
+              <input id="note_${l.id}" class="input-field" placeholder="Call notes..." value="${(l.notes || '').replace(/"/g, '&quot;')}" style="flex:1; min-width:160px; padding:0.35rem 0.6rem; font-size:0.82rem;">
+              <button onclick="logCall('${l.id}','no_answer')" class="btn btn-sm btn-outline" style="font-size:0.75rem;">No Answer</button>
+              <button onclick="logCall('${l.id}','interested')" class="btn btn-sm btn-outline" style="font-size:0.75rem; color:#0284c7;">Interested</button>
+              <button onclick="logCall('${l.id}','in_person')" class="btn btn-sm btn-outline" style="font-size:0.75rem; color:#7c3aed;">🤝 In-Person Visit</button>
+              <button onclick="logCall('${l.id}','callback')" class="btn btn-sm btn-outline" style="font-size:0.75rem; color:#b45309;">📞 Specialist Callback</button>
+              <button onclick="logCall('${l.id}','signed_up')" class="btn btn-sm btn-primary" style="font-size:0.75rem;">✓ Signed Up</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function addLead(e) {
+      e.preventDefault();
+      const res = await fetch("/api/outreach/leads", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          business_name: document.getElementById("ldName").value,
+          phone: document.getElementById("ldPhone").value,
+          category: document.getElementById("ldCategory").value,
+          town: document.getElementById("ldTown").value,
+          contact_name: document.getElementById("ldContact").value
+        })
+      });
+      if (res.ok) {
+        e.target.reset();
+        loadLeads();
+      } else {
+        const d = await res.json();
+        alert(d.error || "Failed to add lead.");
+      }
+    }
+
+    async function logCall(id, status) {
+      const notes = document.getElementById(`note_${id}`).value;
+      const res = await fetch(`/api/outreach/leads/${id}/log-call`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ status, notes })
+      });
+      if (res.ok) loadLeads();
+    }
+
+    window.onload = loadLeads;
   </script>
   <script src="/frontend/pwa_nav.js"></script>
 </body>
