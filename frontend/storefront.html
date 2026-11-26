@@ -2436,6 +2436,8 @@ A confirmation has been registered for front desk check-in.`);
       modal.style.display = "none";
       document.body.style.overflow = "";
       resetZoom(false);
+      const img = document.getElementById("lightboxImg");
+      if (img) img.removeAttribute("src");
     }
 
     function onLightboxBgClick(e) {
