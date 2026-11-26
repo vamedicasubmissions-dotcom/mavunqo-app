@@ -1406,7 +1406,7 @@ class MavunqoService:
         stopwords = {
             "what", "are", "the", "for", "and", "with", "this", "that", "your", "about",
             "when", "where", "how", "does", "have", "can", "you", "find", "near", "open",
-            "close", "hours", "hour", "time", "Schedule", "much", "cost", "price", "prices",
+            "close", "hours", "hour", "time", "schedule", "much", "cost", "price", "prices",
             "que", "cual", "cuales", "son", "los", "las", "para", "con", "una", "uno", "del",
             "por", "como", "donde", "horario", "horarios", "hora", "horas", "abierto",
             "cierran", "abren", "precio", "precios", "cuanto", "les", "des", "pour", "avec",
@@ -1415,7 +1415,8 @@ class MavunqoService:
         }
         loc_words = {"puerto", "plata", "sosua", "cabarete", "montellano", "batey", "charamicos", "maimon"}
         synonym_groups = [
-            {"massage", "masaje", "masajes", "spa", "wellness", "bienestar", "relax", "relajante", "swedish", "deep", "tissue", "facial", "pedicure", "manicure", "depilacion", "therapist", "terapia", "fisica", "rehab", "rehabilitacion", "reflexologia", "draining", "drenaje"},
+            {"massage", "masaje", "masajes", "masajista", "spa"},
+            {"facial", "pedicure", "manicure", "depilacion", "reflexologia", "drenaje", "terapia", "fisica", "rehab", "rehabilitacion"},
             {"lawyer", "lawyers", "abogado", "abogados", "legal", "avocat", "notary", "notario", "residency", "residencia", "realestate"},
             {"tour", "tours", "excursion", "excursiones", "waterfall", "waterfalls", "charcos", "damajagua", "catamaran", "buggy", "atv", "snorkel", "fishing", "pesca"},
             {"hotel", "hotels", "room", "rooms", "stay", "stays", "hospedaje", "habitacion", "habitaciones", "dorm", "dorms", "hostel", "villa", "villas"},
@@ -1530,18 +1531,22 @@ class MavunqoService:
                 if cl:
                     recs.insert(0, dict(cl))
 
+            # Determine direct target business before stripping internal scoring keys
+            target_biz = None
+            if scored and scored[0].get("_direct"):
+                target_biz = scored[0]
+            elif context_biz and (not scored or scored[0]["slug"] == context_biz["slug"]):
+                target_biz = context_biz
+
             # Clean internal scoring keys before JSON serialization
             for r in recs:
                 r.pop("_score", None)
                 r.pop("_direct", None)
                 r.pop("primary_location_id", None)
-
-            # Check if the user is asking a direct question about a specific business (by name or storefront context)
-            target_biz = None
-            if scored and scored[0]["_direct"]:
-                target_biz = scored[0]
-            elif context_biz and (not scored or scored[0]["slug"] == context_biz["slug"]):
-                target_biz = context_biz
+            if target_biz:
+                target_biz.pop("_score", None)
+                target_biz.pop("_direct", None)
+                target_biz.pop("primary_location_id", None)
 
             asks_hours = any(k in tokens for k in ["hour", "hours", "open", "opens", "close", "closes", "horario", "horarios", "abierto", "abren", "cierran", "heure", "heures", "horaire", "horaires", "ouvert"])
             asks_prices = any(k in tokens for k in ["price", "prices", "cost", "costs", "service", "services", "menu", "precio", "precios", "servicio", "servicios", "tarifa", "tarifas", "prix", "tarif", "tarifs"])
