@@ -1314,22 +1314,61 @@ class MavunqoService:
         return {"success": True, "reservation_id": reservation_id, "status": "checked_in"}
 
     # -------------------------------------------------------------
-    # AI Concierge Query Engine (Bilingual, Role-Aware & Grounded)
+    # AI Concierge Query Engine (Bilingual/Trilingual, Role-Aware & Grounded)
     # -------------------------------------------------------------
-    def ask_ai_concierge(self, query: str, lang: str = "en", role: str = "customer"):
+    @staticmethod
+    def _strip_accents(text: str) -> str:
+        trans = str.maketrans("áéíóúàèìòùâêîôûäëïöüñç", "aeiouaeiouaeiouaeiounc")
+        return (text or "").lower().translate(trans)
+
+    @staticmethod
+    def _format_hours_dict(hours_json_raw: str, lang: str = "en") -> str:
+        try:
+            hours_obj = json.loads(hours_json_raw or "{}")
+        except Exception:
+            hours_obj = {}
+        if not isinstance(hours_obj, dict) or not hours_obj:
+            return ""
+        key_map = {
+            "monday_saturday": {"en": "Monday – Saturday", "es": "Lunes – Sábado", "fr": "Lundi – Samedi"},
+            "monday_friday": {"en": "Monday – Friday", "es": "Lunes – Viernes", "fr": "Lundi – Vendredi"},
+            "sunday": {"en": "Sunday", "es": "Domingo", "fr": "Dimanche"},
+            "saturday": {"en": "Saturday", "es": "Sábado", "fr": "Samedi"},
+            "daily": {"en": "Daily", "es": "Todos los días", "fr": "Tous les jours"},
+        }
+        parts = []
+        for k, v in hours_obj.items():
+            kl = str(k).lower()
+            if kl in key_map:
+                label = key_map[kl].get(lang, key_map[kl]["en"])
+            else:
+                label = " – ".join(w.capitalize() for w in kl.split("_") if w)
+            val = str(v)
+            if val.strip().lower() == "closed":
+                val = "Cerrado" if lang == "es" else ("Fermé" if lang == "fr" else "Closed")
+            parts.append(f"{label}: {val}")
+        return "; ".join(parts)
+
+    def ask_ai_concierge(self, query: str, lang: str = "en", role: str = "customer", slug: str = ""):
         raw_query = (query or "").strip()
         query = raw_query.lower()
+        norm_query = self._strip_accents(query)
+        lang = (lang or "en").lower()
         is_es = (lang == "es")
+        is_fr = (lang == "fr")
 
         if not query:
-            return {
-                "answer": "Hola, ¿en qué puedo ayudarte hoy en Mavunqo?" if is_es else "Hello! How can I assist you with services, dining, or hotel stays in Sosúa and Puerto Plata?",
-                "recommendations": []
-            }
+            if is_es:
+                greeting = "Hola, ¿en qué puedo ayudarte hoy en Mavunqo?"
+            elif is_fr:
+                greeting = "Bonjour ! Comment puis-je vous aider à Sosúa et Puerto Plata ?"
+            else:
+                greeting = "Hello! How can I assist you with services, dining, or hotel stays in Sosúa and Puerto Plata?"
+            return {"answer": greeting, "recommendations": []}
 
         # Role-specific platform guidance (Owners, Drivers, Admins)
         if role == "owner":
-            if any(k in query for k in ["price", "precio", "photo", "foto", "edit", "editar", "update", "actualizar", "service", "servicio"]):
+            if any(k in norm_query for k in ["price", "precio", "photo", "foto", "edit", "editar", "update", "actualizar", "service", "servicio"]):
                 return {
                     "answer": (
                         "Para actualizar precios, fotos o servicios: haz clic en '+ Add Item / Photo' en tu panel, o envíanos los cambios por WhatsApp y nosotros los actualizamos por ti."
@@ -1338,7 +1377,7 @@ class MavunqoService:
                     ),
                     "recommendations": []
                 }
-            if any(k in query for k in ["commission", "comision", "comisión", "fee", "tarifa", "plan", "monthly", "mensual", "10%"]):
+            if any(k in norm_query for k in ["commission", "comision", "fee", "tarifa", "plan", "monthly", "mensual", "10%"]):
                 return {
                     "answer": (
                         "Tu perfil básico es gratis. En citas generadas por Mavunqo aplica la comisión acordada (sin recargo al cliente), o puedes optar por un plan mensual fijo después del periodo introductorio gratis."
@@ -1348,7 +1387,7 @@ class MavunqoService:
                     "recommendations": []
                 }
         elif role == "driver":
-            if any(k in query for k in ["pay", "pago", "distance", "distancia", "fee", "tarifa", "pin", "address", "direccion", "dirección"]):
+            if any(k in norm_query for k in ["pay", "pago", "distance", "distancia", "fee", "tarifa", "pin", "address", "direccion"]):
                 return {
                     "answer": (
                         "Tarifa base de 100 DOP hasta 3 km, más 25 DOP por km adicional (y 100% de la propina). Por privacidad del cliente, solo verás el pin de Google Maps y nota de entrada."
@@ -1358,71 +1397,201 @@ class MavunqoService:
                     "recommendations": []
                 }
         elif role == "admin":
-            if any(k in query for k in ["security", "alert", "alerta", "seguridad", "audit"]):
+            if any(k in norm_query for k in ["security", "alert", "alerta", "seguridad", "audit"]):
                 return {
                     "answer": "Security Monitor active: check /api/admin/security-alerts for rate-limit blocks and threat probes logged to audit_events.",
                     "recommendations": []
                 }
 
-        with self.get_connection() as conn:
-            # Query approved listings including service matches
-            words = [w for w in re.split(r'\s+', query) if len(w) > 2]
-            pattern = f"%{query}%"
+        stopwords = {
+            "what", "are", "the", "for", "and", "with", "this", "that", "your", "about",
+            "when", "where", "how", "does", "have", "can", "you", "find", "near", "open",
+            "close", "hours", "hour", "time", "Schedule", "much", "cost", "price", "prices",
+            "que", "cual", "cuales", "son", "los", "las", "para", "con", "una", "uno", "del",
+            "por", "como", "donde", "horario", "horarios", "hora", "horas", "abierto",
+            "cierran", "abren", "precio", "precios", "cuanto", "les", "des", "pour", "avec",
+            "est", "sont", "quel", "quels", "quelles", "heures", "heure", "horaire", "horaires",
+            "ouvert", "prix", "tarif", "tarifs", "in", "en", "at", "de", "la", "el", "un",
+        }
+        loc_words = {"puerto", "plata", "sosua", "cabarete", "montellano", "batey", "charamicos", "maimon"}
+        synonym_groups = [
+            {"massage", "masaje", "masajes", "spa", "wellness", "bienestar", "relax", "relajante", "swedish", "deep", "tissue", "facial", "pedicure", "manicure", "depilacion", "therapist", "terapia", "fisica", "rehab", "rehabilitacion", "reflexologia", "draining", "drenaje"},
+            {"lawyer", "lawyers", "abogado", "abogados", "legal", "avocat", "notary", "notario", "residency", "residencia", "realestate"},
+            {"tour", "tours", "excursion", "excursiones", "waterfall", "waterfalls", "charcos", "damajagua", "catamaran", "buggy", "atv", "snorkel", "fishing", "pesca"},
+            {"hotel", "hotels", "room", "rooms", "stay", "stays", "hospedaje", "habitacion", "habitaciones", "dorm", "dorms", "hostel", "villa", "villas"},
+            {"car", "carro", "carros", "auto", "autos", "vehicle", "vehiculo", "mecanico", "mechanic", "aire", "ac", "a/c", "brake", "freno", "frenos", "repair", "reparar", "reparacion", "taller"},
+            {"food", "comida", "restaurant", "restaurante", "eat", "comer", "dinner", "lunch", "breakfast", "pizza", "taco", "tacos", "burger", "seafood", "fish", "pescado", "chillo", "pollo"},
+            {"fashion", "clothing", "clothes", "ropa", "dress", "dresses", "vestido", "vestidos", "boutique", "bikini", "swimsuit", "jeans"},
+            {"vet", "veterinario", "pet", "pets", "dog", "perro", "cat", "gato", "animal", "clinica"},
+            {"scooter", "moto", "motorcycle", "pasola", "rental", "rentar", "alquiler"},
+        ]
 
-            sql = """
-                SELECT DISTINCT b.id, b.trading_name, b.slug, b.description_en, b.description_es,
-                       b.whatsapp, b.phone, c.name_en AS category, l.name AS location
+        tokens = re.findall(r"[a-z0-9]+", norm_query)
+        location_tokens = [w for w in tokens if w in loc_words]
+        intent_tokens = [w for w in tokens if len(w) >= 2 and w not in stopwords and w not in loc_words]
+
+        expanded_terms = set(intent_tokens)
+        for tok in intent_tokens:
+            for grp in synonym_groups:
+                if tok in grp:
+                    expanded_terms.update(grp)
+
+        with self.get_connection() as conn:
+            biz_rows = conn.execute(
+                """
+                SELECT b.id, b.trading_name, b.slug, b.description_en, b.description_es,
+                       b.whatsapp, b.phone, b.hours_json, b.address, b.logo_url, b.cover_image_url,
+                       b.primary_location_id, c.name_en AS category, c.name_es AS category_es,
+                       l.name AS location
                 FROM businesses b
                 JOIN categories c ON b.category_id = c.id
                 JOIN locations l ON b.primary_location_id = l.id
-                LEFT JOIN services s ON b.id = s.business_id
-                WHERE b.status = 'approved' AND (
-                    LOWER(b.trading_name) LIKE ? OR
-                    LOWER(b.description_en) LIKE ? OR
-                    LOWER(b.description_es) LIKE ? OR
-                    LOWER(c.name_en) LIKE ? OR
-                    LOWER(c.name_es) LIKE ? OR
-                    LOWER(s.name_en) LIKE ? OR
-                    LOWER(s.name_es) LIKE ?
-                )
-                LIMIT 4
-            """
-            params = [pattern] * 7
-            businesses = conn.execute(sql, params).fetchall()
-            recs = [dict(b) for b in businesses]
-
-            # Keyword fallback for multi-word or token matches
-            if not recs and words:
-                word_patterns = [f"%{w}%" for w in words]
-                or_clauses = " OR ".join([
-                    "(LOWER(b.trading_name) LIKE ? OR LOWER(b.description_en) LIKE ? OR LOWER(b.description_es) LIKE ? OR LOWER(s.name_en) LIKE ? OR LOWER(s.name_es) LIKE ?)"
-                    for _ in words
-                ])
-                fallback_sql = f"""
-                    SELECT DISTINCT b.id, b.trading_name, b.slug, b.description_en, b.description_es,
-                           b.whatsapp, b.phone, c.name_en AS category, l.name AS location
-                    FROM businesses b
-                    JOIN categories c ON b.category_id = c.id
-                    JOIN locations l ON b.primary_location_id = l.id
-                    LEFT JOIN services s ON b.id = s.business_id
-                    WHERE b.status = 'approved' AND ({or_clauses})
-                    LIMIT 4
+                WHERE b.status = 'approved'
                 """
-                fallback_params = []
-                for p in word_patterns:
-                    fallback_params.extend([p, p, p, p, p])
-                fb_biz = conn.execute(fallback_sql, fallback_params).fetchall()
-                recs = [dict(b) for b in fb_biz]
+            ).fetchall()
 
-            if any(k in query for k in ["fish", "pescado", "seafood", "marisco", "chillo"]):
-                fb = conn.execute("SELECT id, trading_name, slug, description_en, description_es, whatsapp, phone FROM businesses WHERE id = 'biz_el_batey_bistro'").fetchone()
-                if fb and not any(r["id"] == "biz_el_batey_bistro" for r in recs):
+            srv_by_biz = {}
+            for sr in conn.execute("SELECT business_id, name_en, name_es, description_en, description_es, price, currency, display_price FROM services ORDER BY sort_order ASC").fetchall():
+                srv_by_biz.setdefault(sr["business_id"], []).append(dict(sr))
+
+            areas_by_biz = {}
+            for ar in conn.execute(
+                "SELECT bsa.business_id, l.name FROM business_service_areas bsa JOIN locations l ON bsa.location_id = l.id"
+            ).fetchall():
+                areas_by_biz.setdefault(ar["business_id"], []).append(ar["name"])
+
+            scored = []
+            slug_norm = self._strip_accents(slug or "")
+            context_biz = None
+
+            for row in biz_rows:
+                b = dict(row)
+                bid = b["id"]
+                name_norm = self._strip_accents(b["trading_name"])
+                cat_norm = self._strip_accents(f"{b['category']} {b['category_es']}")
+                desc_norm = self._strip_accents(f"{b['description_en'] or ''} {b['description_es'] or ''}")
+                srv_list = srv_by_biz.get(bid, [])
+                srv_names_norm = self._strip_accents(" ".join(f"{s['name_en']} {s['name_es']}" for s in srv_list))
+                srv_desc_norm = self._strip_accents(" ".join(f"{s['description_en'] or ''} {s['description_es'] or ''}" for s in srv_list))
+                area_text_norm = self._strip_accents(b["location"] + " " + " ".join(areas_by_biz.get(bid, [])))
+
+                if slug_norm and self._strip_accents(b["slug"]) == slug_norm:
+                    context_biz = b
+
+                name_words = [w for w in re.findall(r"[a-z0-9]+", name_norm) if len(w) >= 3]
+                direct_name_hit = False
+                score = 0
+
+                if len(name_norm) >= 4 and name_norm in norm_query:
+                    score += 150
+                    direct_name_hit = True
+                elif len(name_words) >= 2 and sum(1 for nw in name_words if nw in tokens) >= min(2, len(name_words)):
+                    score += 110
+                    direct_name_hit = True
+
+                intent_score = 0
+                for term in expanded_terms:
+                    is_orig = term in intent_tokens
+                    weight_mult = 1.0 if is_orig else 0.75
+                    if re.search(rf"\b{re.escape(term)}\b", name_norm):
+                        intent_score += int(40 * weight_mult)
+                    if re.search(rf"\b{re.escape(term)}\b", cat_norm) or re.search(rf"\b{re.escape(term)}\b", srv_names_norm):
+                        intent_score += int(28 * weight_mult)
+                    if re.search(rf"\b{re.escape(term)}\b", desc_norm) or re.search(rf"\b{re.escape(term)}\b", srv_desc_norm):
+                        intent_score += int(12 * weight_mult)
+
+                loc_score = 0
+                for lw in location_tokens:
+                    if lw in area_text_norm:
+                        loc_score += 20
+
+                # Location boost applies only if query had no specific service intent OR this business matched that intent
+                if intent_tokens and intent_score == 0 and not direct_name_hit:
+                    total_score = 0
+                else:
+                    total_score = score + intent_score + loc_score
+
+                if total_score > 0:
+                    b["_score"] = total_score
+                    b["_direct"] = direct_name_hit
+                    scored.append(b)
+
+            scored.sort(key=lambda item: (-item["_score"], item["trading_name"]))
+            recs = scored[:4]
+
+            # Explicit legacy boosts only when relevant keywords are present
+            if any(k in norm_query for k in ["fish", "pescado", "seafood", "marisco", "chillo"]) and not any(r["id"] == "biz_el_batey_bistro" for r in recs):
+                fb = conn.execute("SELECT id, trading_name, slug, description_en, description_es, whatsapp, phone, hours_json, logo_url, cover_image_url FROM businesses WHERE id = 'biz_el_batey_bistro'").fetchone()
+                if fb:
                     recs.append(dict(fb))
 
-            if "hotel" in query or "room" in query or "stay" in query or "hospedaje" in query or "dorm" in query:
-                cl = conn.execute("SELECT id, trading_name, slug FROM businesses WHERE id = 'biz_city_lights'").fetchone()
-                if cl and not any(r["id"] == "biz_city_lights" for r in recs):
+            if any(k in norm_query for k in ["hotel", "room", "stay", "hospedaje", "dorm"]) and not any(r["id"] == "biz_city_lights" for r in recs):
+                cl = conn.execute("SELECT id, trading_name, slug, logo_url, cover_image_url, hours_json FROM businesses WHERE id = 'biz_city_lights'").fetchone()
+                if cl:
                     recs.insert(0, dict(cl))
+
+            # Clean internal scoring keys before JSON serialization
+            for r in recs:
+                r.pop("_score", None)
+                r.pop("_direct", None)
+                r.pop("primary_location_id", None)
+
+            # Check if the user is asking a direct question about a specific business (by name or storefront context)
+            target_biz = None
+            if scored and scored[0]["_direct"]:
+                target_biz = scored[0]
+            elif context_biz and (not scored or scored[0]["slug"] == context_biz["slug"]):
+                target_biz = context_biz
+
+            asks_hours = any(k in tokens for k in ["hour", "hours", "open", "opens", "close", "closes", "horario", "horarios", "abierto", "abren", "cierran", "heure", "heures", "horaire", "horaires", "ouvert"])
+            asks_prices = any(k in tokens for k in ["price", "prices", "cost", "costs", "service", "services", "menu", "precio", "precios", "servicio", "servicios", "tarifa", "tarifas", "prix", "tarif", "tarifs"])
+            asks_location = any(k in tokens for k in ["where", "location", "address", "area", "areas", "donde", "ubicacion", "zona", "ou", "adresse", "zone"])
+
+            if target_biz and asks_hours:
+                hours_str = self._format_hours_dict(target_biz.get("hours_json") or "", lang)
+                if hours_str:
+                    if target_biz not in recs:
+                        recs = [target_biz] + [r for r in recs if r["id"] != target_biz["id"]][:3]
+                    if is_es:
+                        ans = f"Horario de {target_biz['trading_name']}: {hours_str}."
+                    elif is_fr:
+                        ans = f"Horaires de {target_biz['trading_name']} : {hours_str}."
+                    else:
+                        ans = f"{target_biz['trading_name']} hours: {hours_str}."
+                    return {"query": query, "answer": ans, "recommendations": recs}
+
+            if target_biz and asks_prices:
+                srvs = srv_by_biz.get(target_biz["id"], [])
+                if srvs:
+                    if target_biz not in recs:
+                        recs = [target_biz] + [r for r in recs if r["id"] != target_biz["id"]][:3]
+                    sample = []
+                    for s in srvs[:5]:
+                        sn = s["name_es"] if is_es else s["name_en"]
+                        sp = f"{s['currency']} ${int(s['price']) if float(s['price']).is_integer() else s['price']}" if s.get("display_price") and s.get("price") else ("Consultar precio" if is_es else ("Prix sur demande" if is_fr else "Contact for price"))
+                        sample.append(f"{sn} ({sp})")
+                    joined = ", ".join(sample)
+                    if is_es:
+                        ans = f"Servicios principales de {target_biz['trading_name']}: {joined}."
+                    elif is_fr:
+                        ans = f"Principaux services de {target_biz['trading_name']} : {joined}."
+                    else:
+                        ans = f"Featured services at {target_biz['trading_name']}: {joined}."
+                    return {"query": query, "answer": ans, "recommendations": recs}
+
+            if target_biz and asks_location:
+                areas = areas_by_biz.get(target_biz["id"], [])
+                area_str = ", ".join(areas) if areas else (target_biz.get("location") or "")
+                if area_str:
+                    if target_biz not in recs:
+                        recs = [target_biz] + [r for r in recs if r["id"] != target_biz["id"]][:3]
+                    if is_es:
+                        ans = f"{target_biz['trading_name']} atiende en: {area_str}."
+                    elif is_fr:
+                        ans = f"{target_biz['trading_name']} dessert : {area_str}."
+                    else:
+                        ans = f"{target_biz['trading_name']} serves: {area_str}."
+                    return {"query": query, "answer": ans, "recommendations": recs}
 
             # Regional Knowledge Base: Comprehensive North Coast (Sosua, Cabarete, Puerto Plata)
             regional_knowledge = {
@@ -1495,14 +1664,6 @@ class MavunqoService:
                 },
 
                 # 5. Nightlife, Activities & Excursions
-                "nightlife": {
-                    "en": "Sosua nightlife is centered around Calle Pedro Clisante in El Batey, featuring open-air bars, sports lounges, and dance spots. For beachfront sunset lounges and live music with your feet in the sand, head 15 minutes east to Cabarete Bay.",
-                    "es": "La vida nocturna de Sosúa se concentra en la Calle Pedro Clisante en El Batey, con bares al aire libre y música. En Cabarete (a 15 min), encontrará bares sobre la misma arena de la playa con música en vivo y ambiente bohemio."
-                },
-                "vida nocturna": {
-                    "en": "Pedro Clisante street in Sosua for bars; Cabarete beach for beachfront lounges and dancing under the stars.",
-                    "es": "Calle Pedro Clisante en Sosúa para bares y terrazas; la playa de Cabarete para bailar sobre la arena frente al mar."
-                },
                 "activity": {
                     "en": "Top activities in the area: 1) Snorkeling and scuba diving at Three Rocks / Sosua Bay, 2) 27 Charcos of Damajagua (waterfalls you can jump and slide down), 3) Kitesurfing lessons in Cabarete, 4) Monkey Jungle zip-lining.",
                     "es": "Mejores actividades: 1) Snorkel y buceo en la Bahía de Sosúa y Tres Rocas, 2) Los 27 Charcos de Damajagua (cascadas naturales), 3) Clases de Kitesurf en Cabarete, 4) Tirolinas en Monkey Jungle."
@@ -1516,10 +1677,6 @@ class MavunqoService:
                 "colmado": {
                     "en": "A 'colmado' is the quintessential Dominican corner convenience store. They sell cold Presidente beer, snacks, water, rum, and toiletries, and almost all of them offer free local motorcycle delivery if you call or send a WhatsApp!",
                     "es": "Un colmado es el comercio típico dominicano de barrio. Tienen cerveza Presidente bien fría, botellones de agua, hielo, ron y víveres, y la mayoría entrega a domicilio en motor."
-                },
-                "atm": {
-                    "en": "In Sosua, the primary ATMs and banks are Banco Popular, Banreservas, and Scotiabank located on Calle Pedro Clisante and Highway 5. You can withdraw Dominican Pesos (DOP) and USD with international Visa/Mastercard.",
-                    "es": "En Sosúa, los principales cajeros automáticos y bancos son Banco Popular, Banreservas y Scotiabank en la Calle Pedro Clisante y Carretera Sosúa-Cabarete. Puede retirar pesos (DOP) y dólares con tarjetas internacionales."
                 },
                 "banco": {
                     "en": "In Sosua, you will find Banco Popular, Banreservas, and BHD León on Calle Pedro Clisante and near Supermercado Playero.",
@@ -1605,6 +1762,10 @@ class MavunqoService:
                     "en": "Sosua nightlife is centered along Calle Pedro Clisante in El Batey, featuring vibrant bars, music lounges, and open-air patios (like Kings Rumba, Jolly Roger, and Latin clubs). Cabarete Beach (15 mins away) offers beachfront cocktail lounges with tables directly on the sand.",
                     "es": "La vida nocturna de Sosúa se concentra en la Calle Pedro Clisante en El Batey, con bares animados y terrazas abiertas (Kings Rumba, Jolly Roger). En Cabarete (a 15 min), encontrará bares sobre la arena de la playa con música y fogatas."
                 },
+                "vida nocturna": {
+                    "en": "Pedro Clisante street in Sosua for bars; Cabarete beach for beachfront lounges and dancing under the stars.",
+                    "es": "Calle Pedro Clisante en Sosúa para bares y terrazas; la playa de Cabarete para bailar sobre la arena frente al mar."
+                },
                 "atm": {
                     "en": "ATMs (Cajeros automáticos) are located inside Supermercado Playero, Banco Popular on Pedro Clisante, and Banreservas. It is best to use ATMs physically attached to bank branches for security.",
                     "es": "Hay cajeros automáticos dentro de Supermercado Playero, Banco Popular en Pedro Clisante y Banreservas. Se recomienda usar cajeros dentro de bancos por seguridad."
@@ -1619,29 +1780,32 @@ class MavunqoService:
                 }
             }
 
-            # Check if query matches regional North Coast knowledge
             extra_info = ""
             for key, info_dict in regional_knowledge.items():
-                if key in query:
+                if key in norm_query:
                     extra_info = info_dict.get(lang, info_dict["en"])
                     break
 
             if recs:
-                if lang == "es":
+                if is_es:
                     ans = f"Encontré opciones registradas en Mavunqo para su búsqueda: {', '.join(r['trading_name'] for r in recs)}."
+                elif is_fr:
+                    ans = f"Voici les options vérifiées sur Mavunqo : {', '.join(r['trading_name'] for r in recs)}."
                 else:
                     ans = f"Here are verified options on Mavunqo: {', '.join(r['trading_name'] for r in recs)}."
-                
+
                 if extra_info:
                     ans += f"\n\n💡 Local guide note: {extra_info}"
             else:
                 if extra_info:
                     ans = extra_info
                 else:
-                    if lang == "es":
+                    if is_es:
                         ans = "Para esa búsqueda en Sosúa y la Costa Norte, le recomendamos explorar los comercios gastronómicos y de servicios en nuestro directorio, o consultar con nuestro equipo de asistencia local en la recepción de City Lights o soporte de Mavunqo."
+                    elif is_fr:
+                        ans = "Pour cette recherche à Sosúa et sur la Côte Nord, explorez nos commerces vérifiés dans l'annuaire Mavunqo ou contactez notre assistance WhatsApp."
                     else:
-                        ans = "For that in Sosúa and the North Coast, check our verified dining and services catalog on Mavunqo, or ask our local concierge team at the City Lights front desk or Mavunqo support for personal tips!" 
+                        ans = "For that in Sosúa and the North Coast, check our verified dining and services catalog on Mavunqo, or ask our local concierge team at the City Lights front desk or Mavunqo support for personal tips!"
 
             return {
                 "query": query,

@@ -44,20 +44,32 @@
 
     const lang = (localStorage.getItem("mavunqo_lang") || "en").toLowerCase();
     const isEs = lang === "es";
+    const isFr = lang === "fr";
+    const pick = function (en, es, fr) { return isEs ? es : (isFr ? fr : en); };
 
-    const title = isEs ? "Instalar Mavunqo en tu Teléfono" : "Add Mavunqo to Your Home Screen";
+    const title = pick("Add Mavunqo to Your Home Screen", "Instalar Mavunqo en tu Teléfono", "Installer Mavunqo sur votre écran");
     let stepsHtml = "";
     if (mode === "ios") {
-      stepsHtml = isEs
-        ? `<ol style="margin:0.75rem 0 0 1.2rem;padding:0;line-height:1.6;">
+      if (isEs) {
+        stepsHtml = `<ol style="margin:0.75rem 0 0 1.2rem;padding:0;line-height:1.6;">
              <li>Toca el botón <strong>Compartir</strong> (el ícono con flecha hacia arriba) en Safari.</li>
              <li>Desliza hacia abajo y toca <strong>"Agregar a inicio"</strong>.</li>
              <li>Toca <strong>"Agregar"</strong> arriba a la derecha.</li>
            </ol>
            <p style="margin:0.75rem 0 0;padding:8px 10px;background:#f0fdfa;border-left:3px solid #0d9488;border-radius:6px;font-size:0.84rem;color:#0f172a;">
              <strong>¿Dónde queda el ícono?</strong> Aparecerá automáticamente en el siguiente espacio libre de tu pantalla de inicio (o deslizando hacia la última página).
-           </p>`
-        : `<ol style="margin:0.75rem 0 0 1.2rem;padding:0;line-height:1.6;">
+           </p>`;
+      } else if (isFr) {
+        stepsHtml = `<ol style="margin:0.75rem 0 0 1.2rem;padding:0;line-height:1.6;">
+             <li>Appuyez sur le bouton <strong>Partager</strong> (l'icône avec une flèche vers le haut) dans Safari.</li>
+             <li>Faites défiler et appuyez sur <strong>"Sur l'écran d'accueil"</strong>.</li>
+             <li>Appuyez sur <strong>"Ajouter"</strong> en haut à droite.</li>
+           </ol>
+           <p style="margin:0.75rem 0 0;padding:8px 10px;background:#f0fdfa;border-left:3px solid #0d9488;border-radius:6px;font-size:0.84rem;color:#0f172a;">
+             <strong>Où trouver l'icône ?</strong> Elle apparaîtra dans le prochain espace libre de votre écran d'accueil.
+           </p>`;
+      } else {
+        stepsHtml = `<ol style="margin:0.75rem 0 0 1.2rem;padding:0;line-height:1.6;">
              <li>Tap the <strong>Share</strong> button (square with up arrow) in Safari's toolbar.</li>
              <li>Scroll down and tap <strong>"Add to Home Screen"</strong>.</li>
              <li>Tap <strong>"Add"</strong> in the top-right corner.</li>
@@ -65,22 +77,33 @@
            <p style="margin:0.75rem 0 0;padding:8px 10px;background:#f0fdfa;border-left:3px solid #0d9488;border-radius:6px;font-size:0.84rem;color:#0f172a;">
              <strong>Where to find it:</strong> The icon drops into the next open spot on your Home Screen (check your last Home Screen page or swipe to the App Library).
            </p>`;
+      }
     } else {
-      stepsHtml = isEs
-        ? `<ol style="margin:0.75rem 0 0 1.2rem;padding:0;line-height:1.6;">
+      if (isEs) {
+        stepsHtml = `<ol style="margin:0.75rem 0 0 1.2rem;padding:0;line-height:1.6;">
              <li>Abre el menú de tu navegador (<strong>⋮</strong> o <strong>⋯</strong>).</li>
              <li>Selecciona <strong>"Instalar aplicación"</strong> o <strong>"Agregar a la pantalla principal"</strong>.</li>
            </ol>
            <p style="margin:0.75rem 0 0;padding:8px 10px;background:#f0fdfa;border-left:3px solid #0d9488;border-radius:6px;font-size:0.84rem;color:#0f172a;">
              <strong>¿Dónde queda el ícono?</strong> En Android aparece en tu última pantalla de inicio y en el cajón de apps; en PC se guarda en tu Escritorio o menú de Aplicaciones.
-           </p>`
-        : `<ol style="margin:0.75rem 0 0 1.2rem;padding:0;line-height:1.6;">
+           </p>`;
+      } else if (isFr) {
+        stepsHtml = `<ol style="margin:0.75rem 0 0 1.2rem;padding:0;line-height:1.6;">
+             <li>Ouvrez le menu de votre navigateur (<strong>⋮</strong> ou <strong>⋯</strong>).</li>
+             <li>Appuyez sur <strong>"Installer l'application"</strong> ou <strong>"Ajouter à l'écran d'accueil"</strong>.</li>
+           </ol>
+           <p style="margin:0.75rem 0 0;padding:8px 10px;background:#f0fdfa;border-left:3px solid #0d9488;border-radius:6px;font-size:0.84rem;color:#0f172a;">
+             <strong>Où trouver l'icône ?</strong> Sur Android elle apparaît sur votre écran d'accueil ; sur ordinateur, dans vos Applications ou sur le Bureau.
+           </p>`;
+      } else {
+        stepsHtml = `<ol style="margin:0.75rem 0 0 1.2rem;padding:0;line-height:1.6;">
              <li>Open your browser menu (<strong>⋮</strong> or <strong>⋯</strong>).</li>
              <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</li>
            </ol>
            <p style="margin:0.75rem 0 0;padding:8px 10px;background:#f0fdfa;border-left:3px solid #0d9488;border-radius:6px;font-size:0.84rem;color:#0f172a;">
              <strong>Where to find it:</strong> On Android it appears on your next open Home Screen page and in your App Drawer; on desktop it saves to your Desktop or Apps list.
            </p>`;
+      }
     }
 
     const overlay = document.createElement("div");
@@ -95,7 +118,7 @@
         </div>
         <div style="font-size:0.92rem;color:#334155;">${stepsHtml}</div>
         <button type="button" id="mvqInstallModalOk" style="margin-top:16px;width:100%;padding:10px 14px;border:none;border-radius:999px;background:#0d9488;color:#fff;font-weight:700;cursor:pointer;">
-          ${isEs ? "Entendido" : "Got it"}
+          ${pick("Got it", "Entendido", "Compris")}
         </button>
       </div>
     `;
@@ -159,6 +182,18 @@
     }
   }
 
+  function getLangPick() {
+    const lang = (localStorage.getItem("mavunqo_lang") || "en").toLowerCase();
+    const isEs = lang === "es";
+    const isFr = lang === "fr";
+    return {
+      lang,
+      isEs,
+      isFr,
+      pick: function (en, es, fr) { return isEs ? es : (isFr ? fr : en); }
+    };
+  }
+
   function injectButtons() {
     if (document.getElementById("mvqQuickNavBar")) return;
     if (!document.getElementById("mvqBannerAnimStyle")) {
@@ -169,10 +204,7 @@
       document.head.appendChild(st);
     }
     const navbar = document.querySelector(".navbar");
-    const lang = (localStorage.getItem("mavunqo_lang") || "en").toLowerCase();
-    const isEs = lang === "es";
-    const isFr = lang === "fr";
-    const pick = function (en, es, fr) { return isEs ? es : (isFr ? fr : en); };
+    const { pick } = getLangPick();
 
     const bar = document.createElement("div");
     bar.id = "mvqQuickNavBar";
@@ -187,7 +219,7 @@
       `<span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#0f172a;color:#fef08a;box-shadow:0 2px 6px rgba(15,23,42,0.3);">` +
       `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>` +
       `</span>` +
-      `<span>${pick(
+      `<span id="mvqBannerText">${pick(
         "Mavunqo Express — Put our app on your Home Screen for 1-tap ordering & offline access!",
         "Mavunqo Express — ¡Instala la App en tu teléfono para pedir en 1 toque y navegar sin conexión!",
         "Mavunqo Express — Installez l'app sur votre écran d'accueil pour commander en 1 clic et hors ligne !"
@@ -205,7 +237,7 @@
       backBtn.title = pick("Go Back", "Volver", "Retour");
       backBtn.innerHTML =
         `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>` +
-        `<span>${pick("Back", "Atrás", "Retour")}</span>`;
+        `<span id="mvqBackText">${pick("Back", "Atrás", "Retour")}</span>`;
       backBtn.style.cssText =
         "display:inline-flex;align-items:center;gap:6px;padding:0.4rem 0.9rem;font-weight:700;border-radius:999px;";
       backBtn.onclick = triggerBack;
@@ -219,7 +251,7 @@
     refBtn.title = pick("Refresh Page", "Actualizar página", "Actualiser");
     refBtn.innerHTML =
       `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>` +
-      `<span>${pick("Refresh", "Actualizar", "Actualiser")}</span>`;
+      `<span id="mvqRefreshText">${pick("Refresh", "Actualizar", "Actualiser")}</span>`;
     refBtn.style.cssText =
       "display:inline-flex;align-items:center;gap:6px;padding:0.4rem 0.9rem;font-weight:700;border-radius:999px;";
     refBtn.onclick = triggerRefresh;
@@ -233,8 +265,8 @@
       installBtn.title = pick("Add Mavunqo to your phone's Home Screen", "Agregar Mavunqo a tu pantalla de inicio", "Ajouter Mavunqo à l'écran d'accueil");
       installBtn.innerHTML =
         `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 8v7"/><path d="M9 12l3 3 3-3"/></svg>` +
-        `<span>${pick("Install Mavunqo", "Instalar Mavunqo", "Installer Mavunqo")}</span>` +
-        `<span style="background:#facc15;color:#0f172a;font-size:0.7rem;font-weight:900;padding:2px 7px;border-radius:999px;letter-spacing:0.03em;text-transform:uppercase;">${pick("1-Tap", "1 Toque", "1 Clic")}</span>`;
+        `<span id="mvqInstallText">${pick("Install Mavunqo", "Instalar Mavunqo", "Installer Mavunqo")}</span>` +
+        `<span id="mvqInstallTag" style="background:#facc15;color:#0f172a;font-size:0.7rem;font-weight:900;padding:2px 7px;border-radius:999px;letter-spacing:0.03em;text-transform:uppercase;">${pick("1-Tap", "1 Toque", "1 Clic")}</span>`;
       installBtn.style.cssText =
         "display:inline-flex;align-items:center;gap:8px;padding:0.55rem 1.25rem;font-size:0.95rem;font-weight:900;border-radius:999px;background:linear-gradient(135deg,#ea580c 0%,#dc2626 100%);color:#ffffff;border:2.5px solid #0f172a;cursor:pointer;animation:mvqPulseGlow 2s infinite;transition:transform 0.15s ease;";
       installBtn.onmouseenter = function () { installBtn.style.transform = "translateY(-1px)"; };
@@ -247,39 +279,54 @@
     shareBtn.id = "mvqShareAppBtn";
     shareBtn.type = "button";
     shareBtn.className = "btn btn-outline btn-sm";
-    shareBtn.title = pick("Share Mavunqo link or QR code", "Compartir enlace o código QR", "Partager le lien ou code QR");
+    shareBtn.title = pick("Share link or QR code", "Compartir enlace o código QR", "Partager le lien ou code QR");
     shareBtn.innerHTML =
       `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>` +
-      `<span>${pick("Share", "Compartir", "Partager")}</span>`;
+      `<span id="mvqShareText">${pick("Share", "Compartir", "Partager")}</span>`;
     shareBtn.style.cssText =
       "display:inline-flex;align-items:center;gap:6px;padding:0.4rem 0.9rem;font-weight:700;border-radius:999px;background:#ffffff;color:#0f172a;border:1.5px solid #0f172a;cursor:pointer;";
     shareBtn.onclick = async function () {
-      const shareUrl = window.location.origin + "/";
-      const shareText = pick(
-        "Check out Mavunqo — local services, food, spas & vets in Sosúa & Puerto Plata:",
-        "Mira Mavunqo — servicios locales, comida, spas y veterinarios en Sosúa y Puerto Plata:",
-        "Découvrez Mavunqo — services locaux, restaurants, spas et vétérinaires à Sosúa & Puerto Plata :"
-      );
+      const lp = getLangPick();
+      const isStorefront = window.location.pathname.startsWith("/b/");
+      const shareUrl = isStorefront
+        ? window.location.origin + window.location.pathname
+        : window.location.origin + "/";
+      const bizNameEl = isStorefront ? document.getElementById("bizTradingName") : null;
+      const bizName = bizNameEl && bizNameEl.textContent.trim() ? bizNameEl.textContent.trim() : "Mavunqo";
+      const shareText = isStorefront
+        ? lp.pick(
+            `Check out ${bizName} on Mavunqo:`,
+            `Mira ${bizName} en Mavunqo:`,
+            `Découvrez ${bizName} sur Mavunqo :`
+          )
+        : lp.pick(
+            "Check out Mavunqo — local services, food, spas & vets in Sosúa & Puerto Plata:",
+            "Mira Mavunqo — servicios locales, comida, spas y veterinarios en Sosúa y Puerto Plata:",
+            "Découvrez Mavunqo — services locaux, restaurants, spas et vétérinaires à Sosúa & Puerto Plata :"
+          );
       if (navigator.share) {
-        try { await navigator.share({ title: "Mavunqo", text: shareText, url: shareUrl }); return; } catch (_) {}
+        try { await navigator.share({ title: isStorefront ? bizName : "Mavunqo", text: shareText, url: shareUrl }); return; } catch (_) {}
       }
       const waShareUrl = "https://wa.me/?text=" + encodeURIComponent(shareText + " " + shareUrl);
       const modal = document.createElement("div");
       modal.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;padding:16px;";
       modal.innerHTML = `
         <div style="background:#fff;color:#0f172a;max-width:360px;width:100%;border-radius:16px;padding:20px;box-shadow:0 16px 40px rgba(0,0,0,0.22);text-align:center;">
-          <strong style="font-size:1.05rem;">${pick("Share Mavunqo", "Compartir Mavunqo", "Partager Mavunqo")}</strong>
+          <strong id="mvqShareModalTitle" style="font-size:1.05rem;"></strong>
           <div style="margin:12px auto;"><img src="/frontend/qr_sticker_mavunqo.svg" alt="Mavunqo QR" style="width:140px;height:140px;border-radius:10px;border:1px solid #e2e8f0;"></div>
           <div style="display:flex;flex-direction:column;gap:8px;">
-            <a href="${waShareUrl}" target="_blank" rel="noopener noreferrer" style="padding:10px;border-radius:999px;background:#16a34a;color:#fff;font-weight:700;text-decoration:none;">💬 ${pick("Send via WhatsApp", "Enviar por WhatsApp", "Envoyer par WhatsApp")}</a>
-            <button type="button" id="mvqCopyShareLink" style="padding:10px;border-radius:999px;background:#0d9488;color:#fff;font-weight:700;border:none;cursor:pointer;">🔗 ${pick("Copy Link", "Copiar Enlace", "Copier le lien")}</button>
-            <button type="button" id="mvqCloseShareModal" style="padding:8px;border-radius:999px;background:#f1f5f9;color:#0f172a;font-weight:700;border:none;cursor:pointer;">${pick("Close", "Cerrar", "Fermer")}</button>
+            <a href="${waShareUrl}" target="_blank" rel="noopener noreferrer" style="padding:10px;border-radius:999px;background:#16a34a;color:#fff;font-weight:700;text-decoration:none;">💬 ${lp.pick("Send via WhatsApp", "Enviar por WhatsApp", "Envoyer par WhatsApp")}</a>
+            <button type="button" id="mvqCopyShareLink" style="padding:10px;border-radius:999px;background:#0d9488;color:#fff;font-weight:700;border:none;cursor:pointer;">🔗 ${lp.pick("Copy Link", "Copiar Enlace", "Copier le lien")}</button>
+            <button type="button" id="mvqCloseShareModal" style="padding:8px;border-radius:999px;background:#f1f5f9;color:#0f172a;font-weight:700;border:none;cursor:pointer;">${lp.pick("Close", "Cerrar", "Fermer")}</button>
           </div>
         </div>`;
       modal.onclick = function (e) { if (e.target === modal) modal.remove(); };
       document.body.appendChild(modal);
+      document.getElementById("mvqShareModalTitle").textContent = isStorefront
+        ? lp.pick(`Share ${bizName}`, `Compartir ${bizName}`, `Partager ${bizName}`)
+        : lp.pick("Share Mavunqo", "Compartir Mavunqo", "Partager Mavunqo");
       document.getElementById("mvqCopyShareLink").onclick = async function () {
-        try { await navigator.clipboard.writeText(shareUrl); this.textContent = "✓ Copied!"; } catch (_) {}
+        try { await navigator.clipboard.writeText(shareUrl); this.textContent = lp.pick("✓ Copied!", "✓ ¡Copiado!", "✓ Copié !"); } catch (_) {}
       };
       document.getElementById("mvqCloseShareModal").onclick = function () { modal.remove(); };
     };
@@ -296,7 +343,7 @@
     waBtn.title = pick("Quick WhatsApp Support", "Soporte rápido por WhatsApp", "Support WhatsApp rapide");
     waBtn.innerHTML =
       `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>` +
-      `<span>${pick("WhatsApp Help", "Ayuda WhatsApp", "Aide WhatsApp")}</span>`;
+      `<span id="mvqWaText">${pick("WhatsApp Help", "Ayuda WhatsApp", "Aide WhatsApp")}</span>`;
     waBtn.style.cssText =
       "display:inline-flex;align-items:center;gap:7px;padding:0.4rem 0.95rem;font-weight:700;border-radius:999px;border:1.5px solid #16a34a;color:#15803d;background:#f0fdf4;text-decoration:none;";
     actions.appendChild(waBtn);
@@ -309,8 +356,53 @@
 
     bar.appendChild(actions);
 
+    function refreshBannerCopy() {
+      const lp = getLangPick();
+      const bText = document.getElementById("mvqBannerText");
+      if (bText) {
+        bText.textContent = lp.pick(
+          "Mavunqo Express — Put our app on your Home Screen for 1-tap ordering & offline access!",
+          "Mavunqo Express — ¡Instala la App en tu teléfono para pedir en 1 toque y navegar sin conexión!",
+          "Mavunqo Express — Installez l'app sur votre écran d'accueil pour commander en 1 clic et hors ligne !"
+        );
+      }
+      const backBtnEl = document.getElementById("mvqNavBackBtn");
+      const backSpan = document.getElementById("mvqBackText");
+      if (backBtnEl) backBtnEl.title = lp.pick("Go Back", "Volver", "Retour");
+      if (backSpan) backSpan.textContent = lp.pick("Back", "Atrás", "Retour");
+
+      const refBtnEl = document.getElementById("mvqNavRefreshBtn");
+      const refSpan = document.getElementById("mvqRefreshText");
+      if (refBtnEl) refBtnEl.title = lp.pick("Refresh Page", "Actualizar página", "Actualiser");
+      if (refSpan) refSpan.textContent = lp.pick("Refresh", "Actualizar", "Actualiser");
+
+      const instBtnEl = document.getElementById("mvqInstallAppBtn");
+      const instSpan = document.getElementById("mvqInstallText");
+      const instTag = document.getElementById("mvqInstallTag");
+      if (instBtnEl) instBtnEl.title = lp.pick("Add Mavunqo to your phone's Home Screen", "Agregar Mavunqo a tu pantalla de inicio", "Ajouter Mavunqo à l'écran d'accueil");
+      if (instSpan) instSpan.textContent = lp.pick("Install Mavunqo", "Instalar Mavunqo", "Installer Mavunqo");
+      if (instTag) instTag.textContent = lp.pick("1-Tap", "1 Toque", "1 Clic");
+
+      const shBtnEl = document.getElementById("mvqShareAppBtn");
+      const shSpan = document.getElementById("mvqShareText");
+      if (shBtnEl) shBtnEl.title = lp.pick("Share link or QR code", "Compartir enlace o código QR", "Partager le lien ou code QR");
+      if (shSpan) shSpan.textContent = lp.pick("Share", "Compartir", "Partager");
+
+      const waEl = document.getElementById("mvqWhatsAppHelpBtn");
+      const waSpan = document.getElementById("mvqWaText");
+      if (waEl) {
+        waEl.title = lp.pick("Quick WhatsApp Support", "Soporte rápido por WhatsApp", "Support WhatsApp rapide");
+        waEl.href = "https://wa.me/18299414894?text=" + encodeURIComponent(
+          lp.pick("Hi Mavunqo, I need help with the platform.", "Hola Mavunqo, necesito ayuda con la plataforma.", "Bonjour Mavunqo, j'ai besoin d'aide avec la plateforme.")
+        );
+      }
+      if (waSpan) waSpan.textContent = lp.pick("WhatsApp Help", "Ayuda WhatsApp", "Aide WhatsApp");
+    }
+
+    window.addEventListener("languageChanged", refreshBannerCopy);
+
     function updateNetworkPill(justReconnected) {
-      const es = (localStorage.getItem("mavunqo_lang") || "en").toLowerCase() === "es";
+      const lp = getLangPick();
       if (!navigator.onLine) {
         statusPill.style.display = "inline-flex";
         statusPill.style.background = "#fef3c7";
@@ -318,7 +410,7 @@
         statusPill.style.border = "1px solid #f59e0b";
         statusPill.innerHTML =
           `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>` +
-          `<span>${es ? "Sin conexión (Modo Caché)" : "Offline (Cached View)"}</span>`;
+          `<span>${lp.pick("Offline (Cached View)", "Sin conexión (Modo Caché)", "Hors ligne (En cache)")}</span>`;
       } else if (justReconnected) {
         statusPill.style.display = "inline-flex";
         statusPill.style.background = "#dcfce7";
@@ -326,7 +418,7 @@
         statusPill.style.border = "1px solid #22c55e";
         statusPill.innerHTML =
           `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>` +
-          `<span>${es ? "Conectado de nuevo" : "Back Online"}</span>`;
+          `<span>${lp.pick("Back Online", "Conectado de nuevo", "De retour en ligne")}</span>`;
         setTimeout(function () {
           if (navigator.onLine) statusPill.style.display = "none";
         }, 3000);
@@ -432,6 +524,12 @@
       btn.addEventListener("click", function () {
         sel.value = String(idx);
       });
+    });
+
+    window.addEventListener("languageChanged", function (e) {
+      const targetLang = (e && e.detail && e.detail.lang) || localStorage.getItem("mavunqo_lang") || "en";
+      const matchIdx = btns.findIndex(function (b) { return b.getAttribute("data-lang") === targetLang; });
+      if (matchIdx >= 0) sel.value = String(matchIdx);
     });
 
     sw.appendChild(sel);

@@ -269,12 +269,12 @@
       <!-- Uber Storefront Hero Header -->
       <div id="storefrontHero" class="uber-storefront-hero" style="background: linear-gradient(135deg, #116B62 0%, #09433D 100%) !important; border-bottom: 3px solid #F3A64A; color: #ffffff !important;">
         <div style="display: flex; align-items: center; gap: 1.15rem; flex-wrap: wrap;">
-          <img id="bizLogoImg" src="" alt="Business portrait" style="display: none; width: 88px; height: 88px; border-radius: 16px; object-fit: cover; object-position: top center; border: 3px solid #F3A64A; box-shadow: 0 4px 14px rgba(0,0,0,0.3); background: #ffffff; flex-shrink: 0;">
+          <img id="bizLogoImg" alt="Business portrait" style="display: none; width: 88px; height: 88px; border-radius: 16px; object-fit: cover; object-position: top center; border: 3px solid #F3A64A; box-shadow: 0 4px 14px rgba(0,0,0,0.3); background: #ffffff; flex-shrink: 0;">
           <div style="flex: 1; min-width: 240px;">
             <div class="uber-storefront-meta">
               <span id="bizCategory" class="uber-storefront-badge">Category</span>
               <span id="bizLocation" class="uber-storefront-badge">📍 Location</span>
-              <span id="bizTierPill" class="uber-storefront-badge">Verified Online Store</span>
+              <span id="bizTierPill" class="uber-storefront-badge" data-i18n="verified_store_badge">Verified Online Store</span>
               <span id="bizDeliveryBadge" class="uber-storefront-badge" style="display: none;"></span>
             </div>
             <h1 id="bizTradingName" class="uber-storefront-title" style="color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Business Name</h1>
@@ -286,7 +286,7 @@
       <div class="uber-storefront-layout">
         <!-- Main: Services Catalog -->
         <div>
-          <h2 id="catalogHeading" style="font-size: 1.6rem; font-weight: 850; margin-bottom: 1.25rem; letter-spacing: -0.02em;">🛍️ Online Store Catalog</h2>
+          <h2 id="catalogHeading" data-i18n="online_store_catalog" style="font-size: 1.6rem; font-weight: 850; margin-bottom: 1.25rem; letter-spacing: -0.02em;">🛍️ Online Store Catalog</h2>
           <div id="servicesMenuContainer">
             <!-- Services injected here -->
           </div>
@@ -307,7 +307,7 @@
 
           <!-- Location & Hours -->
           <div class="uber-sidebar-panel">
-            <h4 class="uber-sidebar-title">Location & Store Info</h4>
+            <h4 class="uber-sidebar-title" data-i18n="location_store_info">Location & Store Info</h4>
             <div id="storeEmailRow" class="contact-item-row" style="display: none; margin-bottom: 0.5rem;">
               <span style="font-size: 1.1rem;">✉️</span>
               <a id="bizEmailLink" href="#" style="font-weight: 600; color: var(--teal-primary); word-break: break-all;"></a>
@@ -704,8 +704,8 @@
         </div>
 
         <div style="display: flex; gap: 0.75rem;">
-          <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeUniversalRequestModal();">Cancel</button>
-          <button type="submit" id="btnSubmitUniversal" class="btn btn-primary" style="flex: 2; font-weight: 850;">Submit Request</button>
+          <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeUniversalRequestModal();" data-i18n="cancel_btn">Cancel</button>
+          <button type="submit" id="btnSubmitUniversal" class="btn btn-primary" style="flex: 2; font-weight: 850;" data-i18n="submit_request_btn">Submit Request</button>
         </div>
       </form>
     </div>
@@ -729,7 +729,7 @@
           <textarea id="contactMessage" class="input-field" style="height: 100px; margin-top: 0.35rem;" required></textarea>
         </div>
         <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
-          <button type="button" class="btn btn-outline" onclick="closeContactModal();">Cancel</button>
+          <button type="button" class="btn btn-outline" onclick="closeContactModal();" data-i18n="cancel_btn">Cancel</button>
           <button type="submit" class="btn btn-primary" data-i18n="send_btn">Send Message</button>
         </div>
       </form>
@@ -846,9 +846,30 @@
         logoImg.alt = b.trading_name;
         logoImg.style.display = "block";
       }
-      document.getElementById("bizCategory").textContent = currentLang === "es" ? b.category_name_es : b.category_name_en;
+      const t = (typeof i18n !== "undefined" && i18n[currentLang]) || (typeof i18n !== "undefined" ? i18n.en : {});
+      const frCategoryMap = {
+        "massage & wellness": "Massage et Bien-être",
+        "health & wellness": "Santé et Bien-être",
+        "tours & activities": "Excursions et Activités",
+        "dining & food": "Restaurants et Cuisine",
+        "groceries & colmados": "Épicerie et Colmados",
+        "clothing & fashion": "Mode et Boutiques",
+        "hospitality & tourism": "Hébergement et Tourisme",
+        "professional services": "Services Professionnels",
+        "beauty & personal care": "Beauté et Soins",
+        "legal & real estate": "Services Juridiques et Immobilier"
+      };
+      const frBusinessDescriptions = {
+        "clara-light-spa": "Massothérapeute et esthéticienne certifiée 4x INFOTEP proposant des massages thérapeutiques, soins du visage et beauté des ongles à domicile ou en villa à Puerto Plata, Montellano et Sosúa."
+      };
+      const catKey = (b.category_name_en || "").toLowerCase();
+      document.getElementById("bizCategory").textContent = currentLang === "es"
+        ? (b.category_name_es || b.category_name_en)
+        : (currentLang === "fr" ? (frCategoryMap[catKey] || b.category_name_en) : b.category_name_en);
       document.getElementById("bizLocation").textContent = `📍 ${b.location_name}`;
-      document.getElementById("bizDescription").textContent = currentLang === "es" ? b.description_es : b.description_en;
+      document.getElementById("bizDescription").textContent = currentLang === "es"
+        ? (b.description_es || b.description_en)
+        : (currentLang === "fr" ? (b.description_fr || frBusinessDescriptions[b.slug] || b.description_en) : b.description_en);
 
       // Delivery badge for dining
       const delBadge = document.getElementById("bizDeliveryBadge");
@@ -868,14 +889,14 @@
       }
 
       // Address & areas (mask exact street address and GPS pin across all categories until after checkout/confirmation)
-      document.getElementById("bizAddress").textContent = (b.location_name || "Sosúa") + " — " + (currentLang === "es" ? "Dirección exacta revelada después de confirmar" : "Exact address revealed after booking/checkout");
+      document.getElementById("bizAddress").textContent = (b.location_name || "Sosúa") + " — " + (t.exact_address_after_booking || "Exact address revealed after booking/checkout");
 
       const mapWrap = document.getElementById("storefrontMapContainer");
       if (mapWrap) {
         mapWrap.style.display = "none";
       }
       if (b.service_areas && b.service_areas.length > 0) {
-        const servesLabel = (typeof currentLang !== "undefined" && currentLang === "es") ? "Atiende" : "Serves";
+        const servesLabel = t.serves_label || "Serves";
         document.getElementById("bizServiceAreas").textContent = `${servesLabel}: ${b.service_areas.map(a => a.name).join(", ")}`;
       } else {
         document.getElementById("serviceAreasRow").style.display = "none";
@@ -893,13 +914,34 @@
       }
 
       // Hours
+      const formatHoursKey = (rawKey) => {
+        const lk = String(rawKey || "").toLowerCase();
+        const keyMap = {
+          monday_saturday: { en: "Monday – Saturday", es: "Lunes – Sábado", fr: "Lundi – Samedi" },
+          monday_friday: { en: "Monday – Friday", es: "Lunes – Viernes", fr: "Lundi – Vendredi" },
+          sunday: { en: "Sunday", es: "Domingo", fr: "Dimanche" },
+          saturday: { en: "Saturday", es: "Sábado", fr: "Samedi" },
+          daily: { en: "Daily", es: "Todos los días", fr: "Tous les jours" }
+        };
+        if (keyMap[lk]) return keyMap[lk][currentLang] || keyMap[lk].en;
+        return lk.split("_").map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : "").join(" – ");
+      };
+      const formatHoursVal = (rawVal) => {
+        const v = String(rawVal || "");
+        if (v.trim().toLowerCase() === "closed") {
+          return currentLang === "es" ? "Cerrado" : (currentLang === "fr" ? "Fermé" : "Closed");
+        }
+        return v;
+      };
       const hoursBox = document.getElementById("bizHoursContent");
       if (b.hours && Object.keys(b.hours).length > 0) {
         hoursBox.innerHTML = Object.entries(b.hours)
-          .map(([k, v]) => `<div><strong>${k.replace('_', ' ').toUpperCase()}:</strong> ${v}</div>`)
+          .map(([k, v]) => `<div><strong>${formatHoursKey(k)}:</strong> ${formatHoursVal(v)}</div>`)
           .join("");
       } else {
-        hoursBox.textContent = "Contact for appointment and availability.";
+        hoursBox.textContent = currentLang === "es"
+          ? "Contáctanos para disponibilidad y citas."
+          : (currentLang === "fr" ? "Contactez-nous pour connaître les disponibilités." : "Contact for appointment and availability.");
       }
 
       // External website
@@ -932,12 +974,14 @@
         `;
       } else if (b.requests_enabled && (!restaurantMenu || !restaurantMenu.categories || restaurantMenu.categories.length === 0) && (!lodgingUnits || lodgingUnits.length === 0)) {
         // Universal Activated Request Action
-        const actionLabel = currentLang === 'es' ? (b.request_action_label_es || 'Solicitar') : (b.request_action_label_en || 'Submit Request');
+        const actionLabel = currentLang === 'es'
+          ? (b.request_action_label_es || t.request_appointment_btn || 'Solicitar una cita')
+          : (currentLang === 'fr' ? (t.request_appointment_btn || 'Demander un rendez-vous') : (b.request_action_label_en || t.request_appointment_btn || 'Submit Request'));
         ctaList.innerHTML = `
           <div style="background: rgba(17, 107, 98, 0.08); border: 1px solid rgba(17, 107, 98, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
-            <div style="font-weight: 800; font-size: 0.9rem; color: var(--teal-primary); margin-bottom: 0.25rem;">⚡ Direct Online Request</div>
+            <div style="font-weight: 800; font-size: 0.9rem; color: var(--teal-primary); margin-bottom: 0.25rem;">${t.direct_online_request || '⚡ Direct Online Request'}</div>
             <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
-              Submit your request directly to the merchant. Fast confirmation, confirmed pins, and cash on arrival.
+              ${t.direct_request_desc || 'Submit your request directly to the merchant. Fast confirmation, confirmed pins, and cash on arrival.'}
             </p>
           </div>
           <button class="btn btn-primary" style="width: 100%; font-weight: 800;" onclick="openUniversalRequestModal('${escapeAttr(actionLabel)}');">
@@ -2527,7 +2571,7 @@ A confirmation has been registered for front desk check-in.`);
     <div class="lightbox-content" onclick="event.stopPropagation();">
       <button class="lightbox-close-btn" onclick="closeImageLightbox();" aria-label="Close Zoom">&times;</button>
       <div id="lightboxFrame" class="lightbox-img-frame" onclick="toggleZoomClick(event);">
-        <img id="lightboxImg" class="lightbox-img" src="" alt="Item Closeup">
+        <img id="lightboxImg" class="lightbox-img" alt="Item Closeup">
       </div>
       <div class="lightbox-controls">
         <div style="flex: 1; min-width: 0;">

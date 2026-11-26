@@ -717,6 +717,10 @@ table.data-table th {
 /* ==========================================================================
    FLOATING AI CONCIERGE WIDGET
    ========================================================================== */
+main.container {
+  padding-bottom: 5.5rem;
+}
+
 .ai-concierge-pill {
   position: fixed;
   bottom: 5.2rem;
@@ -730,7 +734,7 @@ table.data-table th {
   align-items: center;
   gap: 0.55rem;
   cursor: pointer;
-  z-index: 98;
+  z-index: 90;
   font-weight: 800;
   font-size: 0.9rem;
   border: 2px solid rgba(255, 255, 255, 0.85);
@@ -738,13 +742,18 @@ table.data-table th {
 }
 @media (min-width: 769px) {
   .ai-concierge-pill {
-    bottom: 2rem;
-    right: 2rem;
+    bottom: 1.25rem;
+    right: 1.25rem;
   }
 }
 .ai-concierge-pill:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 28px rgba(13, 148, 136, 0.38);
+}
+body.ai-drawer-open .ai-concierge-pill {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(8px);
 }
 
 .ai-drawer {
@@ -752,7 +761,7 @@ table.data-table th {
   bottom: 0;
   right: 0;
   width: 100%;
-  max-width: 420px;
+  max-width: min(420px, calc(100vw - 1rem));
   height: 550px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -760,29 +769,33 @@ table.data-table th {
   box-shadow: 0 -8px 36px rgba(15, 23, 42, 0.22);
   display: flex;
   flex-direction: column;
-  z-index: 101;
-  transform: translateY(105%);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 120;
+  transform: translateY(110%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease, visibility 0.22s ease;
   overflow: hidden;
 }
 @media (min-width: 769px) {
   .ai-drawer {
-    bottom: 2rem;
-    right: 2rem;
+    bottom: 1.5rem;
+    right: 1.5rem;
     border-radius: 22px;
     transform: translateY(20px) scale(0.95);
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.25s ease;
   }
   .ai-drawer.open {
     transform: translateY(0) scale(1) !important;
     opacity: 1 !important;
-    pointer-events: all !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
   }
 }
 .ai-drawer.open {
   transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 .ai-drawer-header {
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.28) 0%, rgba(13, 148, 136, 0.92) 100%),
@@ -831,7 +844,18 @@ table.data-table th {
   background: #ffffff;
   border-top: 1px solid #e2e8f0;
   display: flex;
+  align-items: center;
   gap: 0.5rem;
+  box-sizing: border-box;
+}
+.ai-drawer-footer .input-field {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+}
+.ai-drawer-footer button {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 table.data-table td {
   padding: 1rem 1.2rem;

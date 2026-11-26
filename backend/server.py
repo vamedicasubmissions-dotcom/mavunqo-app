@@ -364,10 +364,11 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
             q = query_params.get("q", [""])[0]
             lang = query_params.get("lang", ["en"])[0]
             role = query_params.get("role", ["customer"])[0]
+            slug = query_params.get("slug", [""])[0]
             ok_safe, safe_err = security_monitor.inspect_payload(client_ip, path, q)
             if not ok_safe:
                 return self.send_json({"error": safe_err}, 403)
-            return self.send_json(service.ask_ai_concierge(q, lang, role))
+            return self.send_json(service.ask_ai_concierge(q, lang, role, slug=slug))
 
         if path == "/api/plans":
             return self.send_json(service.list_saas_plans())

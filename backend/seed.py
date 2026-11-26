@@ -747,18 +747,18 @@ def seed_database(db_path: str):
             "pickup_pin_lng": None,
             "pickup_pin_note": "Mobile / Home Visits only (Studio conditional)",
             "services": [
-                ("srv_cls_1", "Express / Targeted Massage (30 min)", "Masaje Express / Localizado (30 min)", "Back, neck & shoulders mobile visit.", 1800.0, 1),
-                ("srv_cls_2", "Relaxation / Swedish Massage (60 min)", "Masaje Relajante / Sueco (60 min)", "Full-body relaxation at your home or villa.", 3000.0, 1),
-                ("srv_cls_3", "Relaxation / Swedish Massage (90 min)", "Masaje Relajante / Sueco (90 min)", "Extended full-body relaxation session.", 4000.0, 1),
-                ("srv_cls_4", "Deep Tissue / Muscle-Release Massage (60 min)", "Masaje Descontracturante / Tejido Profundo (60 min)", "Targeted chronic tension and muscle relief.", 3500.0, 1),
-                ("srv_cls_5", "Sports / Muscle-Release Massage (90 min)", "Masaje Deportivo / Descontracturante (90 min)", "Extended deep muscle recovery session.", 4500.0, 1),
-                ("srv_cls_6", "Lymphatic Drainage (60 min)", "Drenaje Linfático (60 min)", "Gentle therapeutic lymphatic drainage.", 3400.0, 1),
-                ("srv_cls_7", "Hot Stone Massage (60 min)", "Masaje con Piedras Calientes (60 min)", "Warm volcanic stone tension release.", 3800.0, 1),
-                ("srv_cls_8", "Couples Massage (60 min)", "Masaje en Pareja (60 min)", "Simultaneous two-therapist mobile session.", 5500.0, 1),
-                ("srv_cls_9", "4-Hand Massage (60 min)", "Masaje a 4 Manos (60 min)", "Synchronized two-therapist luxury session.", 6000.0, 1),
-                ("srv_cls_10", "Basic Facial", "Facial Básico", "Cleansing, exfoliation & hydration facial.", 3000.0, 1),
-                ("srv_cls_11", "Pedicure & Manicure", "Pedicure y Manicure", "Complete mobile hand and foot care.", 2000.0, 1),
-                ("srv_cls_12", "Hair Removal (Arms, Legs, Underarms)", "Depilación (Brazos, Piernas, Axilas)", "Price quoted by area and hair density.", 0.0, 0),
+                ("srv_cls_1", "Express / Targeted Massage (30 min)", "Masaje Express / Localizado (30 min)", "Back, neck & shoulders mobile visit.", 1800.0, 1, "Visita a domicilio enfocada en espalda, cuello y hombros."),
+                ("srv_cls_2", "Relaxation / Swedish Massage (60 min)", "Masaje Relajante / Sueco (60 min)", "Full-body relaxation at your home or villa.", 3000.0, 1, "Relajación de cuerpo completo en tu hogar o villa."),
+                ("srv_cls_3", "Relaxation / Swedish Massage (90 min)", "Masaje Relajante / Sueco (90 min)", "Extended full-body relaxation session.", 4000.0, 1, "Sesión extendida de relajación corporal completa."),
+                ("srv_cls_4", "Deep Tissue / Muscle-Release Massage (60 min)", "Masaje Descontracturante / Tejido Profundo (60 min)", "Targeted chronic tension and muscle relief.", 3500.0, 1, "Alivio focalizado de tensión crónica y nudos musculares."),
+                ("srv_cls_5", "Sports / Muscle-Release Massage (90 min)", "Masaje Deportivo / Descontracturante (90 min)", "Extended deep muscle recovery session.", 4500.0, 1, "Sesión extendida de recuperación muscular profunda."),
+                ("srv_cls_6", "Lymphatic Drainage (60 min)", "Drenaje Linfático (60 min)", "Gentle therapeutic lymphatic drainage.", 3400.0, 1, "Drenaje linfático terapéutico suave."),
+                ("srv_cls_7", "Hot Stone Massage (60 min)", "Masaje con Piedras Calientes (60 min)", "Warm volcanic stone tension release.", 3800.0, 1, "Liberación de tensión con piedras volcánicas tibias."),
+                ("srv_cls_8", "Couples Massage (60 min)", "Masaje en Pareja (60 min)", "Simultaneous two-therapist mobile session.", 5500.0, 1, "Sesión simultánea a domicilio con dos terapeutas."),
+                ("srv_cls_9", "4-Hand Massage (60 min)", "Masaje a 4 Manos (60 min)", "Synchronized two-therapist luxury session.", 6000.0, 1, "Sesión de lujo sincronizada con dos terapeutas."),
+                ("srv_cls_10", "Basic Facial", "Facial Básico", "Cleansing, exfoliation & hydration facial.", 3000.0, 1, "Limpieza facial, exfoliación e hidratación."),
+                ("srv_cls_11", "Pedicure & Manicure", "Pedicure y Manicure", "Complete mobile hand and foot care.", 2000.0, 1, "Cuidado completo de manos y pies a domicilio."),
+                ("srv_cls_12", "Hair Removal (Arms, Legs, Underarms)", "Depilación (Brazos, Piernas, Axilas)", "Price quoted by area and hair density.", 0.0, 0, "Precio cotizado según el área y densidad del vello."),
             ],
             "service_areas": ["loc_puerto_plata", "loc_montellano", "loc_sosua"]
         },
@@ -1254,7 +1254,7 @@ def seed_database(db_path: str):
                     p["id"], owner_id, p["trading_name"], p["legal_name"], p["slug"], p["category_id"], p["primary_location_id"],
                     p["description_en"], p["description_es"], p["has_physical_location"], p["address"],
                     p["serves_entire_area"], p["whatsapp"], p["phone"], p["public_email"],
-                    json.dumps({"monday_saturday": "8:30 AM - 6:00 PM"}), admin_id,
+                    p.get("hours_json") or json.dumps({"monday_saturday": "8:30 AM - 6:00 PM"}), admin_id,
                     p["requests_enabled"], p["request_action_label_en"], p["request_action_label_es"],
                     p["whatsapp_alerts_consent"], p["whatsapp_alerts_phone"], p["service_modes_supported"],
                     p["storefront_pin_lat"], p["storefront_pin_lng"], p["pickup_pin_lat"], p["pickup_pin_lng"], p["pickup_pin_note"],
@@ -1289,12 +1289,20 @@ def seed_database(db_path: str):
 
         # 4. Services
         for s_item in p.get("services", []):
+            desc_es = s_item[6] if len(s_item) > 6 else s_item[3]
             cur.execute("SELECT id FROM services WHERE id = ?", (s_item[0],))
             if not cur.fetchone():
                 cur.execute(
                     """INSERT INTO services (id, business_id, name_en, name_es, description_en, description_es, price, currency, display_price, sort_order)
                        VALUES (?, ?, ?, ?, ?, ?, ?, 'DOP', 1, ?)""",
-                    (s_item[0], p["id"], s_item[1], s_item[2], s_item[3], s_item[3], s_item[4], s_item[5])
+                    (s_item[0], p["id"], s_item[1], s_item[2], s_item[3], desc_es, s_item[4], s_item[5])
+                )
+            else:
+                cur.execute(
+                    """UPDATE services
+                       SET name_en = ?, name_es = ?, description_en = ?, description_es = ?
+                       WHERE id = ?""",
+                    (s_item[1], s_item[2], s_item[3], desc_es, s_item[0])
                 )
 
     # Seed Initial Motorcycle Drivers & Delivery Capacity in Sosúa

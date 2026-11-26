@@ -76,19 +76,35 @@
 
       <div class="ai-drawer-footer">
         <input type="text" id="aiInput" class="input-field" placeholder="Ask anything in English or Spanish..." onkeydown="if(event.key === 'Enter') sendConciergeQuery();" style="border-radius: var(--radius-pill); font-size: 0.88rem; padding: 0.5rem 0.9rem;">
-        <button class="btn btn-amber btn-sm" onclick="sendConciergeQuery();" style="border-radius: var(--radius-pill); padding: 0.5rem 0.9rem;">Ask</button>
+        <button id="aiAskBtn" class="btn btn-amber btn-sm" onclick="sendConciergeQuery();" style="border-radius: var(--radius-pill); padding: 0.5rem 0.9rem;">Ask</button>
       </div>
     `;
 
     document.body.appendChild(pill);
     document.body.appendChild(drawer);
+    updateConciergeLang();
+  }
+
+  function updateConciergeLang() {
+    const lang = (localStorage.getItem('mavunqo_lang') || 'en').toLowerCase();
+    const inp = document.getElementById('aiInput');
+    const btn = document.getElementById('aiAskBtn');
+    if (inp) {
+      inp.placeholder = lang === 'es'
+        ? 'Pregunta lo que necesites en español o inglés...'
+        : (lang === 'fr' ? 'Posez votre question ici...' : 'Ask anything in English or Spanish...');
+    }
+    if (btn) {
+      btn.textContent = lang === 'es' ? 'Preguntar' : (lang === 'fr' ? 'Demander' : 'Ask');
+    }
   }
 
   window.toggleDrawer = function() {
     const d = document.getElementById('aiDrawer');
     if (d) {
-      d.classList.toggle('open');
-      if (d.classList.contains('open')) {
+      const isOpen = d.classList.toggle('open');
+      document.body.classList.toggle('ai-drawer-open', isOpen);
+      if (isOpen) {
         document.getElementById('aiInput')?.focus();
       }
     }
@@ -110,23 +126,26 @@
     body.scrollTop = body.scrollHeight;
 
     // Loading indicator
+    const lang = (localStorage.getItem('mavunqo_lang') || 'en').toLowerCase();
     const botLoading = document.createElement('div');
     botLoading.className = 'ai-bubble-bot';
-    botLoading.textContent = 'Thinking...';
+    botLoading.textContent = lang === 'es' ? 'Pensando...' : (lang === 'fr' ? 'Réflexion...' : 'Thinking...');
     body.appendChild(botLoading);
     body.scrollTop = body.scrollHeight;
 
     try {
-      const currentLang = localStorage.getItem('mavunqo_lang') || 'en';
       const role = detectUserRole();
-      const res = await fetch(`/api/concierge?q=${encodeURIComponent(query)}&lang=${currentLang}&role=${encodeURIComponent(role)}`);
+      const pathMatch = window.location.pathname.match(/^\/b\/([^\/?#]+)/i);
+      const bizSlug = pathMatch ? decodeURIComponent(pathMatch[1]) : '';
+      const slugParam = bizSlug ? `&slug=${encodeURIComponent(bizSlug)}` : '';
+      const res = await fetch(`/api/concierge?q=${encodeURIComponent(query)}&lang=${lang}&role=${encodeURIComponent(role)}${slugParam}`);
       const data = await res.json();
 
       let recsHtml = '';
       if (data.recommendations && data.recommendations.length > 0) {
         recsHtml = `<div style="margin-top: 0.65rem; display: flex; flex-direction: column; gap: 0.45rem;">` +
           data.recommendations.map(r => {
-            const thumb = r.cover_image_url || r.logo_url || '/frontend/uploads/heritage/cayo_arena_waterfalls.jpg';
+            const thumb = r.logo_url || r.cover_image_url || '/frontend/uploads/heritage/cayo_arena_waterfalls.jpg';
             return `
             <a href="/b/${r.slug}" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.6rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; text-decoration: none; color: #0f172a; font-weight: 750; font-size: 0.84rem;">
               <img src="${thumb}" alt="${r.trading_name}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0;">
@@ -143,5 +162,6 @@
     body.scrollTop = body.scrollHeight;
   };
 
+  window.addEventListener('languageChanged', updateConciergeLang);
   document.addEventListener('DOMContentLoaded', injectConciergeUI);
 })();
