@@ -34,7 +34,7 @@
           🛍️ Guest & Shopper
         </button>
         <button id="tabOwnerBtn" onclick="switchLoginTab('owner');" type="button" style="flex: 1; padding: 0.65rem 0.5rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; background: transparent; color: #64748b; transition: all 0.2s;">
-          🏢 Business / Admin
+          🏢 Business / Sales Staff / Admin
         </button>
       </div>
 
@@ -147,6 +147,8 @@
           localStorage.setItem("mavunqo_user", JSON.stringify(data.user));
           if (data.user.role === "admin") {
             window.location.href = "/admin";
+          } else if (data.user.role === "staff") {
+            window.location.href = "/outreach";
           } else {
             window.location.href = "/dashboard";
           }
