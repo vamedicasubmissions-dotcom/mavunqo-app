@@ -96,6 +96,10 @@
     <details style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:0.85rem 1rem; margin-bottom:0.85rem;">
       <summary style="font-weight:850; font-size:0.92rem; cursor:pointer;">🎥 New Rep Quick-Start Walkthrough (60-Second Onboarding)</summary>
       <div style="margin-top:0.75rem; font-size:0.84rem; line-height:1.5; color:var(--text-secondary);">
+        <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+          <button type="button" id="playWalkthroughBtn" onclick="toggleWalkthroughAudio()" class="btn btn-sm btn-primary" style="font-weight:800;">▶ Play Audio Walkthrough</button>
+          <span style="font-size:0.78rem; color:var(--text-secondary);">Tap to hear the 60-second walkthrough on your phone</span>
+        </div>
         <ol style="margin-left:1.2rem; margin-bottom:0.75rem;">
           <li><strong>Sign In:</strong> Log in at <code>/login</code> under <em>Business / Sales Staff / Admin</em>—you'll land straight here on <code>/outreach</code>.</li>
           <li><strong>Sort Nearby:</strong> Tap <strong>📍 Near Me</strong> to put businesses in your current town at the top.</li>
@@ -277,6 +281,25 @@
     }
 
     window.onload = loadLeads;
+
+    function toggleWalkthroughAudio() {
+      const btn = document.getElementById("playWalkthroughBtn");
+      if (!("speechSynthesis" in window)) {
+        alert("Audio walkthrough is not supported on this browser.");
+        return;
+      }
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        btn.textContent = "▶ Play Audio Walkthrough";
+        return;
+      }
+      const script = "Hey, welcome to the MAVUNQO team. Let me show you how to use the Outreach Portal on your phone, it takes less than a minute. First, go to mavunqo.com slash login, tap Business, Sales Staff, Admin, and sign in with your staff email. It'll drop you straight into your Outreach page. When you're out on the street in Sosúa, Cabarete, or Puerto Plata, tap Near Me at the top. That puts the businesses closest to where you're standing right at the top of your list. To reach out, just tap Call to dial them directly, or tap WhatsApp Pitch plus Form, that already has our Spanish message and the 2-minute signup link ready to send. Once you finish talking to them, type a quick note and tap how it went: No Answer, Interested, In-Person Visit if they want you to stop by, Specialist Callback if they want someone else to follow up, or Signed Up. And one last thing, whenever somebody signs up, always ask who their top suppliers or distributors are, and add them as new leads right here. That's how we build the whole chain. You're good to go!";
+      const utter = new SpeechSynthesisUtterance(script);
+      utter.rate = 0.98;
+      utter.onend = () => { btn.textContent = "▶ Play Audio Walkthrough"; };
+      btn.textContent = "⏹ Stop Audio";
+      window.speechSynthesis.speak(utter);
+    }
   </script>
   <script src="/frontend/pwa_nav.js"></script>
 </body>

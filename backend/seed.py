@@ -1434,6 +1434,24 @@ def seed_database(db_path: str):
         ),
     )
 
+    outreach_starter = [
+        ("lead_sosua_1", "Playa Alicia Grill & Bar", "+1-809-555-0141", "Dining & Food", "Sosúa", "Manager", "user_staff_1"),
+        ("lead_sosua_2", "El Batey Colmado Express", "+1-809-555-0142", "Groceries & Colmados", "Sosúa", "Owner", "user_staff_1"),
+        ("lead_cab_1", "Kite Beach Surf & Kite School", "+1-809-555-0143", "Tours & Activities", "Cabarete", "Front Desk", "user_staff_2"),
+        ("lead_cab_2", "Cabarete Scooter & Moto Rentals", "+1-809-555-0144", "Auto & Transport", "Cabarete", "Owner", "user_staff_2"),
+        ("lead_pp_1", "27 Waterfalls Adventure Tours", "+1-809-555-0145", "Tours & Activities", "Puerto Plata", "Bookings", "user_staff_1"),
+        ("lead_pp_2", "Cofresí Ocean Spa & Massage", "+1-809-555-0146", "Massage & Wellness", "Cofresí", "Reception", "user_staff_2"),
+        ("lead_b2b_1", "North Coast Hotel & Restaurant Supply", "+1-809-555-0147", "B2B & SaaS", "Montellano", "Sales", "user_staff_1"),
+        ("lead_b2b_2", "CaribePOS & Booking Systems", "+1-809-555-0148", "B2B & SaaS", "Puerto Plata", "Partnerships", "user_staff_2"),
+    ]
+    for lid, bname, phone, cat, town, cname, rep_id in outreach_starter:
+        cur.execute(
+            """INSERT OR IGNORE INTO outreach_leads (
+                id, business_name, phone, category, town, contact_name, status, assigned_to
+            ) VALUES (?, ?, ?, ?, ?, ?, 'new', ?)""",
+            (lid, bname, phone, cat, town, cname, rep_id),
+        )
+
     conn.commit()
     conn.close()
     print("Database successfully initialized and seeded with Sosúa pilot data!")
