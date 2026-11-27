@@ -670,6 +670,35 @@
       }, 250);
     }
 
+    let userCoords = null;
+    const NORTH_COAST_COORDS = {
+      "sosua": [19.7522, -70.5190],
+      "sosúa": [19.7522, -70.5190],
+      "cabarete": [19.7498, -70.4083],
+      "puerto plata": [19.7808, -70.6871],
+      "montellano": [19.7333, -70.5833],
+      "cofresi": [19.8167, -70.7333],
+      "cofresí": [19.8167, -70.7333]
+    };
+
+    function getBusinessDistance(b) {
+      if (!userCoords) return 0;
+      const locText = ((b.location_name || "") + " " + (b.address || "")).toLowerCase();
+      for (const [town, coords] of Object.entries(NORTH_COAST_COORDS)) {
+        if (locText.includes(town)) {
+          return Math.hypot(userCoords.lat - coords[0], userCoords.lon - coords[1]);
+        }
+      }
+      return 999999;
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        userCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        if (typeof handleSearch === "function") handleSearch();
+      }, () => {});
+    }
+
     async function handleSearch() {
       const q = document.getElementById("searchInput").value;
       const cat = document.getElementById("categorySelect").value || activeCategory;
@@ -678,6 +707,9 @@
       const url = `/api/businesses?q=${encodeURIComponent(q)}&category=${encodeURIComponent(cat)}&location=${encodeURIComponent(loc)}&lang=${currentLang}`;
       const res = await fetch(url);
       const businesses = await res.json();
+      if (userCoords && Array.isArray(businesses)) {
+        businesses.sort((a, b) => getBusinessDistance(a) - getBusinessDistance(b));
+      }
 
       renderListings(businesses);
     }

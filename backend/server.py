@@ -1382,7 +1382,6 @@ class MavunqoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 ).fetchone()
                 if not tok:
                     return self.send_json({"error": "Single-use token already consumed, revoked or invalid."}, 400)
-                import time
                 if tok["expires_at"] < int(time.time()):
                     conn.execute("UPDATE secure_order_tokens SET status = 'expired' WHERE token = ?", (token,))
                     conn.commit()

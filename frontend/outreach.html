@@ -87,6 +87,7 @@
         <button type="button" onclick="setFilter('in_person', this)" class="btn btn-sm btn-outline">In-Person Visit</button>
         <button type="button" onclick="setFilter('callback', this)" class="btn btn-sm btn-outline">Specialist Callback</button>
         <button type="button" onclick="setFilter('signed_up', this)" class="btn btn-sm btn-outline">Signed Up</button>
+        <button type="button" id="nearMeBtn" onclick="sortNearMe()" class="btn btn-sm btn-outline" style="border-color:var(--primary); color:var(--primary);">📍 Near Me</button>
       </div>
       <div id="repTrackerText" style="font-size:0.82rem; font-weight:750; color:var(--text-secondary);"></div>
     </div>
@@ -123,10 +124,43 @@
     function setFilter(status, btn) {
       currentFilter = status;
       document.querySelectorAll("#leadFilterTabs button").forEach(b => {
-        b.className = "btn btn-sm btn-outline";
+        if (b.id !== "nearMeBtn") b.className = "btn btn-sm btn-outline";
       });
       if (btn) btn.className = "btn btn-sm btn-primary";
       renderLeads();
+    }
+
+    const TOWN_COORDS = {
+      "sosua": [19.7522, -70.5190],
+      "sosúa": [19.7522, -70.5190],
+      "cabarete": [19.7498, -70.4083],
+      "puerto plata": [19.7808, -70.6871],
+      "montellano": [19.7333, -70.5833],
+      "cofresi": [19.8167, -70.7333],
+      "cofresí": [19.8167, -70.7333]
+    };
+
+    function sortNearMe() {
+      const btn = document.getElementById("nearMeBtn");
+      if (!navigator.geolocation) {
+        alert("Location is not supported on this browser.");
+        return;
+      }
+      btn.textContent = "📍 Locating...";
+      navigator.geolocation.getCurrentPosition(pos => {
+        const { latitude: lat, longitude: lon } = pos.coords;
+        const dist = (t) => {
+          const c = TOWN_COORDS[(t || "").trim().toLowerCase()];
+          if (!c) return 999999;
+          return Math.hypot(lat - c[0], lon - c[1]);
+        };
+        allLeads.sort((a, b) => dist(a.town) - dist(b.town));
+        btn.textContent = "📍 Nearest First ✓";
+        renderLeads();
+      }, () => {
+        btn.textContent = "📍 Near Me";
+        alert("Please allow location access to sort nearby leads.");
+      });
     }
 
     async function loadLeads() {

@@ -1418,6 +1418,22 @@ def seed_database(db_path: str):
             (pid, pcode, pne, pns, pusd, pdop, pcomm, pfeat, pact, psort)
         )
 
+    cur.execute(
+        """INSERT OR IGNORE INTO businesses (
+            id, slug, trading_name, category_id, primary_location_id,
+            description_en, description_es, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'approved')""",
+        (
+            "biz_montellano_oasis_massage",
+            "montellano-oasis-massage",
+            "Montellano Oasis Massage",
+            "cat_wellness_massage",
+            "loc_montellano",
+            "Relaxing massage and spa therapy in Montellano.",
+            "Masajes relajantes y terapia de spa en Montellano.",
+        ),
+    )
+
     conn.commit()
     conn.close()
     print("Database successfully initialized and seeded with Sosúa pilot data!")
