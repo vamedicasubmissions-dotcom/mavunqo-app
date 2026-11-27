@@ -1435,14 +1435,18 @@ def seed_database(db_path: str):
     )
 
     outreach_starter = [
-        ("lead_sosua_1", "Playa Alicia Grill & Bar", "+1-809-555-0141", "Dining & Food", "Sosúa", "Manager", "user_staff_1"),
-        ("lead_sosua_2", "El Batey Colmado Express", "+1-809-555-0142", "Groceries & Colmados", "Sosúa", "Owner", "user_staff_1"),
-        ("lead_cab_1", "Kite Beach Surf & Kite School", "+1-809-555-0143", "Tours & Activities", "Cabarete", "Front Desk", "user_staff_2"),
-        ("lead_cab_2", "Cabarete Scooter & Moto Rentals", "+1-809-555-0144", "Auto & Transport", "Cabarete", "Owner", "user_staff_2"),
-        ("lead_pp_1", "27 Waterfalls Adventure Tours", "+1-809-555-0145", "Tours & Activities", "Puerto Plata", "Bookings", "user_staff_1"),
-        ("lead_pp_2", "Cofresí Ocean Spa & Massage", "+1-809-555-0146", "Massage & Wellness", "Cofresí", "Reception", "user_staff_2"),
-        ("lead_b2b_1", "North Coast Hotel & Restaurant Supply", "+1-809-555-0147", "B2B & SaaS", "Montellano", "Sales", "user_staff_1"),
-        ("lead_b2b_2", "CaribePOS & Booking Systems", "+1-809-555-0148", "B2B & SaaS", "Puerto Plata", "Partnerships", "user_staff_2"),
+        ("lead_sosua_1", "The Waterfront Restaurant", "+1-809-571-3024", "Dining & Food", "Sosúa", "Playa Alicia", "user_staff_1"),
+        ("lead_sosua_2", "Restaurant Maria (Sosúa Ocean Village)", "+1-809-571-2111", "Dining & Food", "Sosúa", "Reservations", "user_staff_1"),
+        ("lead_sosua_3", "El Carnaval Restaurant", "+1-809-970-9433", "Dining & Food", "Sosúa", "El Colibrí / Pedro Clisante", "user_staff_1"),
+        ("lead_sosua_4", "Casa Veintiuno", "+1-829-342-8089", "Dining & Food", "Sosúa", "Downtown Sosúa", "user_staff_1"),
+        ("lead_sosua_5", "Bar Restaurante The Tree House", "+1-809-571-1383", "Dining & Food", "Sosúa", "Sosúa Beach", "user_staff_1"),
+        ("lead_cab_1", "Bobo's Point Surf School & Camp", "+1-809-882-5197", "Tours & Activities", "Cabarete", "Playa Encuentro", "user_staff_2"),
+        ("lead_cab_2", "Dominican Surf School", "+1-829-928-1371", "Tours & Activities", "Cabarete", "Encuentro", "user_staff_2"),
+        ("lead_pp_1", "Cleto Tours", "+1-809-984-4992", "Tours & Activities", "Puerto Plata", "Amber Cove / Taino Bay", "user_staff_2"),
+        ("lead_pp_2", "CR Top Excursions", "+1-809-836-7622", "Tours & Activities", "Puerto Plata", "ATV / Waterfalls", "user_staff_2"),
+        ("lead_pp_3", "Mega Adventures DR", "+1-809-586-3611", "Tours & Activities", "Puerto Plata", "27 Waterfalls / Zipline", "user_staff_1"),
+        ("lead_pp_4", "Zacarias Tours", "+1-809-249-7861", "Tours & Activities", "Puerto Plata", "Transfers & Excursions", "user_staff_2"),
+        ("lead_pp_5", "RV Tours DR", "+1-809-912-4173", "Tours & Activities", "Puerto Plata", "Private Shore Excursions", "user_staff_1"),
     ]
     for lid, bname, phone, cat, town, cname, rep_id in outreach_starter:
         cur.execute(
