@@ -1420,11 +1420,12 @@ def seed_database(db_path: str):
 
     cur.execute(
         """INSERT OR IGNORE INTO businesses (
-            id, slug, trading_name, category_id, primary_location_id,
-            description_en, description_es, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'approved')""",
+            id, owner_user_id, slug, trading_name, category_id, primary_location_id,
+            description_en, description_es, status, is_activated
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved', 1)""",
         (
             "biz_montellano_oasis_massage",
+            "user_admin",
             "montellano-oasis-massage",
             "Montellano Oasis Massage",
             "cat_wellness_massage",
@@ -1479,6 +1480,33 @@ def seed_database(db_path: str):
         ("lead_law_3", "DR Legal Shield (Martinez & Crestman)", "+1-809-635-2368", "Legal & Lawyers", "Sosúa", "Main Office", "user_staff_1"),
         ("lead_law_4", "Guido Luis Perdomo Montalvo Law", "+1-809-571-1950", "Legal & Lawyers", "Sosúa", "Pedro Clisante", "user_staff_2"),
         ("lead_law_5", "Lisa Legal Solutions", "+1-809-571-4110", "Legal & Lawyers", "Sosúa", "Plaza Pyramida", "user_staff_1"),
+        ("lead_pc_1", "Secrets Royal Beach Punta Cana", "+1-809-221-4646", "Hospitality & Tourism", "Punta Cana", "Resort", "user_staff_1"),
+        ("lead_pc_2", "Onno's Bávaro", "+1-809-552-0376", "Dining & Food", "Punta Cana", "Bávaro", "user_staff_2"),
+        ("lead_pc_3", "Trebol Restaurant", "+1-809-466-4301", "Dining & Food", "Punta Cana", "Restaurant", "user_staff_1"),
+        ("lead_pc_4", "Villa Blanca Beach Club", "+1-809-831-3312", "Dining & Food", "Punta Cana", "Beach Club", "user_staff_2"),
+        ("lead_pc_5", "Punta Cana Dinner Sky", "+1-809-759-5439", "Dining & Food", "Punta Cana", "Dining", "user_staff_1"),
+        ("lead_pc_6", "Punta Cana Experiences", "+1-809-982-7211", "Tours & Activities", "Punta Cana", "Excursions", "user_staff_2"),
+        ("lead_pc_7", "Punta Cana Transfer Pro", "+1-809-935-0357", "Auto & Transport", "Punta Cana", "Transfers", "user_staff_1"),
+        ("lead_sd_1", "El Mesón de la Cava", "+1-809-533-2818", "Dining & Food", "Santo Domingo", "Fine Dining", "user_staff_2"),
+        ("lead_sd_2", "Mesón D'Bari", "+1-809-687-4091", "Dining & Food", "Santo Domingo", "Colonial Zone", "user_staff_1"),
+        ("lead_sd_3", "Pat'e Palo European Brasserie", "+1-809-687-8089", "Dining & Food", "Santo Domingo", "Plaza España", "user_staff_2"),
+        ("lead_sd_4", "La Briciola", "+1-809-688-5055", "Dining & Food", "Santo Domingo", "Colonial Zone", "user_staff_1"),
+        ("lead_sd_5", "Santino", "+1-809-368-1155", "Dining & Food", "Santo Domingo", "Acrópolis", "user_staff_2"),
+        ("lead_sd_6", "Catalonia Santo Domingo", "+1-809-685-0000", "Hospitality & Tourism", "Santo Domingo", "Malecón", "user_staff_1"),
+        ("lead_sd_7", "Hotel Villa Colonial", "+1-809-221-1049", "Hospitality & Tourism", "Santo Domingo", "Colonial Zone", "user_staff_2"),
+        ("lead_sd_8", "Barceló Santo Domingo", "+1-809-563-5000", "Hospitality & Tourism", "Santo Domingo", "Hotel & Casino", "user_staff_1"),
+        ("lead_sd_9", "W&P Santo Domingo", "+1-809-535-0800", "Hospitality & Tourism", "Santo Domingo", "Bella Vista", "user_staff_2"),
+        ("lead_sti_1", "AC Hotel by Marriott Santiago", "+1-809-971-2024", "Hospitality & Tourism", "Santiago", "Hotel", "user_staff_1"),
+        ("lead_sti_2", "Hodelpa Gran Almirante", "+1-809-580-1992", "Hospitality & Tourism", "Santiago", "Hotel & Casino", "user_staff_2"),
+        ("lead_sti_3", "Hampton by Hilton Santiago", "+1-809-582-0224", "Hospitality & Tourism", "Santiago", "Hotel", "user_staff_1"),
+        ("lead_sti_4", "Hodelpa Garden Court", "+1-809-664-7000", "Hospitality & Tourism", "Santiago", "Airport", "user_staff_2"),
+        ("lead_sti_5", "Hotel Santiago Curio Collection", "+1-809-894-7000", "Hospitality & Tourism", "Santiago", "Hilton", "user_staff_1"),
+        ("lead_sti_6", "Hotel Platino & Casino", "+1-809-724-7576", "Hospitality & Tourism", "Santiago", "Hotel", "user_staff_2"),
+        ("lead_sti_7", "Lovera Hotel", "+1-809-575-6186", "Hospitality & Tourism", "Santiago", "Hotel", "user_staff_1"),
+        ("lead_sti_8", "Giacomo Restaurante Cafe", "+1-809-806-2000", "Dining & Food", "Santiago", "Italian/Café", "user_staff_2"),
+        ("lead_sti_9", "Restaurante Mar Y Fuego", "+1-809-736-4488", "Dining & Food", "Santiago", "Jardines Metropolitanos", "user_staff_1"),
+        ("lead_sti_10", "Kingdom Restaurante", "+1-809-724-0875", "Dining & Food", "Santiago", "Villa Olga", "user_staff_2"),
+        ("lead_sti_11", "Restaurante El Real Sabor", "+1-809-226-1193", "Dining & Food", "Santiago", "Centro", "user_staff_1"),
     ]
     for lid, bname, phone, cat, town, cname, rep_id in outreach_starter:
         cur.execute(

@@ -116,6 +116,7 @@
     </div>
     <div style="display: flex; align-items: center; gap: 8px;">
       <select id="langSelect" onchange="changeDriverLang()" style="background: #0f172a; color: #f8fafc; border: 1px solid #475569; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">
+        <option value="en">🇺🇸 EN</option>
         <option value="es">🇩🇴 ES</option>
         <option value="fr">🇫🇷 FR</option>
       </select>
@@ -154,10 +155,41 @@
     let currentDriverId = localStorage.getItem("mavunqo_driver_id") || "drv_sosua_2";
     let currentDriverPin = localStorage.getItem("mavunqo_driver_pin_" + currentDriverId) || "";
     let driverLang = localStorage.getItem("mavunqo_driver_lang") || "es";
-    if (!["es", "fr"].includes(driverLang)) driverLang = "es";
+    if (!["en", "es", "fr"].includes(driverLang)) driverLang = "es";
     let lastJobs = [];
 
     const DRIVER_I18N = {
+      en: {
+        switchDriver: "Switch Driver:",
+        assigned: "📦 Assigned Deliveries",
+        pinPrompt: "Enter your 4-digit PIN to access (Demo PIN: 1234):",
+        pinBad: "Incorrect PIN.",
+        pinLocked: "🔒 PIN-Protected Access",
+        pinBtn: "Enter Driver PIN",
+        noJobsTitle: "You have no assigned deliveries right now",
+        noJobsSub: "Dispatch will assign orders to you automatically as they arrive.",
+        statusLbl: "Status:",
+        collectLbl: "To Collect:",
+        prepaid: "PREPAID (RD$ 0)",
+        tipLbl: "🌟 Includes Tip:",
+        step1: "Step 1: Pick Up at Restaurant",
+        pickupNote: "Pickup point:",
+        frontCounter: "Front counter",
+        gpsRest: "🗺️ Open GPS to Restaurant (Google Maps) ↗",
+        step2: "Step 2: Deliver to Customer",
+        addrLbl: "📍 Address:",
+        gpsCust: "🗺️ Open GPS to Customer (Google Maps) ↗",
+        btnPrepaid: "✓ Confirm Delivery Completed",
+        btnCashPrefix: "💵 Collect RD$",
+        btnCashSuffix: "& Complete",
+        cashPrompt: "Cash amount received from customer:",
+        doneOk: "✓ Delivery completed successfully!",
+        doneErr: "Error recording delivery.",
+        guideTitle: "📋 Moto Handling Guide:",
+        guide1: "• Keep cold drinks separate from hot food (use divider).",
+        guide2: "• Keep boxes flat (do not tilt pizza or soups).",
+        guide3: "• Verify MAVUNQO seal, utensils, and napkins."
+      },
       es: {
         switchDriver: "Cambiar Conductor:",
         assigned: "📦 Entregas Asignadas",
