@@ -4,7 +4,10 @@ Does not bind to network sockets, running cleanly in sandboxed environments.
 """
 import io
 import json
+import os
+import tempfile
 import unittest
+import backend.server as _server
 from backend.server import MavunqoRequestHandler, service, DB_PATH
 from backend.seed import seed_database
 
@@ -59,7 +62,32 @@ def invoke_handler(method: str, path: str, headers: dict = None, body: dict = No
 class TestHttpEndpoints(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        seed_database(DB_PATH)
+        cls._orig_db_path = _server.DB_PATH
+        cls.temp_dir = tempfile.TemporaryDirectory()
+        cls.db_path = os.path.join(cls.temp_dir.name, "test_http_mavunqo.db")
+        _server.DB_PATH = cls.db_path
+        _server.service.db_path = cls.db_path
+        _server.wa_service.db_path = cls.db_path
+        _server.wa_bot.db_path = cls.db_path
+        _server.security_monitor.db_path = cls.db_path
+        seed_database(cls.db_path)
+        with service.get_connection() as conn:
+            conn.execute(
+                "UPDATE businesses SET status = 'approved', requests_enabled = 1 WHERE id IN ('biz_sosua_villas', 'biz_caribe_fix')"
+            )
+            conn.commit()
+
+    @classmethod
+    def tearDownClass(cls):
+        _server.DB_PATH = cls._orig_db_path
+        _server.service.db_path = cls._orig_db_path
+        _server.wa_service.db_path = cls._orig_db_path
+        _server.wa_bot.db_path = cls._orig_db_path
+        _server.security_monitor.db_path = cls._orig_db_path
+        try:
+            cls.temp_dir.cleanup()
+        except Exception:
+            pass
 
     def test_get_categories_endpoint(self):
         status, body = invoke_handler("GET", "/api/categories")

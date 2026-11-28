@@ -4,8 +4,11 @@ Pilot Locations, Confirmed Map Pins, and Managed Motorcycle Delivery.
 """
 import io
 import json
+import os
+import tempfile
 import unittest
 from datetime import datetime, timezone, timedelta
+import backend.server as _server
 from backend.server import MavunqoRequestHandler, service, DB_PATH
 from backend.seed import seed_database
 
@@ -66,7 +69,31 @@ def invoke(method: str, path: str, headers: dict = None, body: dict = None):
 class TestPhase2MerchantRequests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        seed_database(DB_PATH)
+        global DB_PATH
+        cls._orig_db_path = _server.DB_PATH
+        cls.temp_dir = tempfile.TemporaryDirectory()
+        cls.db_path = os.path.join(cls.temp_dir.name, "test_phase2_mavunqo.db")
+        DB_PATH = cls.db_path
+        _server.DB_PATH = cls.db_path
+        _server.service.db_path = cls.db_path
+        _server.wa_service.db_path = cls.db_path
+        _server.wa_bot.db_path = cls.db_path
+        _server.security_monitor.db_path = cls.db_path
+        seed_database(cls.db_path)
+
+    @classmethod
+    def tearDownClass(cls):
+        global DB_PATH
+        DB_PATH = cls._orig_db_path
+        _server.DB_PATH = cls._orig_db_path
+        _server.service.db_path = cls._orig_db_path
+        _server.wa_service.db_path = cls._orig_db_path
+        _server.wa_bot.db_path = cls._orig_db_path
+        _server.security_monitor.db_path = cls._orig_db_path
+        try:
+            cls.temp_dir.cleanup()
+        except Exception:
+            pass
 
     def test_01_search_aliases_and_locations(self):
         """Acceptance check: Search for 'massage' and 'masaje' finds the same approved listing."""

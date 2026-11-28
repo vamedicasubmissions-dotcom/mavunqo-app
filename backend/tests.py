@@ -28,6 +28,11 @@ class TestMavunqoPhase1(unittest.TestCase):
         cls.db_path = os.path.join(cls.temp_dir.name, "test_mavunqo.db")
         seed_database(cls.db_path)
         cls.service = MavunqoService(cls.db_path)
+        with cls.service.get_connection() as conn:
+            conn.execute(
+                "UPDATE businesses SET status = 'approved', requests_enabled = 1 WHERE id IN ('biz_sosua_villas', 'biz_caribe_fix')"
+            )
+            conn.commit()
 
     @classmethod
     def tearDownClass(cls):
