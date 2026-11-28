@@ -1420,8 +1420,8 @@ def seed_database(db_path: str):
 
     cur.execute(
         """INSERT OR IGNORE INTO businesses (
-            id, owner_user_id, slug, trading_name, category_id, primary_location_id,
-            description_en, description_es, status, is_activated
+            id, owner_id, slug, trading_name, category_id, primary_location_id,
+            description_en, description_es, status, requests_enabled
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved', 1)""",
         (
             "biz_montellano_oasis_massage",
