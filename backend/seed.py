@@ -137,16 +137,16 @@ def seed_database(db_path: str):
         cur.execute(
             """INSERT INTO businesses (
                 id, owner_id, trading_name, legal_name, slug, category_id, primary_location_id,
-                description_en, description_es, status, has_physical_location, address,
+                description_en, description_es, status, requests_enabled, has_physical_location, address,
                 serves_entire_area, website_url, whatsapp, phone, public_email,
                 hours_json, rnc_tax_id, rnc_status, approved_by, approved_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
             (
                 b1_id, owner1_id, "Sosúa Ocean View Villa Rentals", "Inversiones Martinez SRL",
                 "sosua-ocean-view-villas", "cat_tourism", "loc_sosua",
                 "Luxury villa rentals and property management across Sosúa and surrounding beaches. Direct owner booking.",
                 "Alquiler de villas de lujo y administración de propiedades en Sosúa y playas cercanas. Reservación directa con el propietario.",
-                "approved", 1, "Calle Pedro Clisante #42, El Batey, Sosúa",
+                "pending", 0, 1, "Calle Pedro Clisante #42, El Batey, Sosúa",
                 1, "https://example-sosua-villas.com", "+18095550192", "+18095550192", "info@sosuavillas.com",
                 json.dumps({"monday_friday": "8:00 AM - 6:00 PM", "saturday": "9:00 AM - 2:00 PM", "sunday": "On Call"}),
                 "131-98765-4", "verified", admin_id
