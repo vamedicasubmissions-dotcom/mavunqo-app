@@ -189,16 +189,16 @@ def seed_database(db_path: str):
         cur.execute(
             """INSERT INTO businesses (
                 id, owner_id, trading_name, legal_name, slug, category_id, primary_location_id,
-                description_en, description_es, status, has_physical_location, address,
+                description_en, description_es, status, requests_enabled, has_physical_location, address,
                 serves_entire_area, website_url, whatsapp, phone, public_email,
                 hours_json, rnc_tax_id, rnc_status, approved_by, approved_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
             (
                 b2_id, owner2_id, "Caribe Fix Auto & AC", "Caribe Fix SRL",
                 "caribe-fix-auto", "cat_auto", "loc_sosua",
                 "Certified automotive air conditioning recharge, brake repairs, and mobile roadside diagnostics in Sosúa.",
                 "Recarga certificada de aire acondicionado automotriz, frenos y diagnóstico a domicilio en Sosúa.",
-                "approved", 1, "Carretera Sosúa - Cabarete Km 2, Sosúa",
+                "pending", 0, 1, "Carretera Sosúa - Cabarete Km 2, Sosúa",
                 1, None, "+18095550843", "+18095550843", "service@caribefix.com",
                 json.dumps({"monday_friday": "7:30 AM - 5:30 PM", "saturday": "8:00 AM - 1:00 PM", "sunday": "Closed"}),
                 None, "unverified", admin_id # RNC is optional as specified
