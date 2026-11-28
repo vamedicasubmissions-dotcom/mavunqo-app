@@ -306,12 +306,12 @@
           pmBadge.innerHTML = `<span style="color: #15803d; background: #dcfce7; padding: 4px 8px; border-radius: 6px;">💵 Cash on Delivery (Pay Driver at Door)</span>`;
         } else if (o.payment_method === 'zelle') {
           const usdAmount = (o.total / 60.0).toFixed(2);
-          pmBadge.innerHTML = `<span style="color: #b45309; background: #fef3c7; padding: 4px 8px; border-radius: 6px;">⚡ Pre-paid via Zelle ($${usdAmount} USD) • 0% Chargeback</span>`;
+          pmBadge.innerHTML = `<span style="color: #b45309; background: #fef3c7; padding: 4px 8px; border-radius: 6px;">⚡ Pre-paid via Zelle ($${usdAmount} USD)</span>`;
         } else if (o.payment_method === 'transfer') {
           pmBadge.innerHTML = `<span style="color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 6px;">🏦 Pre-paid via Bank Transfer (Banreservas/Popular)</span>`;
         } else if (o.payment_method === 'wise') {
           const usdAmount = (o.total / 60.0).toFixed(2);
-          pmBadge.innerHTML = `<span style="color: #3f6212; background: #ecfccb; padding: 4px 8px; border-radius: 6px;">🌍 Pre-paid via Wise ($${usdAmount} USD) • 0% Chargeback</span>`;
+          pmBadge.innerHTML = `<span style="color: #3f6212; background: #ecfccb; padding: 4px 8px; border-radius: 6px;">🌍 Pre-paid via Wise ($${usdAmount} USD)</span>`;
         }
       }
 
