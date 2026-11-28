@@ -747,8 +747,8 @@ main.container {
   }
 }
 .ai-concierge-pill:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(13, 148, 136, 0.38);
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 12px 28px rgba(245, 158, 11, 0.45), 0 0 0 3px #fbbf24;
 }
 body.ai-drawer-open .ai-concierge-pill {
   opacity: 0 !important;
@@ -1333,4 +1333,47 @@ table.data-table td {
   form [style*="display: flex"][style*="gap: 0.5rem"] > div {
     min-width: 140px !important;
   }
+}
+
+
+/* ==========================================================================
+   HIGH-VISIBILITY INTERACTIVE HOVER STATES (ALL CLICKABLE ELEMENTS)
+   ========================================================================== */
+a, button, [onclick], [role="button"], select, .uber-card, .uber-menu-card, .lang-btn, .bottom-nav-item {
+  cursor: pointer;
+}
+.btn, button, .uber-card, .uber-menu-card, .lang-btn, .bottom-nav-item, .ai-chip-btn, .ai-rec-card {
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background-color 0.16s ease, filter 0.16s ease;
+}
+.btn:hover, button:not(:disabled):hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18), 0 0 0 2px rgba(245, 158, 11, 0.6);
+}
+.uber-card:hover, .uber-menu-card:hover {
+  transform: translateY(-4px) !important;
+  border-color: #0d9488 !important;
+  box-shadow: 0 14px 28px rgba(13, 148, 136, 0.22), 0 0 0 2px #14b8a6 !important;
+}
+.lang-btn:hover {
+  background: rgba(13, 148, 136, 0.14);
+  color: #0f172a;
+}
+.bottom-nav-item:hover {
+  color: #0d9488 !important;
+  background: #f0fdfa;
+  border-radius: 12px;
+}
+.ai-chip-btn:hover {
+  transform: translateY(-2px);
+  background: #f0fdfa !important;
+  border-color: #0d9488 !important;
+  color: #0d9488 !important;
+  box-shadow: 0 6px 14px rgba(13, 148, 136, 0.18) !important;
+}
+.ai-rec-card:hover {
+  transform: translateY(-2px);
+  background: #f0fdfa !important;
+  border-color: #0d9488 !important;
+  box-shadow: 0 8px 18px rgba(13, 148, 136, 0.2);
 }

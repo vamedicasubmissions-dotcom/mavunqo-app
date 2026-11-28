@@ -52,7 +52,7 @@
     drawer.className = 'ai-drawer';
     drawer.id = 'aiDrawer';
     const chipsHtml = (roleTips.chips || []).map(c =>
-      `<button type="button" onclick="document.getElementById('aiInput').value='${c}'; sendConciergeQuery();" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:999px; padding:0.32rem 0.72rem; font-size:0.76rem; font-weight:750; cursor:pointer; color:#0f172a; box-shadow:0 2px 6px rgba(15,23,42,0.05);">${c}</button>`
+      `<button type="button" class="ai-chip-btn" onclick="document.getElementById('aiInput').value='${c}'; sendConciergeQuery();" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:999px; padding:0.32rem 0.72rem; font-size:0.76rem; font-weight:750; cursor:pointer; color:#0f172a; box-shadow:0 2px 6px rgba(15,23,42,0.05);">${c}</button>`
     ).join('');
 
     drawer.innerHTML = `
@@ -147,7 +147,7 @@
           data.recommendations.map(r => {
             const thumb = r.logo_url || r.cover_image_url || '/frontend/uploads/heritage/cayo_arena_waterfalls.jpg';
             return `
-            <a href="/b/${r.slug}" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.6rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; text-decoration: none; color: #0f172a; font-weight: 750; font-size: 0.84rem;">
+            <a href="/b/${r.slug}" class="ai-rec-card" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.6rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; text-decoration: none; color: #0f172a; font-weight: 750; font-size: 0.84rem;">
               <img src="${thumb}" alt="${r.trading_name}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0;">
               <span style="flex:1;">${r.trading_name}</span>
               <span style="color:#0d9488;">→</span>
